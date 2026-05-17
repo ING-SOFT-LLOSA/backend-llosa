@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: llosa_db
+    environment:
+      POSTGRES_DB: llosa_db
+      POSTGRES_USER: REMOVED_USER
+      POSTGRES_PASSWORD: REMOVED_PASSWORD
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
