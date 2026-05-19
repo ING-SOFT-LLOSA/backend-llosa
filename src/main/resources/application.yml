@@ -23,4 +23,4 @@ firebase:
   service-account-path: classpath:firebase-service-account.json
 
 app:
-  dominio-corporativo: llosaedificaciones.com
+  dominio-corporativo: llosa.com
