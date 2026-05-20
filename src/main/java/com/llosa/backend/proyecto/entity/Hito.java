@@ -19,14 +19,12 @@ import java.util.UUID;
 @ToString(exclude = "etapa")
 public class Hito {
 
+    // Atributos de la clase
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "uuid_hito", updatable = false, nullable = false)
     private UUID id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_etapa", nullable = false)
-    private Etapa etapa;
 
     @Column(nullable = false)
     private Integer orden;
@@ -47,4 +45,10 @@ public class Hito {
 
     @Column(name = "fecha_estimada")
     private LocalDate fechaEstimada;
+
+    // RELACIONES A LAS DIFERENTES TABLAS
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_etapa", nullable = false)
+    private Etapa etapa;
 }

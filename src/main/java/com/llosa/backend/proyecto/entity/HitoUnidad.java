@@ -20,18 +20,12 @@ import java.util.UUID;
 @EqualsAndHashCode(of = "id")
 public class HitoUnidad {
 
+    // Atributos de la clase
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "uuid_hito_unidad", updatable = false, nullable = false)
     private UUID id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uuid_activo", nullable = false)
-    private Activo activo;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uuid_hito", nullable = false)
-    private Hito hito;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -43,4 +37,20 @@ public class HitoUnidad {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @CreationTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    private String observaciones;
+
+    // Relaciones con otras tablas
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uuid_activo", nullable = false)
+    private Activo activo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uuid_hito", nullable = false)
+    private Hito hito;
 }

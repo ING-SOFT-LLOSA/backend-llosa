@@ -17,15 +17,11 @@ import java.util.List;
 @EqualsAndHashCode(of = "id")
 @ToString(exclude = {"proyecto", "hitos"})
 public class Etapa {
-
+    // Atributos de la clase
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_etapa")
     private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uuid_proyecto", nullable = false)
-    private Proyecto proyecto;
 
     @Column(nullable = false)
     private String nombre;
@@ -33,11 +29,17 @@ public class Etapa {
     @Column(nullable = false)
     private Integer orden;
 
-    private String descripcion;
+    @Column(length = 200)
+    private String descripcion = "Descripcion aún no definida";
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoEtapa estado;
+
+    // RELACIONES A LAS DIFERENTES TABLAS
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uuid_proyecto", nullable = false)
+    private Proyecto proyecto;
 
     @OneToMany(mappedBy = "etapa",
                cascade = CascadeType.ALL,

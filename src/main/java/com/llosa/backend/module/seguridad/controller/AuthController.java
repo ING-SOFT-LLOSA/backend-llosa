@@ -1,4 +1,4 @@
-package com.llosa.backend.module.seguridad.controller;
+/*package com.llosa.backend.module.seguridad.controller;
 
 import com.llosa.backend.module.seguridad.dto.PerfilConPermisosResponse;
 import com.llosa.backend.module.seguridad.service.AuthService;
@@ -31,3 +31,5 @@ public class AuthController {
         return ResponseEntity.ok(perfil);
     }
 }
+
+ */

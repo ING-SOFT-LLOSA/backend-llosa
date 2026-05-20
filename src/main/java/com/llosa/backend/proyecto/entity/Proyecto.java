@@ -20,7 +20,7 @@ import java.util.UUID;
 @EqualsAndHashCode(of = "id")
 @ToString(exclude = {"torres", "etapas"})
 public class Proyecto {
-
+    // Atributos de la relación en la tabla
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "uuid_proyecto", updatable = false, nullable = false)
@@ -36,6 +36,7 @@ public class Proyecto {
     @Column(name = "fecha_inicio")
     private LocalDate fechaInicio;
 
+    // RELACIONES A LAS DIFERENTES TABLAS
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -53,4 +54,5 @@ public class Proyecto {
                orphanRemoval = true)
     @Builder.Default
     private List<Etapa> etapas = new ArrayList<>();
+    // RELACION DE DOCUMENTOS AUN NO REALIZADA
 }

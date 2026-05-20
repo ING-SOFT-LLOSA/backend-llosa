@@ -17,22 +17,28 @@ import java.util.List;
 @ToString(exclude = {"proyecto", "pisos"})
 public class Torre {
 
+    // Atributos de la clase
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_torre")
     private Long id;
 
+    @Column(nullable = false)
+    private String nombre;
+
+    // RELACIONES A LAS DIFERENTES TABLAS
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uuid_proyecto", nullable = false)
     private Proyecto proyecto;
 
-    @Column(nullable = false)
-    private String nombre;
-
     @OneToMany(mappedBy = "torre",
-               cascade = CascadeType.ALL,
-               fetch = FetchType.LAZY,
-               orphanRemoval = true)
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY,
+            orphanRemoval = true)
     @Builder.Default
     private List<Piso> pisos = new ArrayList<>();
+
+
 }
