@@ -1,4 +1,4 @@
-package com.llosa.backend.security;
+/*package com.llosa.backend.security;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
@@ -55,3 +55,4 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 }
+ */

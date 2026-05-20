@@ -1,4 +1,4 @@
-package com.llosa.backend.security;
+/*package com.llosa.backend.security;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -27,3 +27,4 @@ public class FirebaseAuthenticationToken extends AbstractAuthenticationToken {
     public String getEmail() { return email; }
     public String getUid()   { return uid; }
 }
+*/
