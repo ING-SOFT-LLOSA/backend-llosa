@@ -30,6 +30,9 @@ public class Etapa {
     @Column(nullable = false)
     private String nombre;
 
+    @Column(nullable = false)
+    private Integer orden;
+
     private String descripcion;
 
     @Enumerated(EnumType.STRING)

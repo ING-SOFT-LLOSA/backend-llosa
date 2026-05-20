@@ -1,6 +1,8 @@
 package com.llosa.backend.proyecto.service.impl;
 
 import com.llosa.backend.proyecto.entity.Proyecto;
+import com.llosa.backend.proyecto.enums.EstadoHito;
+import com.llosa.backend.proyecto.repository.HitoUnidadRepository;
 import com.llosa.backend.proyecto.repository.ProyectoRepository;
 import com.llosa.backend.proyecto.service.ProyectoService;
 import jakarta.persistence.EntityNotFoundException;
@@ -16,38 +18,12 @@ import java.util.UUID;
 public class ProyectoServiceImpl implements ProyectoService {
 
     private final ProyectoRepository proyectoRepository;
-
-    @Override
-    @Transactional
-    public Proyecto save(Proyecto proyecto) {
-        return proyectoRepository.save(proyecto);
-    }
+    private final HitoUnidadRepository hitoUnidadRepository;
 
     @Override
     @Transactional(readOnly = true)
     public Proyecto findById(UUID id) {
         return proyectoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Proyecto no encontrado: " + id));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Proyecto findByIdWithTorresAndPisos(UUID id) {
-        return proyectoRepository.findByIdWithTorresAndPisos(id)
-                .orElseThrow(() -> new EntityNotFoundException("Proyecto no encontrado: " + id));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Proyecto findArbolFisico(UUID id) {
-        return proyectoRepository.findByIdWithArbolFisico(id)
-                .orElseThrow(() -> new EntityNotFoundException("Proyecto no encontrado: " + id));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Proyecto findCronograma(UUID id) {
-        return proyectoRepository.findByIdWithCronograma(id)
                 .orElseThrow(() -> new EntityNotFoundException("Proyecto no encontrado: " + id));
     }
 
@@ -59,33 +35,10 @@ public class ProyectoServiceImpl implements ProyectoService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Proyecto> findByDistrito(String distrito) {
-        return proyectoRepository.findByDistrito(distrito);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Proyecto> findByNombre(String nombre) {
-        return proyectoRepository.findByNombreContainingIgnoreCase(nombre);
-    }
-
-    @Override
-    @Transactional
-    public Proyecto update(UUID id, Proyecto datos) {
-        Proyecto existente = findById(id);
-        existente.setNombre(datos.getNombre());
-        existente.setDistrito(datos.getDistrito());
-        existente.setDireccion(datos.getDireccion());
-        existente.setFechaInicio(datos.getFechaInicio());
-        return proyectoRepository.save(existente);
-    }
-
-    @Override
-    @Transactional
-    public void delete(UUID id) {
-        if (!proyectoRepository.existsById(id)) {
-            throw new EntityNotFoundException("Proyecto no encontrado: " + id);
-        }
-        proyectoRepository.deleteById(id);
+    public double getPorcentajeAvance(UUID id) {
+        long totales = hitoUnidadRepository.countByProyectoId(id);
+        if (totales == 0) return 0.0;
+        long completados = hitoUnidadRepository.countByProyectoIdAndEstado(id, EstadoHito.COMPLETADO);
+        return (double) completados * 100 / totales;
     }
 }
