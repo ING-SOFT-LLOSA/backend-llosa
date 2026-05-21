@@ -27,7 +27,7 @@ public class ProyectoController {
     private final ProyectoService proyectoService;
     private final EtapaService etapaService;
 
-
+    // Funcionando correctamente
     @PostMapping
     public ResponseEntity<ProyectoResponseDTO> crearProyecto(@Valid @RequestBody ProyectoCreateDTO proyecto) {
         Proyecto nuevo_proyecto = Proyecto.builder()
@@ -39,10 +39,11 @@ public class ProyectoController {
                 .distrito(proyecto.distrito())
                 .direccion(proyecto.direccion())
                 .fechaInicio(proyecto.fechaInicio())
+                .fechaFin(proyecto.fechaFin())
                 .build();
         return ResponseEntity.status(HttpStatus.CREATED).body(ProyectoResponseDTO.fromEntity(proyectoService.save(nuevo_proyecto)));
     }
-
+    // Funcionando correctamente
     @GetMapping
     public ResponseEntity<List<ProyectoResponseDTO>> findAll() {
         List<ProyectoResponseDTO> response = proyectoService.findAll()
@@ -51,9 +52,9 @@ public class ProyectoController {
                 .toList();
         return ResponseEntity.ok(response);
     }
-
+    // Funcionando correctamente
     @PostMapping("/{uuid}/etapas")
-    public ResponseEntity<EtapaResponseDTO> crearEtapa(@PathVariable("uuid") UUID id,
+    public ResponseEntity<EtapaResponseDTO> crearEtapa(@PathVariable("uuid") UUID id_proyecto,
                                                        @Valid @RequestBody EtapaCreateDTO dto) {
         Etapa etapa = Etapa.builder()
                 .nombre(dto.nombre())
@@ -63,7 +64,7 @@ public class ProyectoController {
                 .build();
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(EtapaResponseDTO.fromEntity(etapaService.save(id, etapa)));
+                .body(EtapaResponseDTO.fromEntity(etapaService.save(id_proyecto, etapa)));
     }
 
     @GetMapping("/{uuid}/avance-general")

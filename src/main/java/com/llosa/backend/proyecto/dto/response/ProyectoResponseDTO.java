@@ -10,9 +10,14 @@ import java.util.UUID;
 public record ProyectoResponseDTO(
         UUID id,
         String nombre,
+        String descripcion,
+        Boolean precertificacionEdgeLeed,
+        String linkRecorridoVirtual,
+        String departamento,
         String distrito,
         String direccion,
         LocalDate fechaInicio,
+        LocalDate fechaFin,
         LocalDateTime createdAt
 ) {
     public static ProyectoResponseDTO fromEntity(Proyecto p) {
@@ -20,8 +25,13 @@ public record ProyectoResponseDTO(
                 p.getId(),
                 p.getNombre(),
                 p.getDistrito(),
+                p.getPrecertificacionEdgeLeed(),
+                p.getLinkRecorridoVirtual(),
+                p.getDepartamento(),
+                p.getDistrito(),
                 p.getDireccion(),
                 p.getFechaInicio(),
+                p.getFechaFin(),
                 p.getCreatedAt()
         );
     }

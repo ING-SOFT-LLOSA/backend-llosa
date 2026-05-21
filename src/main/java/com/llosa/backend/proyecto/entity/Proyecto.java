@@ -44,22 +44,25 @@ public class Proyecto {
     @Column(name = "fecha_inicio")
     private LocalDate fechaInicio;
 
+    @Column(name = "fecha_fin")
+    private LocalDate fechaFin;
+
     // RELACIONES A LAS DIFERENTES TABLAS
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "proyecto",
-               cascade = CascadeType.ALL,
-               fetch = FetchType.LAZY,
-               orphanRemoval = true)
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY,
+            orphanRemoval = true)
     @Builder.Default
     private List<Torre> torres = new ArrayList<>();
 
     @OneToMany(mappedBy = "proyecto",
-               cascade = CascadeType.ALL,
-               fetch = FetchType.LAZY,
-               orphanRemoval = true)
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY,
+            orphanRemoval = true)
     @Builder.Default
     private List<Etapa> etapas = new ArrayList<>();
     // RELACION DE DOCUMENTOS AUN NO REALIZADA
