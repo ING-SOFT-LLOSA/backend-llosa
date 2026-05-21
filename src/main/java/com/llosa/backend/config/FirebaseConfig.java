@@ -10,7 +10,7 @@ import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 
-@Configuration
+//@Configuration
 public class FirebaseConfig {
 
     @Value("${firebase.service-account-path}")
