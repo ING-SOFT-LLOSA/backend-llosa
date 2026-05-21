@@ -18,6 +18,8 @@
 	<properties>
 		<java.version>21</java.version>
 		<lombok.version>1.18.36</lombok.version>
+		<!-- Docker 29.x requiere API mínima 1.40; Testcontainers 1.20+ usa docker-java 3.4+ que lo soporta -->
+		<testcontainers.version>1.20.4</testcontainers.version>
 	</properties>
 
 	<dependencies>
@@ -83,6 +85,31 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- Testcontainers - integración con Spring Boot 3.1+ ServiceConnection -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Spring Security Test - authentication() helpers para MockMvc -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -110,6 +137,17 @@
 							<version>${lombok.version}</version>
 						</path>
 					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<!-- Surefire: excluye tag "stress" del ciclo test normal -->
+			<!-- api.version=1.41 fuerza docker-java a usar API ≥1.40 (Docker 29.x exige mínimo 1.40) -->
+			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<excludedGroups>stress</excludedGroups>
+					<systemPropertyVariables>
+						<api.version>1.41</api.version>
+					</systemPropertyVariables>
 				</configuration>
 			</plugin>
 		</plugins>

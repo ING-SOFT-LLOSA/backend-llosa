@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: REMOVED_DB_URL
-    username: REMOVED_USER
-    password: REMOVED_PASSWORD
+    url: jdbc:postgresql://localhost:${LOCAL_PORT}/${DB_NAME}
+    username: ${USERNAME}
+    password: ${PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -23,4 +23,4 @@ firebase:
   service-account-path: classpath:firebase-service-account.json
 
 app:
-  dominio-corporativo: llosaedificaciones.com
+  dominio-corporativo: ${DOMINIO}

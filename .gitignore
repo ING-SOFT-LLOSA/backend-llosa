@@ -2,7 +2,12 @@ HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
-!**/src/test/**/target/
+!**/src/test/**/target
+.env
+
+## Claude files ##
+CLAUDE.md
+.claude/
 
 ### STS ###
 .apt_generated

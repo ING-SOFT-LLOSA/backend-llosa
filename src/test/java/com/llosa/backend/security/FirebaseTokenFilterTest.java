@@ -1,0 +1,139 @@
+package com.llosa.backend.security;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseToken;
+import jakarta.servlet.FilterChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class FirebaseTokenFilterTest {
+
+    private FirebaseTokenFilter filter;
+    private MockHttpServletResponse response;
+    private FilterChain filterChain;
+
+    @BeforeEach
+    void setUp() {
+        filter = new FirebaseTokenFilter();
+        response = new MockHttpServletResponse();
+        filterChain = mock(FilterChain.class);
+        SecurityContextHolder.clearContext();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    // ── Sin header Authorization ─────────────────────────────────────────────
+
+    @Test
+    void sinHeaderAuthorization_continuaEncadenadoSinAutenticar() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    // ── Header sin "Bearer " ──────────────────────────────────────────────────
+
+    @Test
+    void headerBasic_sinBearer_ignoraYContinua() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Basic dXNlcjpwYXNz");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    // ── Token inválido ────────────────────────────────────────────────────────
+
+    @Test
+    void tokenFirebaseInvalido_limpiaContextoYContinua() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-invalido");
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.verifyIdToken("token-invalido"))
+                .thenThrow(new RuntimeException("Token expirado"));
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            filter.doFilterInternal(request, response, filterChain);
+        }
+
+        verify(filterChain).doFilter(request, response);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    // ── Token válido ──────────────────────────────────────────────────────────
+
+    @Test
+    void tokenValido_autenticaEnSecurityContext() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-valido");
+
+        FirebaseToken mockToken = mock(FirebaseToken.class);
+        when(mockToken.getUid()).thenReturn("uid-test-123");
+        when(mockToken.getEmail()).thenReturn("user@test.com");
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.verifyIdToken("token-valido")).thenReturn(mockToken);
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            filter.doFilterInternal(request, response, filterChain);
+        }
+
+        verify(filterChain).doFilter(request, response);
+
+        FirebaseAuthenticationToken auth =
+                (FirebaseAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+
+        assertThat(auth).isNotNull();
+        assertThat(auth.getUid()).isEqualTo("uid-test-123");
+        assertThat(auth.getEmail()).isEqualTo("user@test.com");
+        assertThat(auth.isAuthenticated()).isTrue();
+        assertThat(auth.getAuthorities())
+                .extracting("authority")
+                .containsExactly("ROLE_USER");
+    }
+
+    @Test
+    void tokenValido_siempreContinuaLaCadena() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-ok");
+
+        FirebaseToken mockToken = mock(FirebaseToken.class);
+        when(mockToken.getUid()).thenReturn("uid-ok");
+        when(mockToken.getEmail()).thenReturn("ok@test.com");
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.verifyIdToken("token-ok")).thenReturn(mockToken);
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+            filter.doFilterInternal(request, response, filterChain);
+        }
+
+        // La cadena continúa independientemente del resultado del token
+        verify(filterChain, times(1)).doFilter(request, response);
+    }
+}
