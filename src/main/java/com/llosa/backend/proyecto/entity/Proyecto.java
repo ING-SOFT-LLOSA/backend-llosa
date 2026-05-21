@@ -29,6 +29,14 @@ public class Proyecto {
     @Column(nullable = false)
     private String nombre;
 
+    private String descripcion;
+
+    private Boolean precertificacionEdgeLeed = false;
+
+    private String linkRecorridoVirtual = "";
+
+    private String departamento;
+
     private String distrito;
 
     private String direccion;

@@ -1,5 +1,6 @@
 package com.llosa.backend.proyecto.service;
 
+import com.llosa.backend.proyecto.dto.request.ProyectoCreateDTO;
 import com.llosa.backend.proyecto.entity.Proyecto;
 
 import java.util.List;
@@ -12,4 +13,6 @@ public interface ProyectoService {
     List<Proyecto> findAll();
 
     double getPorcentajeAvance(UUID id);
+
+    Proyecto save(Proyecto proyecto);
 }

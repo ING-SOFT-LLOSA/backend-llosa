@@ -1,5 +1,6 @@
 package com.llosa.backend.proyecto.service.impl;
 
+import com.llosa.backend.proyecto.dto.request.ProyectoCreateDTO;
 import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.repository.HitoUnidadRepository;
@@ -19,6 +20,11 @@ public class ProyectoServiceImpl implements ProyectoService {
 
     private final ProyectoRepository proyectoRepository;
     private final HitoUnidadRepository hitoUnidadRepository;
+
+    @Override
+    public Proyecto save(Proyecto proyecto) {
+        return proyectoRepository.save(proyecto);
+    }
 
     @Override
     @Transactional(readOnly = true)

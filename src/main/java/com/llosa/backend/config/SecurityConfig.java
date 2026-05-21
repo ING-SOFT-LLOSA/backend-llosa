@@ -1,4 +1,4 @@
-/*package com.llosa.backend.config;
+package com.llosa.backend.config;
 
 import com.llosa.backend.security.FirebaseTokenFilter;
 import lombok.RequiredArgsConstructor;
@@ -60,5 +60,3 @@ public class SecurityConfig {
         };
     }
 }
-
- */

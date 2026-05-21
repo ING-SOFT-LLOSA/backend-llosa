@@ -1,6 +1,7 @@
 package com.llosa.backend.proyecto.controller;
 
 import com.llosa.backend.proyecto.dto.request.EtapaCreateDTO;
+import com.llosa.backend.proyecto.dto.request.ProyectoCreateDTO;
 import com.llosa.backend.proyecto.dto.response.DashboardProyectoDTO;
 import com.llosa.backend.proyecto.dto.response.EtapaResponseDTO;
 import com.llosa.backend.proyecto.dto.response.ProyectoResponseDTO;
@@ -25,6 +26,22 @@ public class ProyectoController {
 
     private final ProyectoService proyectoService;
     private final EtapaService etapaService;
+
+
+    @PostMapping
+    public ResponseEntity<ProyectoResponseDTO> crearProyecto(@Valid @RequestBody ProyectoCreateDTO proyecto) {
+        Proyecto nuevo_proyecto = Proyecto.builder()
+                .nombre(proyecto.nombre())
+                .descripcion(proyecto.descripcion())
+                .precertificacionEdgeLeed(proyecto.precertificacionEdgeLeed())
+                .linkRecorridoVirtual(proyecto.linkRecorridoVirtual())
+                .departamento(proyecto.departamento())
+                .distrito(proyecto.distrito())
+                .direccion(proyecto.direccion())
+                .fechaInicio(proyecto.fechaInicio())
+                .build();
+        return ResponseEntity.status(HttpStatus.CREATED).body(ProyectoResponseDTO.fromEntity(proyectoService.save(nuevo_proyecto)));
+    }
 
     @GetMapping
     public ResponseEntity<List<ProyectoResponseDTO>> findAll() {
