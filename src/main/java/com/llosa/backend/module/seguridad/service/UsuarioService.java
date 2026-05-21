@@ -4,6 +4,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import com.llosa.backend.module.seguridad.dto.CrearUsuarioRequest;
 import com.llosa.backend.module.seguridad.dto.UsuarioResponse;
+import com.llosa.backend.module.seguridad.entity.Funcion;
 import com.llosa.backend.module.seguridad.entity.Rol;
 import com.llosa.backend.module.seguridad.entity.Usuario;
 import com.llosa.backend.module.seguridad.repository.RolRepository;
@@ -125,7 +126,7 @@ public class UsuarioService {
         r.setCreatedAt(u.getCreatedAt());
         r.setFunciones(u.getRol() != null
                 ? u.getRol().getFunciones().stream()
-                .map(f -> f.getNombreCodigo()).toList()
+                .map(Funcion::getNombreCodigo).toList()
                 : List.of());
         return r;
     }
