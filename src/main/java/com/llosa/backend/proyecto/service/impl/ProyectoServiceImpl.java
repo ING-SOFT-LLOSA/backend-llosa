@@ -48,16 +48,14 @@ public class ProyectoServiceImpl implements ProyectoService {
         long completados = hitoUnidadRepository.countByProyectoIdAndEstado(id, EstadoHito.COMPLETADO);
         return (double) completados * 100 / totales;
     }
-
+    /*
     @Override
     @Transactional
     public void cargarProyecto(UUID idProyecto, ProyectoCargaDTO dto) {
 
         Proyecto proyecto = proyectoRepository.findById(idProyecto)
                 .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
-
-
-
         proyectoRepository.save(proyecto);
     }
+    */
 }

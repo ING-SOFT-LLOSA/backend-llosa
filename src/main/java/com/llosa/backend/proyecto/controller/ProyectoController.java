@@ -71,7 +71,7 @@ public class ProyectoController {
     @PostMapping("{id_proyecto}/estructura-fisica")
     public ResponseEntity<Void> crearEstructuraFisica(@PathVariable("id_proyecto") UUID id_proyecto,
                                                       @Valid @RequestBody ProyectoCargaDTO estructuraFisica) {
-        proyectoService.cargarProyecto(UUID id_proyecto,estructuraFisica);
+        proyectoService.cargarProyecto(id_proyecto,estructuraFisica);
         return ResponseEntity.ok().build();
     }
 
