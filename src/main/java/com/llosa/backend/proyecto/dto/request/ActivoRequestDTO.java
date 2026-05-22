@@ -6,7 +6,7 @@ import com.llosa.backend.proyecto.enums.TipoActivo;
 import java.math.BigDecimal;
 
 public record ActivoRequestDTO(
-        String numero,
+        String nro,
         TipoActivo tipo,
         BigDecimal areaM2,
         EstadoComercialActivo estadoComercial,
