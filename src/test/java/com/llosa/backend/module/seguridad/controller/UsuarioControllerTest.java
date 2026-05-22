@@ -3,6 +3,8 @@ package com.llosa.backend.module.seguridad.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llosa.backend.config.FirebaseConfig;
 import com.llosa.backend.config.TestData;
+import com.llosa.backend.exception.EmailDuplicadoException;
+import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.module.seguridad.dto.AsignarRolRequest;
 import com.llosa.backend.module.seguridad.dto.CrearUsuarioRequest;
 import com.llosa.backend.module.seguridad.dto.UsuarioResponse;
@@ -172,5 +174,161 @@ class UsuarioControllerTest {
     void desactivar_sinAutenticar_devuelve401() throws Exception {
         mockMvc.perform(delete("/api/users/5").with(csrf()))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // ── Manejo de errores de negocio ──────────────────────────────────────────
+
+    @Test
+    void register_emailDuplicado_devuelve409() throws Exception {
+        when(usuarioService.crearUsuario(any()))
+                .thenThrow(new EmailDuplicadoException("ana.garcia@test.com"));
+
+        mockMvc.perform(post("/api/users/register")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(TestData.crearUsuarioRequest())))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").exists());
+    }
+
+    @Test
+    void register_rolNoEncontrado_devuelve404() throws Exception {
+        when(usuarioService.crearUsuario(any()))
+                .thenThrow(new RecursoNoEncontradoException("Rol no encontrado"));
+
+        mockMvc.perform(post("/api/users/register")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(TestData.crearUsuarioRequest())))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Rol no encontrado"));
+    }
+
+    @Test
+    void asignarRol_usuarioNoEncontrado_devuelve404() throws Exception {
+        AsignarRolRequest req = new AsignarRolRequest();
+        req.setIdRol(1);
+        when(usuarioService.asignarRol(eq(99), eq(1)))
+                .thenThrow(new RecursoNoEncontradoException("Usuario no encontrado"));
+
+        mockMvc.perform(put("/api/users/99/role")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Usuario no encontrado"));
+    }
+
+    @Test
+    void asignarRol_rolNoEncontrado_devuelve404() throws Exception {
+        AsignarRolRequest req = new AsignarRolRequest();
+        req.setIdRol(999);
+        when(usuarioService.asignarRol(eq(1), eq(999)))
+                .thenThrow(new RecursoNoEncontradoException("Rol no encontrado"));
+
+        mockMvc.perform(put("/api/users/1/role")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Rol no encontrado"));
+    }
+
+    @Test
+    void desactivar_usuarioNoEncontrado_devuelve404() throws Exception {
+        doThrow(new RecursoNoEncontradoException("Usuario no encontrado"))
+                .when(usuarioService).cambiarEstado(eq(99), eq(false));
+
+        mockMvc.perform(delete("/api/users/99")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Usuario no encontrado"));
+    }
+
+    // ── Body vacío y Content-Type ausente ────────────────────────────────────
+
+    @Test
+    void register_bodyVacio_devuelve400() throws Exception {
+        mockMvc.perform(post("/api/users/register")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void register_sinContentType_devuelve415() throws Exception {
+        mockMvc.perform(post("/api/users/register")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
+                        .content(objectMapper.writeValueAsString(TestData.crearUsuarioRequest())))
+                .andExpect(status().isUnsupportedMediaType());
+    }
+
+    // ── Autenticación obligatoria en GET y PUT ────────────────────────────────
+
+    @Test
+    void listar_sinAutenticar_devuelve401() throws Exception {
+        mockMvc.perform(get("/api/users"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void asignarRol_sinAutenticar_devuelve401() throws Exception {
+        AsignarRolRequest req = new AsignarRolRequest();
+        req.setIdRol(1);
+
+        mockMvc.perform(put("/api/users/1/role")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ── Validación de campos adicionales en registro ──────────────────────────
+
+    @Test
+    void register_emailMalFormateado_devuelve400() throws Exception {
+        CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        req.setEmail("no-es-un-email");
+
+        mockMvc.perform(post("/api/users/register")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void register_sinApellidos_devuelve400() throws Exception {
+        CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        req.setApellidos("");
+
+        mockMvc.perform(post("/api/users/register")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void register_sinTipoUsuario_devuelve400() throws Exception {
+        CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        req.setTipoUsuario(null);
+
+        mockMvc.perform(post("/api/users/register")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
     }
 }

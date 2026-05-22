@@ -75,6 +75,21 @@ class RolServiceTest {
         verify(rolRepository, never()).save(any());
     }
 
+    @Test
+    void modificarFunciones_algunasIdsInexistentes_guardaSoloLasEncontradas() {
+        Rol rol = TestData.rol();
+        List<Funcion> soloUna = List.of(TestData.funcion("PROY_VER"));
+        when(rolRepository.findById(1)).thenReturn(Optional.of(rol));
+        // IDs 1 y 99 solicitados, sólo el 1 existe en BD
+        when(funcionRepository.findAllById(List.of(1, 99))).thenReturn(soloUna);
+        when(rolRepository.save(rol)).thenReturn(rol);
+
+        Rol resultado = rolService.modificarFunciones(1, List.of(1, 99));
+
+        assertThat(resultado.getFunciones()).hasSize(1);
+        assertThat(resultado.getFunciones()).extracting("nombreCodigo").containsExactly("PROY_VER");
+    }
+
     // ── listarTodos ───────────────────────────────────────────────────────────
 
     @Test
