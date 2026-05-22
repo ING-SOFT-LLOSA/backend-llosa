@@ -7,9 +7,7 @@ import java.time.LocalDate;
 
 public record HitoCreateDTO(
     @NotBlank String titulo,
-    String nombre,
-    String descripcion,
     @NotNull Integer orden,
     @NotNull TipoHito tipo,
-    LocalDate fechaEstimada
+    LocalDate fechaCompletado
 ) {}

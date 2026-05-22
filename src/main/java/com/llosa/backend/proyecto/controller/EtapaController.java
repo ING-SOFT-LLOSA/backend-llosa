@@ -23,12 +23,10 @@ public class EtapaController {
                                                       @Valid @RequestBody HitoCreateDTO dto) {
         Hito hito = Hito.builder()
                 .titulo(dto.titulo())
-                .nombre(dto.nombre())
-                .descripcion(dto.descripcion())
                 .orden(dto.orden())
                 .tipo(dto.tipo())
                 .estado(EstadoHito.PENDIENTE)
-                .fechaEstimada(dto.fechaEstimada())
+                .fechaCompletado(dto.fechaCompletado())
                 .build();
         return ResponseEntity
                 .status(HttpStatus.CREATED)

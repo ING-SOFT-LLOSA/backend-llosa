@@ -36,7 +36,7 @@ public class Activo {
     private TipoActivo tipo; // Para saber si es area comun o candidato a venta
 
     @Column(nullable = false)
-    private BigDecimal area_m2 = BigDecimal.valueOf(0.0);
+    private BigDecimal areaM2 = BigDecimal.valueOf(0.0);
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

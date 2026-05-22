@@ -1,5 +1,6 @@
 package com.llosa.backend.proyecto.service;
 
+import com.llosa.backend.proyecto.dto.request.ProyectoCargaDTO;
 import com.llosa.backend.proyecto.dto.request.ProyectoCreateDTO;
 import com.llosa.backend.proyecto.entity.Proyecto;
 
@@ -15,4 +16,6 @@ public interface ProyectoService {
     double getPorcentajeAvance(UUID id);
 
     Proyecto save(Proyecto proyecto);
+
+    void cargarProyecto(UUID idProyecto,ProyectoCargaDTO dto);
 }

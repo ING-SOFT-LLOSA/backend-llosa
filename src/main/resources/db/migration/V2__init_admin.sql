@@ -2,7 +2,7 @@
 -- Firebase project: llosa-edificaciones
 INSERT INTO usuario (firebase_uuid, tipo_usuario, id_rol, nombre, apellidos, email, activo)
 VALUES (
-           'DmwXY6eVpcOUhf7TnSUKYQvKlIj2',
+           'AMLtHuGEe9dLVca353dLX3O6YKy1',
            'EMPLEADO',
            (SELECT id_rol FROM roles WHERE nombre = 'ADMIN'),
            'Super',

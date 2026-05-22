@@ -1,6 +1,7 @@
 package com.llosa.backend.proyecto.controller;
 
 import com.llosa.backend.proyecto.dto.request.EtapaCreateDTO;
+import com.llosa.backend.proyecto.dto.request.ProyectoCargaDTO;
 import com.llosa.backend.proyecto.dto.request.ProyectoCreateDTO;
 import com.llosa.backend.proyecto.dto.response.DashboardProyectoDTO;
 import com.llosa.backend.proyecto.dto.response.EtapaResponseDTO;
@@ -66,7 +67,15 @@ public class ProyectoController {
                 .status(HttpStatus.CREATED)
                 .body(EtapaResponseDTO.fromEntity(etapaService.save(id_proyecto, etapa)));
     }
+    // Super endopint para la creacion de torres , pisos y activos
+    @PostMapping("{id_proyecto}/estructura-fisica")
+    public ResponseEntity<Void> crearEstructuraFisica(@PathVariable("id_proyecto") UUID id_proyecto,
+                                                      @Valid @RequestBody ProyectoCargaDTO estructuraFisica) {
+        proyectoService.cargarProyecto(UUID id_proyecto,estructuraFisica);
+        return ResponseEntity.ok().build();
+    }
 
+    // Falta mapear
     @GetMapping("/{uuid}/avance-general")
     public ResponseEntity<DashboardProyectoDTO> getAvanceGeneral(@PathVariable("uuid") UUID id) {
         Proyecto proyecto = proyectoService.findById(id);

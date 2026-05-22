@@ -1,5 +1,6 @@
 package com.llosa.backend.proyecto.service.impl;
 
+import com.llosa.backend.proyecto.dto.request.ProyectoCargaDTO;
 import com.llosa.backend.proyecto.dto.request.ProyectoCreateDTO;
 import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.enums.EstadoHito;
@@ -46,5 +47,17 @@ public class ProyectoServiceImpl implements ProyectoService {
         if (totales == 0) return 0.0;
         long completados = hitoUnidadRepository.countByProyectoIdAndEstado(id, EstadoHito.COMPLETADO);
         return (double) completados * 100 / totales;
+    }
+
+    @Override
+    @Transactional
+    public void cargarProyecto(UUID idProyecto, ProyectoCargaDTO dto) {
+
+        Proyecto proyecto = proyectoRepository.findById(idProyecto)
+                .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
+
+
+
+        proyectoRepository.save(proyecto);
     }
 }

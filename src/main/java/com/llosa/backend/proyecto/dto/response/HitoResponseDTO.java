@@ -13,10 +13,8 @@ public record HitoResponseDTO(
         Integer orden,
         TipoHito tipo,
         String titulo,
-        String nombre,
-        String descripcion,
         EstadoHito estado,
-        LocalDate fechaEstimada
+        LocalDate fechaCompletado
 ) {
     public static HitoResponseDTO fromEntity(Hito h) {
         return new HitoResponseDTO(
@@ -25,10 +23,8 @@ public record HitoResponseDTO(
                 h.getOrden(),
                 h.getTipo(),
                 h.getTitulo(),
-                h.getNombre(),
-                h.getDescripcion(),
                 h.getEstado(),
-                h.getFechaEstimada()
+                h.getFechaCompletado()
         );
     }
 }

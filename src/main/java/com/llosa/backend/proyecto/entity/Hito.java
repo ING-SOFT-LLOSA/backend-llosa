@@ -35,16 +35,12 @@ public class Hito {
 
     private String titulo;
 
-    private String nombre;
-
-    private String descripcion;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoHito estado;
 
-    @Column(name = "fecha_estimada")
-    private LocalDate fechaEstimada;
+    @Column(name = "fecha_completado")
+    private LocalDate fechaCompletado;
 
     // RELACIONES A LAS DIFERENTES TABLAS
 
