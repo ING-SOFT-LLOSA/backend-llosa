@@ -26,8 +26,7 @@ public class AuthController {
         }
 
         FirebaseAuthenticationToken auth = (FirebaseAuthenticationToken) authentication;
-        PerfilConPermisosResponse perfil =
-                authService.verificarYCargarPerfil(auth.getUid(), auth.getEmail());
+        PerfilConPermisosResponse perfil = authService.verificarYCargarPerfil(auth.getUid(), auth.getEmail());
         return ResponseEntity.ok(perfil);
     }
 }
