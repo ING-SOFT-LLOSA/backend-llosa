@@ -8,6 +8,8 @@ import com.llosa.backend.module.seguridad.entity.Rol;
 import com.llosa.backend.module.seguridad.entity.Usuario;
 import com.llosa.backend.module.seguridad.repository.RolRepository;
 import com.llosa.backend.module.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.exception.EmailDuplicadoException;
+import com.llosa.backend.exception.RecursoNoEncontradoException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +27,7 @@ public class UsuarioService {
     public UsuarioResponse crearUsuario(CrearUsuarioRequest request) throws Exception {
 
         if (usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("El correo ya está registrado en el sistema.");
+            throw new EmailDuplicadoException(request.getEmail());
         }
 
         // 1. Crear identidad en Firebase
@@ -49,7 +51,7 @@ public class UsuarioService {
 
         if (request.getIdRol() != null) {
             Rol rol = rolRepository.findById(request.getIdRol())
-                    .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado"));
             usuario.setRol(rol);
         }
 
@@ -60,7 +62,7 @@ public class UsuarioService {
     @Transactional
     public void cambiarEstado(Integer usuarioId, Boolean activo) throws Exception {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         FirebaseAuth.getInstance().revokeRefreshTokens(usuario.getFirebaseUuid());
         FirebaseAuth.getInstance().updateUser(
@@ -74,10 +76,10 @@ public class UsuarioService {
     @Transactional
     public UsuarioResponse asignarRol(Integer usuarioId, Integer idRol) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         Rol rol = rolRepository.findById(idRol)
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado"));
 
         usuario.setRol(rol);
         usuarioRepository.save(usuario);
