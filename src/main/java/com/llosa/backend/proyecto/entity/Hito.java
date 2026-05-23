@@ -1,0 +1,50 @@
+package com.llosa.backend.proyecto.entity;
+
+import com.llosa.backend.proyecto.enums.EstadoHito;
+import com.llosa.backend.proyecto.enums.TipoHito;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDate;
+import java.util.UUID;
+
+@Entity
+@Table(name = "hito")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = "etapa")
+public class Hito {
+
+    // Atributos de la clase
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "uuid_hito", updatable = false, nullable = false)
+    private UUID id;
+
+    @Column(nullable = false)
+    private Integer orden;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TipoHito tipo;
+
+    private String titulo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EstadoHito estado;
+
+    @Column(name = "fecha_completado")
+    private LocalDate fechaCompletado;
+
+    // RELACIONES A LAS DIFERENTES TABLAS
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_etapa", nullable = false)
+    private Etapa etapa;
+}

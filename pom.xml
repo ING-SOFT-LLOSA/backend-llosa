@@ -78,7 +78,12 @@
 			<version>${lombok.version}</version>
 			<optional>true</optional>
 		</dependency>
-
+		<!-- Dotenv - carga variables desde .env -->
+		<dependency>
+			<groupId>me.paulschwarz</groupId>
+			<artifactId>spring-dotenv</artifactId>
+			<version>4.0.0</version>
+		</dependency>
 		<!-- Test -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

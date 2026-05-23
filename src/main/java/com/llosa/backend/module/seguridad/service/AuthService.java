@@ -1,6 +1,7 @@
 package com.llosa.backend.module.seguridad.service;
 
 import com.llosa.backend.module.seguridad.dto.PerfilConPermisosResponse;
+import com.llosa.backend.module.seguridad.entity.Funcion;
 import com.llosa.backend.module.seguridad.entity.Usuario;
 import com.llosa.backend.module.seguridad.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +36,7 @@ public class AuthService {
 
         List<String> funciones = usuario.getRol() != null
                 ? usuario.getRol().getFunciones().stream()
-                .map(f -> f.getNombreCodigo())
+                .map(Funcion::getNombreCodigo)
                 .toList()
                 : List.of();
 

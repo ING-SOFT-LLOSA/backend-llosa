@@ -35,6 +35,7 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
         }
 
         String idToken = authHeader.substring(7);
+        log.warn("Token recibido (primeros 50 chars): {}", idToken.substring(0, Math.min(50, idToken.length())));
 
         try {
             FirebaseToken decoded = FirebaseAuth.getInstance().verifyIdToken(idToken);
@@ -46,11 +47,15 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
                             List.of(new SimpleGrantedAuthority("ROLE_USER")));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
         } catch (Exception e) {
             log.warn("Token Firebase inválido: {}", e.getMessage());
+            log.warn("Causa: {}", e.getClass().getName());
             SecurityContextHolder.clearContext();
         }
+//        } catch (Exception e) {
+//            log.warn("Token Firebase inválido: {}", e.getMessage());
+//            SecurityContextHolder.clearContext();
+//        }
 
         filterChain.doFilter(request, response);
     }
