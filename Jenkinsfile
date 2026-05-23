@@ -15,7 +15,7 @@ pipeline {
         stage('Build & Test') {
             agent {
                 docker {
-                    image 'maven:3.9.8-openjdk-21-slim'
+                    image 'maven:3.9.8-eclipse-temurin-21-alpine'
                     reuseNode true
                 }
             }
