@@ -34,10 +34,10 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
                     sh '''
-                        mvn sonar:sonar \
-                            -Dsonar.projectKey=llosa-backend \
-                            -Dsonar.projectName="Llosa Edificaciones Backend" \
-                            -Dsonar.projectVersion=1.0.0
+                        export COREPACK_HOME="$WORKSPACE/.corepack"
+                        export SONAR_TOKEN="${SONAR_AUTH_TOKEN:-$SONAR_TOKEN}"
+                        corepack pnpm --package=sonarqube-scanner@4 dlx sonar-scanner \
+                            -Dsonar.host.url="$SONAR_HOST_URL"
                     '''
                 }
             }
@@ -59,7 +59,7 @@ pipeline {
                 ]) {
                     sh '''
                         docker compose down
-                        docker compose up -d --build backend
+                        docker compose up -d --build backend-llosa
                     '''
                 }
             }
