@@ -11,9 +11,6 @@ services:
     environment:
       - KEY1=${KEY1}
       - FIREBASE_API_KEY=${FIREBASE_API_KEY}
-      - DB_URL=${DB_URL}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
       - DOMINIO_CORPORATIVO=${DOMINIO_CORPORATIVO}
       - SHOW_SQL=${SHOW_SQL}
       - SPRING_FLYWAY_SCHEMAS=public,proyectos,seguridad,activos,etapas
