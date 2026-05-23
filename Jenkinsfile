@@ -15,7 +15,7 @@ pipeline {
         stage('Test (En Contenedor Java)') {
             agent {
                 docker {
-                    image 'openjdk:25-ea-21-jdk-slim'
+                    image 'openjdk:21-jdk-slim'
                     reuseNode true 
                 }
             }
@@ -27,12 +27,14 @@ pipeline {
         }
         
         stage('SonarQube Analysis') {
-            environment {
-                scannerHome = tool 'SonarScanner'
-            }
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
-                    sh "${scannerHome}/bin/sonar-scanner"
+                    sh '''
+                        mvn sonar:sonar \
+                            -Dsonar.projectKey=llosa-backend \
+                            -Dsonar.projectName="Llosa Edificaciones Backend" \
+                            -Dsonar.projectVersion=1.0.0
+                    '''
                 }
             }
         }
