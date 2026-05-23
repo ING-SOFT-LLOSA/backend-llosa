@@ -1,12 +1,25 @@
+version: '3.8'
+
 services:
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        FIREBASE_API_KEY: ${FIREBASE_API_KEY}
     container_name: llosa_backend
     environment:
       - KEY1=${KEY1}
+      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
     networks:
       - proxy_net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   proxy_net:

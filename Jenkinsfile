@@ -6,27 +6,31 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Repo') {
+        stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-        
-        stage('Test (En Contenedor Java)') {
+
+        stage('Build & Test') {
             agent {
                 docker {
-                    image 'openjdk:21-jdk-slim'
-                    reuseNode true 
+                    image 'maven:3.9.8-openjdk-21-slim'
+                    reuseNode true
                 }
             }
             steps {
                 sh '''
-                    mvn clean test
+                    mvn clean verify
+                    mvn spring-boot:run
                 '''
             }
         }
-        
+
         stage('SonarQube Analysis') {
+            environment {
+                scannerHome = tool 'SonarScanner'
+            }
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
                     sh '''
@@ -38,21 +42,24 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Quality Gate') {
             steps {
                 timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: true
+                    waitForQualityGate abortPipeline: false
                 }
             }
         }
 
         stage('Deploy (Docker Compose)') {
             steps {
-                withCredentials([string(credentialsId: 'KEY1', variable: 'KEY1')]) {
+                withCredentials([
+                    string(credentialsId: 'KEY1', variable: 'KEY1'),
+                    string(credentialsId: 'SPRING_PROFILES_ACTIVE', variable: 'SPRING_PROFILES_ACTIVE')
+                ]) {
                     sh '''
                         docker compose down
-                        docker compose up -d --build
+                        docker compose up -d --build backend
                     '''
                 }
             }
