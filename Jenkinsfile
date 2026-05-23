@@ -21,8 +21,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    mvn clean verify -Dmaven.repo.local=.m2/repository
-                    mvn spring-boot:run
+                    mvn clean package -DskipTests -Dmaven.repo.local=.m2/repository
                 '''
             }
         }

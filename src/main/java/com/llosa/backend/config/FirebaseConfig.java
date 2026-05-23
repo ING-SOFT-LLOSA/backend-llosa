@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
+import org.springframework.core.io.ClassPathResource;
 @Configuration
 public class FirebaseConfig {
 
@@ -22,8 +22,7 @@ public class FirebaseConfig {
 
         if (FirebaseApp.getApps().isEmpty()) {
 
-            InputStream serviceAccount =
-                    new FileInputStream(serviceAccountPath);
+            InputStream serviceAccount = new ClassPathResource("firebase-service-account.json").getInputStream();
 
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(
