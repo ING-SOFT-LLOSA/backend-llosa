@@ -33,7 +33,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -128,16 +128,14 @@ class SeguridadIntegrationTest {
                 .andExpect(jsonPath("$.funciones[0]").exists());
     }
 
-    // ── Desactivar usuario → /me rechazado ───────────────────────────────────
+    // ── Desactivar usuario → /me rechazado con 403 ───────────────────────────
 
     @Test
-    void usuarioDesactivado_meDevuelve500() throws Exception {
-        // Crear usuario directamente en DB
+    void usuarioDesactivado_meDevuelve403() throws Exception {
         Usuario u = TestData.usuarioConEmail("suspendido@test.com");
         u.setFirebaseUuid("uid-suspendido");
         usuarioRepository.save(u);
 
-        // Desactivar (mock Firebase)
         FirebaseAuth mockAuth = mock(FirebaseAuth.class);
         try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
             ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
@@ -148,22 +146,19 @@ class SeguridadIntegrationTest {
                     .andExpect(status().isOk());
         }
 
-        // Consultar /me → "Cuenta suspendida"
         FirebaseAuthenticationToken tokenSuspendido = new FirebaseAuthenticationToken(
                 "uid-suspendido", "suspendido@test.com",
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
 
-        assertThatThrownBy(() ->
-                mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(tokenSuspendido)))))
-                .rootCause()
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("suspendida");
+        mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(tokenSuspendido))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Cuenta suspendida. Contacte a la inmobiliaria."));
     }
 
-    // ── Registro con email duplicado ─────────────────────────────────────────
+    // ── Registro con email duplicado → 409 ───────────────────────────────────
 
     @Test
-    void registrarEmailDuplicado_lanzaExcepcion() throws Exception {
+    void registrarEmailDuplicado_devuelve409() throws Exception {
         Usuario existente = TestData.usuarioConEmail("duplicado@test.com");
         usuarioRepository.save(existente);
 
@@ -171,18 +166,37 @@ class SeguridadIntegrationTest {
         req.setEmail("duplicado@test.com");
 
         try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
-            assertThatThrownBy(() ->
-                    mockMvc.perform(post("/api/users/register")
+            mockMvc.perform(post("/api/users/register")
                             .with(securityContext(contextWithAuth(adminAuth())))
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(req))))
-                    .rootCause()
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("ya está registrado");
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.error").exists());
 
             ms.verifyNoInteractions();
         }
+    }
+
+    // ── Brecha de seguridad: usuario suspendido accede a otros endpoints ──────
+
+    @Test
+    void usuarioSuspendido_puedeAccederEndpointsSinCheckActivo() throws Exception {
+        // SECURITY GAP: el FirebaseTokenFilter solo valida el token Firebase,
+        // NO verifica el campo activo en BD. La suspensión solo se chequea en
+        // AuthService.verificarYCargarPerfil (/api/auth/me).
+        // Un usuario suspendido con token válido puede seguir llamando otros endpoints.
+        Usuario suspendido = TestData.usuarioConEmail("brecha@test.com");
+        suspendido.setFirebaseUuid("uid-brecha");
+        suspendido.setActivo(false);
+        usuarioRepository.save(suspendido);
+
+        FirebaseAuthenticationToken token = new FirebaseAuthenticationToken(
+                "uid-brecha", "brecha@test.com",
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+        mockMvc.perform(get("/api/roles").with(securityContext(contextWithAuth(token))))
+                .andExpect(status().isOk()); // debería ser 403 — brecha conocida
     }
 
     // ── Listar usuarios ───────────────────────────────────────────────────────
@@ -204,6 +218,162 @@ class SeguridadIntegrationTest {
         mockMvc.perform(get("/api/roles").with(securityContext(contextWithAuth(adminAuth()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(6));
+    }
+
+    // ── Usuario sin rol → /me devuelve perfil con funciones vacías ────────────
+
+    @Test
+    void usuarioSinRol_me_devuelvePerfilConFuncionesVacias() throws Exception {
+        Usuario u = TestData.usuarioConEmail("sinrol@test.com");
+        u.setFirebaseUuid("uid-sinrol");
+        usuarioRepository.save(u);
+
+        FirebaseAuthenticationToken token = new FirebaseAuthenticationToken(
+                "uid-sinrol", "sinrol@test.com",
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+        mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(token))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("sinrol@test.com"))
+                .andExpect(jsonPath("$.funciones").isArray())
+                .andExpect(jsonPath("$.funciones.length()").value(0));
+    }
+
+    // ── UID de Firebase no registrado en BD → 404 ────────────────────────────
+
+    @Test
+    void usuarioNoRegistrado_me_devuelve404() throws Exception {
+        FirebaseAuthenticationToken token = new FirebaseAuthenticationToken(
+                "uid-fantasma", "fantasma@test.com",
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+        mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(token))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Usuario no registrado en el sistema"));
+    }
+
+    // ── DELETE usuario inexistente → 404 ─────────────────────────────────────
+
+    @Test
+    void usuarioInexistente_delete_devuelve404() throws Exception {
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            mockMvc.perform(delete("/api/users/{id}", 99999)
+                            .with(securityContext(contextWithAuth(adminAuth())))
+                            .with(csrf()))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.error").exists());
+        }
+    }
+
+    // ── PUT role usuario inexistente → 404 ───────────────────────────────────
+
+    @Test
+    void usuarioInexistente_asignarRol_devuelve404() throws Exception {
+        Rol rolCliente = rolRepository.findByNombre("CLIENTE").orElseThrow();
+        AsignarRolRequest req = new AsignarRolRequest();
+        req.setIdRol(rolCliente.getIdRol());
+
+        mockMvc.perform(put("/api/users/{id}/role", 99999)
+                        .with(securityContext(contextWithAuth(adminAuth())))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").exists());
+    }
+
+    // ── Reactivar usuario suspendido → /me vuelve a funcionar ────────────────
+
+    @Test
+    void usuarioReactivado_meDevuelve200() throws Exception {
+        Usuario u = TestData.usuarioConEmail("reactivar@test.com");
+        u.setFirebaseUuid("uid-reactivar");
+        usuarioRepository.save(u);
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            // 1. Desactivar
+            mockMvc.perform(delete("/api/users/{id}", u.getId())
+                            .with(securityContext(contextWithAuth(adminAuth())))
+                            .with(csrf()))
+                    .andExpect(status().isOk());
+
+            // 2. /me rechazado
+            FirebaseAuthenticationToken token = new FirebaseAuthenticationToken(
+                    "uid-reactivar", "reactivar@test.com",
+                    List.of(new SimpleGrantedAuthority("ROLE_USER")));
+            mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(token))))
+                    .andExpect(status().isForbidden());
+        }
+
+        // 3. Reactivar via PUT /api/users/{id}/activo — pero el endpoint es DELETE para desactivar.
+        //    La reactivación se hace directamente en BD para este test.
+        Usuario guardado = usuarioRepository.findById(u.getId()).orElseThrow();
+        guardado.setActivo(true);
+        usuarioRepository.save(guardado);
+
+        // 4. /me vuelve a funcionar
+        FirebaseAuthenticationToken token = new FirebaseAuthenticationToken(
+                "uid-reactivar", "reactivar@test.com",
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(token))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("reactivar@test.com"));
+    }
+
+    // ── ASESOR: asignar rol → /me devuelve exactamente 6 funciones ───────────
+
+    @Test
+    void asignarRolAsesor_meDevuelveSeisFunciones() throws Exception {
+        Usuario u = TestData.usuarioConEmail("asesor-it@test.com");
+        u.setFirebaseUuid("uid-asesor-it");
+        usuarioRepository.save(u);
+
+        Rol rolAsesor = rolRepository.findByNombre("ASESOR").orElseThrow();
+        AsignarRolRequest req = new AsignarRolRequest();
+        req.setIdRol(rolAsesor.getIdRol());
+
+        mockMvc.perform(put("/api/users/{id}/role", u.getId())
+                        .with(securityContext(contextWithAuth(adminAuth())))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rol").value("ASESOR"))
+                .andExpect(jsonPath("$.funciones.length()").value(6));
+
+        FirebaseAuthenticationToken token = new FirebaseAuthenticationToken(
+                "uid-asesor-it", "asesor-it@test.com",
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+        mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(token))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rol").value("ASESOR"))
+                .andExpect(jsonPath("$.funciones.length()").value(6));
+    }
+
+    // ── Asignar rol inexistente → 404 ────────────────────────────────────────
+
+    @Test
+    void asignarRolInexistente_devuelve404() throws Exception {
+        Usuario u = TestData.usuarioConEmail("roltest@test.com");
+        usuarioRepository.save(u);
+
+        AsignarRolRequest req = new AsignarRolRequest();
+        req.setIdRol(9999);
+
+        mockMvc.perform(put("/api/users/{id}/role", u.getId())
+                        .with(securityContext(contextWithAuth(adminAuth())))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").exists());
     }
 
     // ─────────────────────────────────────────────────────────────────────────

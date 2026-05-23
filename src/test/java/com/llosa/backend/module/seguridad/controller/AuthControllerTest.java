@@ -2,6 +2,9 @@ package com.llosa.backend.module.seguridad.controller;
 
 import com.llosa.backend.config.FirebaseConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
+import com.llosa.backend.exception.AccesoDenegadoException;
+import com.llosa.backend.exception.GlobalExceptionHandler;
+import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.module.seguridad.dto.PerfilConPermisosResponse;
 import com.llosa.backend.module.seguridad.service.AuthService;
 import com.llosa.backend.security.FirebaseAuthenticationToken;
@@ -26,14 +29,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.securityContext;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
-@Import({AuthControllerTest.TestConfig.class, SecurityTestConfiguration.class})
+@Import({AuthControllerTest.TestConfig.class, SecurityTestConfiguration.class, GlobalExceptionHandler.class})
 class AuthControllerTest {
 
     @Autowired
@@ -82,22 +84,45 @@ class AuthControllerTest {
     }
 
     @Test
-    void getMe_servicioLanzaExcepcion_excepcionPropagaAlCaller() throws Exception {
+    void getMe_usuarioNoRegistrado_devuelve404() throws Exception {
         when(authService.verificarYCargarPerfil("test-uid", "test@test.com"))
-                .thenThrow(new RuntimeException("Usuario no registrado en el sistema"));
+                .thenThrow(new RecursoNoEncontradoException("Usuario no registrado en el sistema"));
 
         FirebaseAuthenticationToken auth = new FirebaseAuthenticationToken(
                 "test-uid", "test@test.com",
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
 
-        SecurityContext ctx = contextWithAuth(auth);
+        mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(auth))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Usuario no registrado en el sistema"));
+    }
 
-        assertThatThrownBy(() ->
-                mockMvc.perform(get("/api/auth/me")
-                        .with(securityContext(ctx))))
-                .rootCause()
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Usuario no registrado");
+    @Test
+    void getMe_cuentaSuspendida_devuelve403() throws Exception {
+        when(authService.verificarYCargarPerfil("test-uid", "test@test.com"))
+                .thenThrow(new AccesoDenegadoException("Cuenta suspendida. Contacte a la inmobiliaria."));
+
+        FirebaseAuthenticationToken auth = new FirebaseAuthenticationToken(
+                "test-uid", "test@test.com",
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+        mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(auth))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Cuenta suspendida. Contacte a la inmobiliaria."));
+    }
+
+    @Test
+    void getMe_empleadoDominioNoAutorizado_devuelve403() throws Exception {
+        when(authService.verificarYCargarPerfil("test-uid", "test@test.com"))
+                .thenThrow(new AccesoDenegadoException("Acceso denegado: dominio no autorizado."));
+
+        FirebaseAuthenticationToken auth = new FirebaseAuthenticationToken(
+                "test-uid", "test@test.com",
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+        mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(auth))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Acceso denegado: dominio no autorizado."));
     }
 
     private SecurityContext contextWithAuth(FirebaseAuthenticationToken auth) {

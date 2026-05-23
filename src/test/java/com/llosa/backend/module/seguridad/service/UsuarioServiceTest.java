@@ -3,6 +3,8 @@ package com.llosa.backend.module.seguridad.service;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import com.llosa.backend.config.TestData;
+import com.llosa.backend.exception.EmailDuplicadoException;
+import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.module.seguridad.dto.CrearUsuarioRequest;
 import com.llosa.backend.module.seguridad.dto.UsuarioResponse;
 import com.llosa.backend.module.seguridad.entity.Rol;
@@ -45,6 +47,20 @@ class UsuarioServiceTest {
             assertThatThrownBy(() -> usuarioService.crearUsuario(req))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("ya está registrado");
+
+            ms.verifyNoInteractions();
+        }
+    }
+
+    @Test
+    void crearUsuario_emailDuplicado_lanzaEmailDuplicadoException() {
+        CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        when(usuarioRepository.existsByEmail(req.getEmail())).thenReturn(true);
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            assertThatThrownBy(() -> usuarioService.crearUsuario(req))
+                    .isInstanceOf(EmailDuplicadoException.class)
+                    .hasMessageContaining(req.getEmail());
 
             ms.verifyNoInteractions();
         }
@@ -130,6 +146,25 @@ class UsuarioServiceTest {
         }
     }
 
+    @Test
+    void crearUsuario_firebaseLanzaExcepcion_noPersiste() throws Exception {
+        CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        when(usuarioRepository.existsByEmail(req.getEmail())).thenReturn(false);
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.createUser(any(UserRecord.CreateRequest.class)))
+                .thenThrow(new RuntimeException("Firebase no disponible"));
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            assertThatThrownBy(() -> usuarioService.crearUsuario(req))
+                    .isInstanceOf(RuntimeException.class);
+
+            verify(usuarioRepository, never()).save(any());
+        }
+    }
+
     // ── cambiarEstado ─────────────────────────────────────────────────────────
 
     @Test
@@ -191,6 +226,96 @@ class UsuarioServiceTest {
                 .containsExactlyInAnyOrder("PROY_VER", "DOCS_VER");
     }
 
+    @Test
+    void cambiarEstado_firebaseLanzaExcepcionEnRevoke_noActualizaBD() throws Exception {
+        Usuario usuario = TestData.usuario();
+        usuario.setId(10);
+        when(usuarioRepository.findById(10)).thenReturn(Optional.of(usuario));
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        doThrow(new RuntimeException("Firebase no disponible"))
+                .when(mockAuth).revokeRefreshTokens(usuario.getFirebaseUuid());
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            assertThatThrownBy(() -> usuarioService.cambiarEstado(10, false))
+                    .isInstanceOf(RuntimeException.class);
+
+            verify(usuarioRepository, never()).save(any());
+            assertThat(usuario.getActivo()).isTrue();
+        }
+    }
+
+    @Test
+    void cambiarEstado_true_reactivaUsuarioEnFirebaseYBD() throws Exception {
+        Usuario usuario = TestData.usuario();
+        usuario.setId(10);
+        usuario.setActivo(false);
+        when(usuarioRepository.findById(10)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any())).thenReturn(usuario);
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            usuarioService.cambiarEstado(10, true);
+
+            verify(mockAuth).revokeRefreshTokens(usuario.getFirebaseUuid());
+            verify(mockAuth).updateUser(any(UserRecord.UpdateRequest.class));
+            assertThat(usuario.getActivo()).isTrue();
+        }
+    }
+
+    @Test
+    void cambiarEstado_usuarioNoEncontrado_lanzaRecursoNoEncontrado() {
+        when(usuarioRepository.findById(999)).thenReturn(Optional.empty());
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            assertThatThrownBy(() -> usuarioService.cambiarEstado(999, false))
+                    .isInstanceOf(RecursoNoEncontradoException.class)
+                    .hasMessageContaining("no encontrado");
+        }
+    }
+
+    @Test
+    void asignarRol_usuarioNoEncontrado_lanzaRecursoNoEncontrado() {
+        when(usuarioRepository.findById(999)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioService.asignarRol(999, 1))
+                .isInstanceOf(RecursoNoEncontradoException.class)
+                .hasMessageContaining("no encontrado");
+    }
+
+    @Test
+    void crearUsuario_sinRol_persisteConActivoTrue() throws Exception {
+        CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        req.setIdRol(null);
+        when(usuarioRepository.existsByEmail(req.getEmail())).thenReturn(false);
+
+        UserRecord mockRecord = mock(UserRecord.class);
+        when(mockRecord.getUid()).thenReturn("uid-sin-rol");
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.createUser(any())).thenReturn(mockRecord);
+
+        ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+        when(usuarioRepository.save(captor.capture())).thenAnswer(inv -> {
+            Usuario u = inv.getArgument(0);
+            u.setId(7);
+            return u;
+        });
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+            UsuarioResponse resultado = usuarioService.crearUsuario(req);
+
+            assertThat(resultado.getRol()).isNull();
+            assertThat(captor.getValue().getActivo()).isTrue();
+            assertThat(captor.getValue().getRol()).isNull();
+        }
+    }
+
     // ── listarTodos ───────────────────────────────────────────────────────────
 
     @Test
@@ -199,5 +324,12 @@ class UsuarioServiceTest {
                 .thenReturn(java.util.List.of(TestData.usuario(), TestData.usuario()));
 
         assertThat(usuarioService.listarTodos()).hasSize(2);
+    }
+
+    @Test
+    void listarTodos_sinUsuarios_devuelveListaVacia() {
+        when(usuarioRepository.findAll()).thenReturn(java.util.List.of());
+
+        assertThat(usuarioService.listarTodos()).isEmpty();
     }
 }

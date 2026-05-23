@@ -4,17 +4,16 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import com.llosa.backend.module.seguridad.dto.CrearUsuarioRequest;
 import com.llosa.backend.module.seguridad.dto.UsuarioResponse;
-import com.llosa.backend.module.seguridad.entity.Funcion;
 import com.llosa.backend.module.seguridad.entity.Rol;
 import com.llosa.backend.module.seguridad.entity.Usuario;
 import com.llosa.backend.module.seguridad.repository.RolRepository;
 import com.llosa.backend.module.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.exception.EmailDuplicadoException;
+import com.llosa.backend.exception.RecursoNoEncontradoException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.google.firebase.auth.FirebaseAuthException;
-import com.llosa.backend.exception.ApiException;
-import org.springframework.http.HttpStatus;
+
 import java.util.List;
 
 @Service
@@ -25,24 +24,21 @@ public class UsuarioService {
     private final RolRepository rolRepository;
 
     @Transactional
-    public UsuarioResponse crearUsuario(CrearUsuarioRequest request) {
+    public UsuarioResponse crearUsuario(CrearUsuarioRequest request) throws Exception {
 
         if (usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new ApiException("El correo ya está registrado en el sistema.", HttpStatus.CONFLICT);
+            throw new EmailDuplicadoException(request.getEmail());
         }
 
-        UserRecord userRecord;
-        try {
-            UserRecord.CreateRequest firebaseRequest = new UserRecord.CreateRequest()
-                    .setEmail(request.getEmail())
-                    .setEmailVerified(false)
-                    .setDisplayName(request.getNombre() + " " + request.getApellidos());
-            userRecord = FirebaseAuth.getInstance().createUser(firebaseRequest);
-        } catch (FirebaseAuthException e) {
-            throw new ApiException("Error al crear usuario en Firebase: " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        // 1. Crear identidad en Firebase
+        UserRecord.CreateRequest firebaseRequest = new UserRecord.CreateRequest()
+                .setEmail(request.getEmail())
+                .setEmailVerified(false)
+                .setDisplayName(request.getNombre() + " " + request.getApellidos());
 
+        UserRecord userRecord = FirebaseAuth.getInstance().createUser(firebaseRequest);
+
+        // 2. Crear perfil en PostgreSQL
         Usuario usuario = new Usuario();
         usuario.setFirebaseUuid(userRecord.getUid());
         usuario.setNombre(request.getNombre());
@@ -53,44 +49,25 @@ public class UsuarioService {
         usuario.setTipoUsuario(request.getTipoUsuario());
         usuario.setActivo(true);
 
-        if ("CLIENTE".equals(request.getTipoUsuario())) {
-            Rol rolCliente = rolRepository.findByNombre("CLIENTE")
-                    .orElseThrow(() -> new ApiException("Rol CLIENTE no encontrado.",
-                            HttpStatus.INTERNAL_SERVER_ERROR));
-            usuario.setRol(rolCliente);
-        } else if (request.getIdRol() != null) {
+        if (request.getIdRol() != null) {
             Rol rol = rolRepository.findById(request.getIdRol())
-                    .orElseThrow(() -> new ApiException("Rol no encontrado.",
-                            HttpStatus.NOT_FOUND));
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado"));
             usuario.setRol(rol);
         }
 
         usuarioRepository.save(usuario);
-
-        try {
-            sendPasswordResetEmail(request.getEmail());
-        } catch (Exception e) {
-            throw new ApiException("Usuario creado pero falló el envío del email: " + e.getMessage(),
-                    HttpStatus.CREATED);
-        }
-
         return toResponse(usuario);
     }
 
     @Transactional
-    public void cambiarEstado(Integer usuarioId, Boolean activo) {
+    public void cambiarEstado(Integer usuarioId, Boolean activo) throws Exception {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new ApiException("Usuario no encontrado.", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
-        try {
-            FirebaseAuth.getInstance().revokeRefreshTokens(usuario.getFirebaseUuid());
-            FirebaseAuth.getInstance().updateUser(
-                    new UserRecord.UpdateRequest(usuario.getFirebaseUuid())
-                            .setDisabled(!activo));
-        } catch (FirebaseAuthException e) {
-            throw new ApiException("Error al actualizar estado en Firebase: " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        FirebaseAuth.getInstance().revokeRefreshTokens(usuario.getFirebaseUuid());
+        FirebaseAuth.getInstance().updateUser(
+                new UserRecord.UpdateRequest(usuario.getFirebaseUuid())
+                        .setDisabled(!activo));
 
         usuario.setActivo(activo);
         usuarioRepository.save(usuario);
@@ -99,10 +76,10 @@ public class UsuarioService {
     @Transactional
     public UsuarioResponse asignarRol(Integer usuarioId, Integer idRol) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         Rol rol = rolRepository.findById(idRol)
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado"));
 
         usuario.setRol(rol);
         usuarioRepository.save(usuario);
@@ -126,39 +103,8 @@ public class UsuarioService {
         r.setCreatedAt(u.getCreatedAt());
         r.setFunciones(u.getRol() != null
                 ? u.getRol().getFunciones().stream()
-                .map(Funcion::getNombreCodigo).toList()
+                .map(f -> f.getNombreCodigo()).toList()
                 : List.of());
         return r;
-    }
-    private void sendPasswordResetEmail(String email) throws Exception {
-        String apiKey = "AIzaSyDo_yQ7_tJ3kulCZXaqOcPXAzywtF4pAj0";
-        String url = "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=" + apiKey;
-
-        String body = "{\"requestType\":\"PASSWORD_RESET\",\"email\":\"" + email + "\"}";
-
-        java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-        java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
-                .uri(java.net.URI.create(url))
-                .header("Content-Type", "application/json")
-                .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
-                .build();
-
-        java.net.http.HttpResponse<String> response = client.send(httpRequest,
-                java.net.http.HttpResponse.BodyHandlers.ofString());
-
-        if (response.statusCode() != 200) {
-            throw new RuntimeException("Error al enviar email de bienvenida: " + response.body());
-        }
-    }
-    @Transactional
-    public void eliminarCompletamente(Integer usuarioId) throws Exception {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        // Eliminar de Firebase
-        FirebaseAuth.getInstance().deleteUser(usuario.getFirebaseUuid());
-
-        // Eliminar de PostgreSQL
-        usuarioRepository.delete(usuario);
     }
 }

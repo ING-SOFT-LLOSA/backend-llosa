@@ -3,6 +3,7 @@ package com.llosa.backend.module.seguridad.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llosa.backend.config.FirebaseConfig;
 import com.llosa.backend.config.TestData;
+import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.module.seguridad.dto.ModificarFuncionesRequest;
 import com.llosa.backend.module.seguridad.entity.Rol;
 import com.llosa.backend.module.seguridad.service.RolService;
@@ -133,5 +134,30 @@ class RolControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void modificarFunciones_sinContentType_devuelve415() throws Exception {
+        mockMvc.perform(put("/api/roles/1/functions")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
+                        .content("{\"idFunciones\":[1,2]}"))
+                .andExpect(status().isUnsupportedMediaType());
+    }
+
+    @Test
+    void modificarFunciones_rolNoEncontrado_devuelve404() throws Exception {
+        ModificarFuncionesRequest req = new ModificarFuncionesRequest();
+        req.setIdFunciones(List.of(1, 2));
+        when(rolService.modificarFunciones(eq(99), any()))
+                .thenThrow(new RecursoNoEncontradoException("Rol no encontrado"));
+
+        mockMvc.perform(put("/api/roles/99/functions")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Rol no encontrado"));
     }
 }

@@ -11,7 +11,10 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -135,5 +138,54 @@ class FirebaseTokenFilterTest {
 
         // La cadena continúa independientemente del resultado del token
         verify(filterChain, times(1)).doFilter(request, response);
+    }
+
+    // ── "Bearer " sin token — pasa el startsWith pero token es vacío ─────────
+
+    @Test
+    void bearerConTokenVacio_limpiaContextoYContinua() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer ");
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.verifyIdToken("")).thenThrow(new RuntimeException("Token vacío inválido"));
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+            filter.doFilterInternal(request, response, filterChain);
+        }
+
+        verify(filterChain).doFilter(request, response);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    // ── Token válido sobreescribe autenticación preexistente ─────────────────
+
+    @Test
+    void tokenValido_sobreescribeContextoPrevio() throws Exception {
+        FirebaseAuthenticationToken prevAuth = new FirebaseAuthenticationToken(
+                "uid-previo", "previo@test.com",
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        SecurityContextHolder.getContext().setAuthentication(prevAuth);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer nuevo-token");
+
+        FirebaseToken mockToken = mock(FirebaseToken.class);
+        when(mockToken.getUid()).thenReturn("uid-nuevo");
+        when(mockToken.getEmail()).thenReturn("nuevo@test.com");
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.verifyIdToken("nuevo-token")).thenReturn(mockToken);
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+            filter.doFilterInternal(request, response, filterChain);
+        }
+
+        FirebaseAuthenticationToken auth =
+                (FirebaseAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+        assertThat(auth.getUid()).isEqualTo("uid-nuevo");
+        assertThat(auth.getEmail()).isEqualTo("nuevo@test.com");
     }
 }

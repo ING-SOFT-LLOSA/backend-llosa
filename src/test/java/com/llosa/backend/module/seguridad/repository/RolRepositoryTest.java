@@ -77,4 +77,32 @@ class RolRepositoryTest {
                 .extracting("nombreCodigo")
                 .containsExactlyInAnyOrder("CONTRATO_VER", "CONTRATO_EDITAR", "DOCS_VER");
     }
+
+    @Test
+    void rolAsesor_tieneFuncionesCorrectas() {
+        Rol asesor = rolRepository.findByNombre("ASESOR").orElseThrow();
+
+        assertThat(asesor.getFunciones())
+                .extracting("nombreCodigo")
+                .containsExactlyInAnyOrder(
+                        "PROY_VER", "USER_GESTIONAR", "DOCS_VER", "DOCS_SUBIR", "PAGOS_VER", "CONTRATO_VER");
+    }
+
+    @Test
+    void rolTecnico_tieneFuncionesCorrectas() {
+        Rol tecnico = rolRepository.findByNombre("TECNICO").orElseThrow();
+
+        assertThat(tecnico.getFunciones())
+                .extracting("nombreCodigo")
+                .containsExactlyInAnyOrder("OBRA_VER", "OBRA_EDITAR", "PROY_VER");
+    }
+
+    @Test
+    void rolPostventa_tieneFuncionesCorrectas() {
+        Rol postventa = rolRepository.findByNombre("POSTVENTA").orElseThrow();
+
+        assertThat(postventa.getFunciones())
+                .extracting("nombreCodigo")
+                .containsExactlyInAnyOrder("PROY_VER", "DOCS_VER", "PAGOS_VER");
+    }
 }

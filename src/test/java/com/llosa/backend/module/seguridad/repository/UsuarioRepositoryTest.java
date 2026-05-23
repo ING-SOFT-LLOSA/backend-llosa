@@ -120,4 +120,35 @@ class UsuarioRepositoryTest {
         Usuario cargado = usuarioRepository.findById(u.getId()).orElseThrow();
         assertThat(cargado.getRol().getNombre()).isEqualTo("CLIENTE");
     }
+
+    // ── findByEmail ───────────────────────────────────────────────────────────
+
+    @Test
+    void findByEmail_devuelveUsuarioPorEmail() {
+        Usuario u = TestData.usuarioConEmail("buscado@test.com");
+        em.persistAndFlush(u);
+
+        Optional<Usuario> result = usuarioRepository.findByEmail("buscado@test.com");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getFirebaseUuid()).isEqualTo(u.getFirebaseUuid());
+    }
+
+    @Test
+    void findByEmail_devuelveVacioSiNoExiste() {
+        Optional<Usuario> result = usuarioRepository.findByEmail("fantasma@test.com");
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findByFirebaseUuid_usuarioInactivo_devuelveIgual() {
+        Usuario u = TestData.usuarioConEmail("inactivo@test.com");
+        u.setActivo(false);
+        em.persistAndFlush(u);
+
+        Optional<Usuario> result = usuarioRepository.findByFirebaseUuid(u.getFirebaseUuid());
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getActivo()).isFalse();
+    }
 }

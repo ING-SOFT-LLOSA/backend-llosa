@@ -1,6 +1,8 @@
 package com.llosa.backend.module.seguridad.service;
 
 import com.llosa.backend.config.TestData;
+import com.llosa.backend.exception.AccesoDenegadoException;
+import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.module.seguridad.dto.PerfilConPermisosResponse;
 import com.llosa.backend.module.seguridad.entity.Rol;
 import com.llosa.backend.module.seguridad.entity.Usuario;
@@ -39,7 +41,7 @@ class AuthServiceTest {
         when(usuarioRepository.findByFirebaseUuid("uid-x")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.verificarYCargarPerfil("uid-x", "x@test.com"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(RecursoNoEncontradoException.class)
                 .hasMessageContaining("no registrado");
     }
 
@@ -54,7 +56,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() ->
                 authService.verificarYCargarPerfil(u.getFirebaseUuid(), u.getEmail()))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(AccesoDenegadoException.class)
                 .hasMessageContaining("suspendida");
     }
 
@@ -68,7 +70,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() ->
                 authService.verificarYCargarPerfil(empleado.getFirebaseUuid(), "juan@gmail.com"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(AccesoDenegadoException.class)
                 .hasMessageContaining("dominio no autorizado");
     }
 
@@ -118,6 +120,54 @@ class AuthServiceTest {
         PerfilConPermisosResponse perfil =
                 authService.verificarYCargarPerfil(cliente.getFirebaseUuid(), cliente.getEmail());
 
+        assertThat(perfil.getFunciones()).isEmpty();
+        assertThat(perfil.getRol()).isNull();
+    }
+
+    // ── Email null en token Firebase (phone-auth) ────────────────────────────
+
+    @Test
+    void verificarPerfil_empleadoConEmailNull_lanzaAccesoDenegado() {
+        Usuario empleado = TestData.usuarioEmpleado("empleado@llosaedificaciones.com");
+        when(usuarioRepository.findByFirebaseUuid(empleado.getFirebaseUuid()))
+                .thenReturn(Optional.of(empleado));
+
+        assertThatThrownBy(() ->
+                authService.verificarYCargarPerfil(empleado.getFirebaseUuid(), null))
+                .isInstanceOf(AccesoDenegadoException.class)
+                .hasMessageContaining("dominio no autorizado");
+    }
+
+    // ── Intento de bypass con subdominio ─────────────────────────────────────
+
+    @Test
+    void verificarPerfil_empleadoConSubdominioCorporativo_lanzaExcepcion() {
+        // "user@sub.llosaedificaciones.com" no termina en "@llosaedificaciones.com"
+        String emailSubdominio = "atacante@sub.llosaedificaciones.com";
+        Usuario empleado = TestData.usuarioEmpleado(emailSubdominio);
+        when(usuarioRepository.findByFirebaseUuid(empleado.getFirebaseUuid()))
+                .thenReturn(Optional.of(empleado));
+
+        assertThatThrownBy(() ->
+                authService.verificarYCargarPerfil(empleado.getFirebaseUuid(), emailSubdominio))
+                .isInstanceOf(AccesoDenegadoException.class)
+                .hasMessageContaining("dominio no autorizado");
+    }
+
+    // ── Empleado sin rol ──────────────────────────────────────────────────────
+
+    @Test
+    void verificarPerfil_empleadoSinRol_devuelveFuncionesVacias() {
+        String emailCorp = "empleado@llosaedificaciones.com";
+        Usuario empleado = TestData.usuarioEmpleado(emailCorp);
+        empleado.setRol(null);
+        when(usuarioRepository.findByFirebaseUuid(empleado.getFirebaseUuid()))
+                .thenReturn(Optional.of(empleado));
+
+        PerfilConPermisosResponse perfil =
+                authService.verificarYCargarPerfil(empleado.getFirebaseUuid(), emailCorp);
+
+        assertThat(perfil.getTipoUsuario()).isEqualTo("EMPLEADO");
         assertThat(perfil.getFunciones()).isEmpty();
         assertThat(perfil.getRol()).isNull();
     }
