@@ -42,10 +42,10 @@ public class UsuarioController {
     }
 
     // Endpoint temporal solo para desarrollo - eliminar completamente un usuario
-    @DeleteMapping("/{id}/hard")
-    public ResponseEntity<Void> eliminarCompletamente(@PathVariable Integer id) throws Exception {
-        usuarioService.eliminarCompletamente(id);
-        return ResponseEntity.ok().build();
-    }
+    // @DeleteMapping("/{id}/hard")
+    // public ResponseEntity<Void> eliminarCompletamente(@PathVariable Integer id) throws Exception {
+       // usuarioService.eliminarCompletamente(id);
+       // return ResponseEntity.ok().build();
+    // }
 
 }
