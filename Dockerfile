@@ -2,19 +2,17 @@
 FROM maven:3.9.8-eclipse-temurin-21-alpine AS builder
 WORKDIR /build
 
-# Fix permissions for the maven user
-RUN chown -R maven:maven /build
-USER maven
+# 1. Crear explícitamente el directorio caché de Maven dentro de la zona de trabajo
+RUN mkdir -p /build/.m2/repository && chmod -R 777 /build
 
-# Copy files with correct ownership
-COPY --chown=maven:maven pom.xml .
-COPY --chown=maven:maven src ./src
+COPY pom.xml .
+COPY src ./src
 
 ARG FIREBASE_API_KEY
 ENV FIREBASE_API_KEY=${FIREBASE_API_KEY}
 
-# Maven now writes to /home/maven/.m2/repository without permission blocks
-RUN mvn clean package -DskipTests
+# 2. Forzar a Maven a escribir localmente usando parámetros del sistema
+RUN mvn clean package -DskipTests -Dmaven.repo.local=/build/.m2/repository
 
 # Stage 2: Run the application (Replacing deprecated openjdk image)
 FROM eclipse-temurin:21-jre-alpine
