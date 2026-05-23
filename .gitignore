@@ -28,6 +28,6 @@ target/
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
-src/main/resources/firebase-service-account.json
+secrets/firebase-service-account.json
 ### VS Code ###
 .vscode/
