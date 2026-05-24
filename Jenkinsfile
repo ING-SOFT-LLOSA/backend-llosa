@@ -39,7 +39,8 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
                     sh '''
-                        apt-get update && apt-get install -y openjdk-17-jre-headless
+                        export SONAR_USER_HOME="${WORKSPACE}/.sonar"
+                        mkdir -p "${SONAR_USER_HOME}"
                         ${scannerHome}/bin/sonar-scanner
                     '''
                 }
