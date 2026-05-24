@@ -33,13 +33,14 @@ pipeline {
                     reuseNode true
                 }
             }
+            environment {
+                scannerHome = tool 'SonarScanner'
+            }
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
                     sh '''
-                        export COREPACK_HOME="$WORKSPACE/.corepack"
-                        export SONAR_TOKEN="${SONAR_AUTH_TOKEN:-$SONAR_TOKEN}"
-                        corepack pnpm --package=sonarqube-scanner@4 dlx sonar-scanner \
-                            -Dsonar.host.url="$SONAR_HOST_URL"
+                        apt-get update && apt-get install -y openjdk-17-jre-headless
+                        ${scannerHome}/bin/sonar-scanner
                     '''
                 }
             }
