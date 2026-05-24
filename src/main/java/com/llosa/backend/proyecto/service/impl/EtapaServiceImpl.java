@@ -34,4 +34,11 @@ public class EtapaServiceImpl implements EtapaService {
                 .orElseThrow(() -> new EntityNotFoundException("Etapa no encontrada: " + id));
     }
 
+    @Override
+    @Transactional
+    public void deleteById(Long id){
+        etapaRepository.deleteById(id);
+        return;
+    }
+
 }

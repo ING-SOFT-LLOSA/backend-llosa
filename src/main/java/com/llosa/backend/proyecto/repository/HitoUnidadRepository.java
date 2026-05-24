@@ -24,4 +24,6 @@ public interface HitoUnidadRepository extends JpaRepository<HitoUnidad, UUID> {
     long countByProyectoId(@Param("proyectoId") UUID proyectoId);
 
     List<HitoUnidad> findByActivo_IdOrderByHito_OrdenAsc(UUID activoId);
+
+
 }

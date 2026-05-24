@@ -5,9 +5,12 @@ import com.llosa.backend.proyecto.enums.TipoActivo;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -18,7 +21,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = "piso")
+@ToString(exclude = {"piso","hitosUnidad"})
 public class Activo {
 
     // ATRIBUTOS DE LA CLASE
@@ -50,7 +53,7 @@ public class Activo {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @CreationTimestamp
+    @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
@@ -59,4 +62,7 @@ public class Activo {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_piso", nullable = false)
     private Piso piso;
+
+    @OneToMany(mappedBy = "activo", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HitoUnidad> hitosUnidad = new ArrayList<>();
 }
