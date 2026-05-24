@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        FIREBASE_API_KEY: ${FIREBASE_API_KEY_LLOSA}
+        FIREBASE_API_KEY: ${FIREBASE_API_KEY}
     container_name: llosa_backend
     environment:
       - FIREBASE_API_KEY=${FIREBASE_API_KEY}
