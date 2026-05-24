@@ -18,6 +18,9 @@ RUN mvn clean package -DskipTests -Dmaven.repo.local=/build/.m2/repository
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
+# curl es necesario para el healthcheck definido en docker-compose.yml
+RUN apk add --no-cache curl
+
 # Alpine uses 'adduser' instead of 'useradd'
 RUN adduser -D -u 1001 appuser
 
