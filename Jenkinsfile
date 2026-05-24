@@ -61,13 +61,16 @@ pipeline {
                     string(credentialsId: 'FIREBASE_API_KEY_LLOSA',          variable: 'FIREBASE_API_KEY'),
                     string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA',       variable: 'DOMINIO_CORPORATIVO'),
                     string(credentialsId: 'SHOW_SQL_LLOSA',                  variable: 'SHOW_SQL'),
-                    string(credentialsId: 'FIREBASE_CREDENTIALS_PATH_LLOSA', variable: 'FIREBASE_CREDENTIALS_PATH'),
                     string(credentialsId: 'SPRING_FLYWAY_SCHEMAS_LLOSA',     variable: 'SPRING_FLYWAY_SCHEMAS'),
                     string(credentialsId: 'DB_URL_LLOSA',                    variable: 'DB_URL'),
                     string(credentialsId: 'DB_USERNAME_LLOSA',               variable: 'DB_USERNAME'),
-                    string(credentialsId: 'DB_PASSWORD_LLOSA',               variable: 'DB_PASSWORD')
+                    string(credentialsId: 'DB_PASSWORD_LLOSA',               variable: 'DB_PASSWORD'),
+                    file(credentialsId:   'FIREBASE_SERVICE_ACCOUNT_LLOSA',  variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
+                        mkdir -p ./secrets
+                        cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
+                        chmod 644 ./secrets/firebase-service-account.json
                         docker compose down
                         docker compose up -d --build backend
                     '''
@@ -81,7 +84,6 @@ pipeline {
                     string(credentialsId: 'FIREBASE_API_KEY_LLOSA',          variable: 'FIREBASE_API_KEY'),
                     string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA',       variable: 'DOMINIO_CORPORATIVO'),
                     string(credentialsId: 'SHOW_SQL_LLOSA',                  variable: 'SHOW_SQL'),
-                    string(credentialsId: 'FIREBASE_CREDENTIALS_PATH_LLOSA', variable: 'FIREBASE_CREDENTIALS_PATH'),
                     string(credentialsId: 'SPRING_FLYWAY_SCHEMAS_LLOSA',     variable: 'SPRING_FLYWAY_SCHEMAS'),
                     string(credentialsId: 'DB_URL_LLOSA',                    variable: 'DB_URL'),
                     string(credentialsId: 'DB_USERNAME_LLOSA',               variable: 'DB_USERNAME'),
