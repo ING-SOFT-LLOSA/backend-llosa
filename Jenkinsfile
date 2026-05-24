@@ -57,16 +57,15 @@ pipeline {
         stage('Deploy (Docker Compose)') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'KEY1', variable: 'KEY1'),
-                    string(credentialsId: 'SPRING_PROFILES_ACTIVE', variable: 'SPRING_PROFILES_ACTIVE'),
-                    string(credentialsId: 'FIREBASE_API_KEY', variable: 'FIREBASE_API_KEY'),
-                    string(credentialsId: 'DOMINIO_CORPORATIVO', variable: 'DOMINIO_CORPORATIVO'),
-                    string(credentialsId: 'SHOW_SQL', variable: 'SHOW_SQL'),
-                    string(credentialsId: 'FIREBASE_CREDENTIALS_PATH', variable: 'FIREBASE_CREDENTIALS_PATH')
+                    string(credentialsId: 'FIREBASE_API_KEY_LLOSA', variable: 'FIREBASE_API_KEY_LLOSA'),
+                    string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA', variable: 'DOMINIO_CORPORATIVO_LLOSA'),
+                    string(credentialsId: 'SHOW_SQL_LLOSA', variable: 'SHOW_SQL_LLOSA'),
+                    string(credentialsId: 'FIREBASE_CREDENTIALS_PATH_LLOSA', variable: 'FIREBASE_CREDENTIALS_PATH_LLOSA'),
+                    string(credentialsId: 'SPRING_FLYWAY_SCHEMAS_LLOSA', variable: 'SPRING_FLYWAY_SCHEMAS_LLOSA')
                 ]) {
                     sh '''
                         docker compose down
-                        docker compose up -d --build backend-llosa
+                        docker compose up -d --build backend
                     '''
                 }
             }
