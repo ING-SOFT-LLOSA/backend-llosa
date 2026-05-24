@@ -71,8 +71,11 @@ pipeline {
                         mkdir -p ./secrets
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
+
                         docker compose down
-                        docker compose up -d --build backend
+                        docker compose up --build --no-start backend
+                        docker cp ./secrets/firebase-service-account.json llosa_backend:/app/secrets/firebase-service-account.json
+                        docker compose start backend
                     '''
                 }
             }
