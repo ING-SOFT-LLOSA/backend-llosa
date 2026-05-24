@@ -5,14 +5,22 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        FIREBASE_API_KEY: ${FIREBASE_API_KEY}
+        FIREBASE_API_KEY: ${FIREBASE_API_KEY_LLOSA}
     container_name: llosa_backend
     environment:
+<<<<<<< HEAD
+      - FIREBASE_API_KEY_LLOSA=${FIREBASE_API_KEY_LLOSA}
+      - DOMINIO_CORPORATIVO_LLOSA=${DOMINIO_CORPORATIVO_LLOSA}
+      - SHOW_SQL_LLOSA=${SHOW_SQL_LLOSA}
+      - SPRING_FLYWAY_SCHEMAS_LLOSA=${SPRING_FLYWAY_SCHEMAS_LLOSA}
+      - FIREBASE_CREDENTIALS_PATH_LLOSA=${FIREBASE_CREDENTIALS_PATH_LLOSA}
+=======
       - FIREBASE_API_KEY=${FIREBASE_API_KEY}
       - DOMINIO_CORPORATIVO=${DOMINIO_CORPORATIVO}
       - SHOW_SQL=${SHOW_SQL}
       - SPRING_FLYWAY_SCHEMAS=public,proyectos,seguridad,activos,etapas
       - FIREBASE_CREDENTIALS_PATH=${FIREBASE_CREDENTIALS_PATH}
+>>>>>>> 26c32d619264d7ba5c72a0b8af5d677e059e385b
     networks:
       - proxy_net
     restart: unless-stopped
