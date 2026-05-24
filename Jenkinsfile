@@ -58,7 +58,6 @@ pipeline {
         stage('Deploy (Docker Compose)') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'SPRING_PROFILES_ACTIVE_LLOSA', variable: 'SPRING_PROFILES_ACTIVE'),
                     string(credentialsId: 'FIREBASE_API_KEY_LLOSA', variable: 'FIREBASE_API_KEY'),
                     string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA', variable: 'DOMINIO_CORPORATIVO'),
                     string(credentialsId: 'SHOW_SQL_LLOSA', variable: 'SHOW_SQL'),

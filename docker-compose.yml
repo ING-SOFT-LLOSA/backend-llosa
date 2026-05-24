@@ -8,7 +8,6 @@ services:
         FIREBASE_API_KEY: ${FIREBASE_API_KEY}
     container_name: llosa_backend
     environment:
-      - KEY1=${KEY1}
       - FIREBASE_API_KEY=${FIREBASE_API_KEY}
       - DOMINIO_CORPORATIVO=${DOMINIO_CORPORATIVO}
       - SHOW_SQL=${SHOW_SQL}
