@@ -27,8 +27,11 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            environment {
-                scannerHome = tool 'SonarScanner'
+            agent {
+                docker {
+                    image 'maven:3.9.8-eclipse-temurin-21-alpine'
+                    reuseNode true
+                }
             }
             steps {
                 withSonarQubeEnv('SonarQube-Server') {
