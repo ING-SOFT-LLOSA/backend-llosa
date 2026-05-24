@@ -113,11 +113,11 @@ pipeline {
                         CONTAINER=llosa_backend
 
                         echo "Esperando hasta 120s a que el healthcheck reporte healthy..."
-                        for i in $(seq 1 24); do
+                        for i in $(seq 1 15); do
                             HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}' "$CONTAINER" 2>/dev/null)
                             RUNNING=$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)
                             RESTARTS=$(docker inspect -f '{{.RestartCount}}' "$CONTAINER" 2>/dev/null)
-                            echo "  intento $i/24 -> Running=$RUNNING Health=$HEALTH Restarts=$RESTARTS"
+                            echo "  intento $i/15 -> Running=$RUNNING Health=$HEALTH Restarts=$RESTARTS"
                             if [ "$RUNNING" != "true" ]; then break; fi
                             if [ "$HEALTH" = "healthy" ] || [ "$HEALTH" = "n/a" ]; then break; fi
                             sleep 5
