@@ -22,7 +22,6 @@ pipeline {
             steps {
                 sh '''
                     mvn clean package -DskipTests -Dmaven.repo.local=.m2/repository
-                    mvn spring:boot run
                 '''
             }
         }
