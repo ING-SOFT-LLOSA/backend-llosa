@@ -1,6 +1,7 @@
 package com.llosa.backend.proyecto.controller;
 
 import com.llosa.backend.proyecto.dto.request.ActivoRequestDTO;
+import com.llosa.backend.proyecto.dto.response.ActivoResponseDTO;
 import com.llosa.backend.proyecto.dto.response.AvanceUnidadResponseDTO;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.repository.ActivoRepository;
@@ -22,8 +23,8 @@ public class ActivoController {
     private final ActivoService activoService;
 
 
-    @PostMapping("/activos/{id}/Etapas")
-    public ResponseEntity<Activo> crearActivo(@PathVariable Long id, @RequestBody ActivoRequestDTO activoDTO) {
+    @PostMapping("/activos/{id}/pisos")
+    public ResponseEntity<ActivoResponseDTO> crearActivo(@PathVariable Long id, @RequestBody ActivoRequestDTO activoDTO) {
         Activo activo = Activo.builder()
                 .nro(activoDTO.nro())
                 .tipo(activoDTO.tipo())
@@ -32,12 +33,11 @@ public class ActivoController {
                 .precio(activoDTO.precio())
                 .descripcion(activoDTO.descripcion())
                 .build();
-        activoService.saveIndividual(id, activo);
-        return ResponseEntity.ok(activo);
+        return ResponseEntity.ok(ActivoResponseDTO.fromEntity(activoService.saveIndividual(id, activo)));
     }
 
     @PutMapping("/activos/{id}")
-    public ResponseEntity<Activo> actualizarActivo(@PathVariable UUID id, @RequestBody ActivoRequestDTO activoDTO) {
+    public ResponseEntity<ActivoResponseDTO> actualizarActivo(@PathVariable UUID id, @RequestBody ActivoRequestDTO activoDTO) {
         Activo activoExistente = activoService.findById(id);
 
         activoExistente.setNro(activoDTO.nro());
@@ -49,7 +49,7 @@ public class ActivoController {
 
         Activo actualizado = activoService.save(activoExistente);
 
-        return ResponseEntity.ok(actualizado);
+        return ResponseEntity.ok(ActivoResponseDTO.fromEntity(actualizado));
     }
 
     @DeleteMapping("/activos/{id}")

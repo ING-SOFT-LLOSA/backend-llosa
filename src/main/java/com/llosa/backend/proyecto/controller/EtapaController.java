@@ -53,5 +53,4 @@ public class EtapaController {
         etapaService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
-
 }

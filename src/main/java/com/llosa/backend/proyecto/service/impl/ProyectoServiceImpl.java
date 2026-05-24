@@ -56,6 +56,14 @@ public class ProyectoServiceImpl implements ProyectoService {
         long completados = hitoUnidadRepository.countByProyectoIdAndEstado(id, EstadoHito.COMPLETADO);
         return (double) completados * 100 / totales;
     }
+
+    @Override
+    @Transactional
+    public void deleteById(UUID id) {
+        proyectoRepository.deleteById(id);
+        return;
+    }
+
     @Override
     @Transactional
     public void cargarProyecto(UUID idProyecto, ProyectoCargaDTO dto) {

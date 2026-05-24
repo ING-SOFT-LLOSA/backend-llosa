@@ -44,6 +44,27 @@ public class ProyectoController {
                 .build();
         return ResponseEntity.status(HttpStatus.CREATED).body(ProyectoResponseDTO.fromEntity(proyectoService.save(nuevo_proyecto)));
     }
+    @PutMapping("/{uuid}")
+    public ResponseEntity<ProyectoResponseDTO> actualizarProyecto(@PathVariable("uuid") UUID id, @Valid @RequestBody ProyectoCreateDTO proyecto) {
+        Proyecto proyectoActualizado = proyectoService.findById(id);
+        proyectoActualizado.setNombre(proyecto.nombre());
+        proyectoActualizado.setDescripcion(proyecto.descripcion());
+        proyectoActualizado.setPrecertificacionEdgeLeed(proyecto.precertificacionEdgeLeed());
+        proyectoActualizado.setLinkRecorridoVirtual(proyecto.linkRecorridoVirtual());
+        proyectoActualizado.setDepartamento(proyecto.departamento());
+        proyectoActualizado.setDistrito(proyecto.distrito());
+        proyectoActualizado.setDireccion(proyecto.direccion());
+        proyectoActualizado.setFechaInicio(proyecto.fechaInicio());
+        proyectoActualizado.setFechaFin(proyecto.fechaFin());
+        return ResponseEntity.ok(ProyectoResponseDTO.fromEntity(proyectoService.save(proyectoActualizado)));
+    }
+
+    @DeleteMapping("/{uuid}")
+    public ResponseEntity<Void> deleteProyecto(@PathVariable("uuid") UUID id) {
+        proyectoService.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // Funcionando correctamente
     @GetMapping
     public ResponseEntity<List<ProyectoResponseDTO>> findAll() {

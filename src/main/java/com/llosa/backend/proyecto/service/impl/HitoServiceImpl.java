@@ -2,19 +2,17 @@ package com.llosa.backend.proyecto.service.impl;
 
 
 import com.llosa.backend.proyecto.entity.*;
-import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.repository.ActivoRepository;
-import com.llosa.backend.proyecto.repository.EtapaRepository;
 import com.llosa.backend.proyecto.repository.HitoRepository;
-import com.llosa.backend.proyecto.repository.HitoUnidadRepository;
 import com.llosa.backend.proyecto.service.EtapaService;
 import com.llosa.backend.proyecto.service.HitoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -40,5 +38,24 @@ public class HitoServiceImpl implements HitoService {
 
         return hitoGuardado;
     }
+    @Override
+    @Transactional
+    public Hito save(Hito hito) {
+        return hitoRepository.save(hito);
+    }
 
+    @Override
+    @Transactional
+    public Hito findById(UUID id){
+        return hitoRepository.findById(id).orElseThrow(
+                () -> new RuntimeException("Hito no encontrado")
+        );
+    }
+
+    @Override
+    @Transactional
+    public void deleteById(UUID id){
+        hitoRepository.deleteById(id);
+        return;
+    }
 }
