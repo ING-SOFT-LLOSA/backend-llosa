@@ -13,6 +13,9 @@ services:
       - SHOW_SQL=${SHOW_SQL}
       - SPRING_FLYWAY_SCHEMAS=public,proyectos,seguridad,activos,etapas
       - FIREBASE_CREDENTIALS_PATH=${FIREBASE_CREDENTIALS_PATH}
+      - DB_URL=${DB_URL}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
     networks:
       - proxy_net
     restart: unless-stopped
