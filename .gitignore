@@ -35,4 +35,6 @@ build/
 !**/src/test/**/build/
 secrets/firebase-service-account.json
 ### VS Code ###
-.vscode/
+.vscode/.env.backend
+.env.backend
+env.backend
