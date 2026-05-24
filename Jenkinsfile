@@ -58,22 +58,6 @@ pipeline {
         stage('Deploy (Docker Compose)') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'FIREBASE_API_KEY_LLOSA', variable: 'FIREBASE_API_KEY'),
-                    string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA', variable: 'DOMINIO_CORPORATIVO'),
-                    string(credentialsId: 'SHOW_SQL_LLOSA', variable: 'SHOW_SQL'),
-                    string(credentialsId: 'FIREBASE_CREDENTIALS_PATH_LLOSA', variable: 'FIREBASE_CREDENTIALS_PATH')
-                ]) {
-                    sh '''
-                        docker compose down
-                        docker compose up -d --build backend
-                    '''
-                }
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                withCredentials([
                     string(credentialsId: 'FIREBASE_API_KEY_LLOSA',          variable: 'FIREBASE_API_KEY'),
                     string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA',       variable: 'DOMINIO_CORPORATIVO'),
                     string(credentialsId: 'SHOW_SQL_LLOSA',                  variable: 'SHOW_SQL'),
