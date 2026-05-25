@@ -96,7 +96,8 @@ public class ProyectoController {
         return ResponseEntity.ok().build();
     }
 
-    // Falta mapear
+    // Funciona correctamente
+    // Genera el porcentaje total de avance de un proyecto por sus hitos
     @GetMapping("/{uuid}/avance-general")
     public ResponseEntity<DashboardProyectoDTO> getAvanceGeneral(@PathVariable("uuid") UUID id) {
         Proyecto proyecto = proyectoService.findById(id);
