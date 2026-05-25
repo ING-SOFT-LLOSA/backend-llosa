@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -34,7 +35,7 @@ public class HitoUnidadServiceImpl implements HitoUnidadService {
 
         if (nuevoEstado == EstadoHito.COMPLETADO) {
             validarHitoAnterior(hitoUnidad);
-            hitoUnidad.setFechaCompletado(LocalDateTime.now());
+            hitoUnidad.setFechaCompletado(LocalDate.now());
         } else {
             hitoUnidad.setFechaCompletado(null);
         }

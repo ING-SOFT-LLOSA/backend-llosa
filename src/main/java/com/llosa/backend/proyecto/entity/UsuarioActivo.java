@@ -12,7 +12,6 @@ import java.util.UUID;
 @Entity
 @Table(
         name = "usuario_activo",
-        schema = "proyectos", // Asegura el esquema correcto de BD
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_usuario_activo",

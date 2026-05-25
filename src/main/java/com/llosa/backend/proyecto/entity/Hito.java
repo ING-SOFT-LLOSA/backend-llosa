@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -16,7 +18,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = "etapa")
+@ToString(exclude = {"etapa","hitosUnidad"})
 public class Hito {
 
     // Atributos de la clase
@@ -47,4 +49,7 @@ public class Hito {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_etapa", nullable = false)
     private Etapa etapa;
+
+    @OneToMany(mappedBy = "hito", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HitoUnidad> hitosUnidad = new ArrayList<>();
 }

@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,6 +28,7 @@ public class ProyectoServiceImpl implements ProyectoService {
     private final TorreServiceImpl torreService;
     private final ActivoServiceImpl activoService;
     private final PisoService pisoService;
+    private final HidratationServiceImpl hidratacionService;
 
     @Override
     public Proyecto save(Proyecto proyecto) {
@@ -54,11 +56,22 @@ public class ProyectoServiceImpl implements ProyectoService {
         long completados = hitoUnidadRepository.countByProyectoIdAndEstado(id, EstadoHito.COMPLETADO);
         return (double) completados * 100 / totales;
     }
+
+    @Override
+    @Transactional
+    public void deleteById(UUID id) {
+        proyectoRepository.deleteById(id);
+        return;
+    }
+
     @Override
     @Transactional
     public void cargarProyecto(UUID idProyecto, ProyectoCargaDTO dto) {
         Proyecto proyecto = proyectoRepository.findById(idProyecto)
                 .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
+
+        List<Activo> activosRecienCreados = new ArrayList<>();
+
         for (TorreRequestDTO torreRequestDTO : dto.torres()){
             Torre torre = Torre.builder()
                     .nombre(torreRequestDTO.nombre())
@@ -78,10 +91,14 @@ public class ProyectoServiceImpl implements ProyectoService {
                             .precio(activoRequestDTO.precio())
                             .descripcion(activoRequestDTO.descripcion())
                             .build();
-                    activoService.save(pisoGuardado.getId(), activo);
+                    Activo activoGuardado = activoService.saveFisico(pisoGuardado.getId(), activo);
+                    activosRecienCreados.add(activoGuardado);
                 }
             }
         }
         proyectoRepository.save(proyecto);
+        if (!activosRecienCreados.isEmpty()) {
+            hidratacionService.hidratarActivos(activosRecienCreados, idProyecto);
+        }
     }
 }
