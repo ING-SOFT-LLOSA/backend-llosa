@@ -12,6 +12,7 @@ import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.HitoUnidadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +27,7 @@ public class ActivoController {
     private final ActivoService activoService;
 
     // Consulta los hitos de un activo trayendote HITOUNIDAD
+    @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @GetMapping("/activos/{id}/hitos")
     public ResponseEntity<List<HitoUnidadResponseDTO>> getActivos(@PathVariable UUID id) {
         List<HitoUnidad> hitoUnidades = hitoUnidadService.findByActivo(id);
@@ -35,7 +37,7 @@ public class ActivoController {
         return ResponseEntity.ok(response);
     }
 
-
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PostMapping("/activos/{id}/pisos")
     public ResponseEntity<ActivoResponseDTO> crearActivo(@PathVariable Long id, @RequestBody ActivoRequestDTO activoDTO) {
         Activo activo = Activo.builder()
@@ -49,6 +51,7 @@ public class ActivoController {
         return ResponseEntity.ok(ActivoResponseDTO.fromEntity(activoService.saveIndividual(id, activo)));
     }
 
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PutMapping("/activos/{id}")
     public ResponseEntity<ActivoResponseDTO> actualizarActivo(@PathVariable UUID id, @RequestBody ActivoRequestDTO activoDTO) {
         Activo activoExistente = activoService.findById(id);
@@ -65,6 +68,7 @@ public class ActivoController {
         return ResponseEntity.ok(ActivoResponseDTO.fromEntity(actualizado));
     }
 
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @DeleteMapping("/activos/{id}")
     public ResponseEntity<Void> eliminarActivo(@PathVariable UUID id) {
         activoService.deleteById(id);
@@ -73,6 +77,7 @@ public class ActivoController {
 
     // Correctamente mapeado
     // Trae los activos que tiene un usario
+    @PreAuthorize("hasAuthority('OBRA_VER')")
     @GetMapping("/activos/{uuid_activo}/avances")
     public ResponseEntity<List<AvanceUnidadResponseDTO>> getAvances(@PathVariable("uuid_activo") UUID id) {
         List<AvanceUnidadResponseDTO> response = hitoUnidadService.findByActivo(id)

@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +30,7 @@ public class ProyectoController {
     private final EtapaService etapaService;
 
     // Funcionando correctamente
+    @PreAuthorize("hasAuthority('PROY_CREAR')")
     @PostMapping
     public ResponseEntity<ProyectoResponseDTO> crearProyecto(@Valid @RequestBody ProyectoCreateDTO proyecto) {
         Proyecto nuevo_proyecto = Proyecto.builder()
@@ -44,6 +46,8 @@ public class ProyectoController {
                 .build();
         return ResponseEntity.status(HttpStatus.CREATED).body(ProyectoResponseDTO.fromEntity(proyectoService.save(nuevo_proyecto)));
     }
+
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PutMapping("/{uuid}")
     public ResponseEntity<ProyectoResponseDTO> actualizarProyecto(@PathVariable("uuid") UUID id, @Valid @RequestBody ProyectoCreateDTO proyecto) {
         Proyecto proyectoActualizado = proyectoService.findById(id);
@@ -59,6 +63,7 @@ public class ProyectoController {
         return ResponseEntity.ok(ProyectoResponseDTO.fromEntity(proyectoService.save(proyectoActualizado)));
     }
 
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @DeleteMapping("/{uuid}")
     public ResponseEntity<Void> deleteProyecto(@PathVariable("uuid") UUID id) {
         proyectoService.deleteById(id);
@@ -66,6 +71,7 @@ public class ProyectoController {
     }
 
     // Funcionando correctamente
+    @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping
     public ResponseEntity<List<ProyectoResponseDTO>> findAll() {
         List<ProyectoResponseDTO> response = proyectoService.findAll()
@@ -75,6 +81,8 @@ public class ProyectoController {
         return ResponseEntity.ok(response);
     }
     // Funcionando correctamente
+
+    @PreAuthorize("hasAuthority('PROY_CREAR')")
     @PostMapping("/{uuid}/etapas")
     public ResponseEntity<EtapaResponseDTO> crearEtapa(@PathVariable("uuid") UUID id_proyecto,
                                                        @Valid @RequestBody EtapaCreateDTO dto) {
@@ -89,6 +97,7 @@ public class ProyectoController {
                 .body(EtapaResponseDTO.fromEntity(etapaService.save(id_proyecto, etapa)));
     }
     // Super endopint para la creacion de torres , pisos y activos
+    @PreAuthorize("hasAuthority('PROY_CREAR')")
     @PostMapping("{id_proyecto}/estructura-fisica")
     public ResponseEntity<Void> crearEstructuraFisica(@PathVariable("id_proyecto") UUID id_proyecto,
                                                       @Valid @RequestBody ProyectoCargaDTO estructuraFisica) {
@@ -98,6 +107,7 @@ public class ProyectoController {
 
     // Funciona correctamente
     // Genera el porcentaje total de avance de un proyecto por sus hitos
+    @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping("/{uuid}/avance-general")
     public ResponseEntity<DashboardProyectoDTO> getAvanceGeneral(@PathVariable("uuid") UUID id) {
         Proyecto proyecto = proyectoService.findById(id);
