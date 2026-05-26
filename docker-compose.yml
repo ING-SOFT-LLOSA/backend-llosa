@@ -5,14 +5,17 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        FIREBASE_API_KEY: ${FIREBASE_API_KEY_LLOSA}
+        FIREBASE_API_KEY: ${FIREBASE_API_KEY}
     container_name: llosa_backend
     environment:
       - FIREBASE_API_KEY=${FIREBASE_API_KEY}
       - DOMINIO_CORPORATIVO=${DOMINIO_CORPORATIVO}
       - SHOW_SQL=${SHOW_SQL}
       - SPRING_FLYWAY_SCHEMAS=public,proyectos,seguridad,activos,etapas
-      - FIREBASE_CREDENTIALS_PATH=${FIREBASE_CREDENTIALS_PATH}
+      - FIREBASE_CREDENTIALS_PATH=/app/secrets/firebase-service-account.json
+      - DB_URL=${DB_URL}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
     networks:
       - proxy_net
     restart: unless-stopped

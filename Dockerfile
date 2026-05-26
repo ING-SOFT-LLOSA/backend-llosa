@@ -27,6 +27,8 @@ RUN adduser -D -u 1001 appuser
 COPY --from=builder /build/target/backend-*.jar app.jar
 RUN chown appuser:appuser app.jar
 
+RUN mkdir -p /app/secrets && chown appuser:appuser /app/secrets
+
 USER appuser
 EXPOSE 8080
 
