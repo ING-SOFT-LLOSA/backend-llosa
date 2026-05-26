@@ -63,9 +63,7 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "http://localhost:5173",
                 "http://localhost:4200",
-                "https://llosa.ingsoftware.lat",
-                "https://llosa-client.ingsoftware.lat",
-                "https://backend-llosa.ingsoftware.lat"
+                "https://llosa.ingsoftware.lat"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));

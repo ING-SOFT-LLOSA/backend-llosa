@@ -11,5 +11,4 @@ import java.util.UUID;
 public interface UsuarioActivoRepository extends JpaRepository<UsuarioActivo, Long> {
     List<UsuarioActivo> findByUsuario_Id(Integer usuarioId);
     List<UsuarioActivo> findByActivo_Id(UUID activoId);
-    List<UsuarioActivo> findByUsuarioEmail(String email);
 }

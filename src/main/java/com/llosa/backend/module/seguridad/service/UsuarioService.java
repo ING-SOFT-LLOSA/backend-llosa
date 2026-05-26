@@ -6,16 +6,11 @@ import com.llosa.backend.module.seguridad.dto.CrearUsuarioRequest;
 import com.llosa.backend.module.seguridad.dto.UsuarioResponse;
 import com.llosa.backend.module.seguridad.entity.Rol;
 import com.llosa.backend.module.seguridad.entity.Usuario;
-import com.llosa.backend.module.seguridad.entity.UsuarioResponseFunciones;
 import com.llosa.backend.module.seguridad.repository.RolRepository;
 import com.llosa.backend.module.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.exception.EmailDuplicadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
