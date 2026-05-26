@@ -38,3 +38,5 @@ secrets/firebase-service-account.json
 .vscode/.env.backend
 .env.backend
 env.backend
+casos_prueba.md
+
