@@ -56,9 +56,9 @@ public class UsuarioController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping
+    @GetMapping("/paginado")
     @PreAuthorize("hasAuthority('USER_GESTIONAR')") // Aqui debería ser user ver
-    public ResponseEntity<Page<UsuarioResponseFunciones>> listar(
+    public ResponseEntity<Page<UsuarioResponseFunciones>> listar_paginado(
             @RequestParam(required = false, defaultValue = "") String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
