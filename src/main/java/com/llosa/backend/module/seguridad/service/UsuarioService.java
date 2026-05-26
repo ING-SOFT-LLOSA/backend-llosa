@@ -7,9 +7,14 @@ import com.llosa.backend.module.seguridad.dto.UsuarioResponse;
 import com.llosa.backend.module.seguridad.entity.Funcion;
 import com.llosa.backend.module.seguridad.entity.Rol;
 import com.llosa.backend.module.seguridad.entity.Usuario;
+import com.llosa.backend.module.seguridad.entity.UsuarioResponseFunciones;
 import com.llosa.backend.module.seguridad.repository.RolRepository;
 import com.llosa.backend.module.seguridad.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.google.firebase.auth.FirebaseAuthException;
@@ -161,4 +166,18 @@ public class UsuarioService {
         // Eliminar de PostgreSQL
         usuarioRepository.delete(usuario);
     }
+
+    @Transactional
+    public Usuario findById(Integer id){
+        return usuarioRepository.findById(id).orElseThrow(
+                () -> new RuntimeException("Usuario no encontrado")
+        );
+    }
+
+    public Page<UsuarioResponseFunciones> listarPaginadoYFiltrado(String search, int pagina, int tamano) {
+        Pageable pageable = PageRequest.of(pagina, tamano);
+        Page<Usuario> usuariosPage = usuarioRepository.buscarUsuariosPaginados(search, pageable);
+        return usuariosPage.map(UsuarioResponseFunciones::fromEntity);
+    }
+
 }
