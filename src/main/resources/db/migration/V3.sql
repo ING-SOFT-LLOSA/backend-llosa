@@ -95,7 +95,7 @@ WHERE r.nombre = 'CLIENTE'
 
 -- Usuario admin
 INSERT INTO usuario (firebase_uuid, tipo_usuario, id_rol, nombre, apellidos, email, activo)
-SELECT 'AMLtHuGEe9dLVca353dLX3O6YKy1', 'EMPLEADO', r.id_rol, 'Super', 'Admin', 'superadmin@gmail.com', true
+SELECT 'AMLtHuGEe9dLVca353dLX3O6YKy1', 'EMPLEADO', r.id_rol, 'Super', 'Admin', 'superadmin@llosa.com', true
 FROM roles r
 WHERE r.nombre = 'ADMIN'
   AND NOT EXISTS (
