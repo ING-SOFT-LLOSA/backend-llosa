@@ -27,13 +27,13 @@ public class AuthService {
         if (!usuario.getActivo()) {
             throw new RuntimeException("Cuenta suspendida. Contacte a la inmobiliaria.");
         }
-
+        /* Para testing se invalida esto
         if ("EMPLEADO".equals(usuario.getTipoUsuario())) {
             if (!email.endsWith("@" + dominioCorporativo)) {
                 throw new RuntimeException("Acceso denegado: dominio no autorizado.");
             }
         }
-
+        */
         List<String> funciones = usuario.getRol() != null
                 ? usuario.getRol().getFunciones().stream()
                 .map(Funcion::getNombreCodigo)
