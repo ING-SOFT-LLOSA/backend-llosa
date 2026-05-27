@@ -180,4 +180,9 @@ public class UsuarioService {
         return usuariosPage.map(UsuarioResponseFunciones::fromEntity);
     }
 
+    public Usuario findByFirebaseUuid(String firebaseUuid) {
+        return usuarioRepository.findByFirebaseUuid(firebaseUuid)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    }
+
 }

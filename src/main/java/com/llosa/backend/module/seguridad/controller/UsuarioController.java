@@ -56,6 +56,7 @@ public class UsuarioController {
         return ResponseEntity.ok().build();
     }
 
+    // Paginado correo corectamente
     @GetMapping("/paginado")
     @PreAuthorize("hasAuthority('USER_GESTIONAR')") // Aqui debería ser user ver
     public ResponseEntity<Page<UsuarioResponseFunciones>> listar_paginado(
@@ -65,5 +66,4 @@ public class UsuarioController {
         Page<UsuarioResponseFunciones> resultado = usuarioService.listarPaginadoYFiltrado(search, page, size);
         return ResponseEntity.ok(resultado);
     }
-
 }
