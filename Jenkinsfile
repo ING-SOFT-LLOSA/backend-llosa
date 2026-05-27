@@ -90,7 +90,8 @@ pipeline {
                     string(credentialsId: 'SPRING_FLYWAY_SCHEMAS_LLOSA',     variable: 'SPRING_FLYWAY_SCHEMAS'),
                     string(credentialsId: 'DB_URL_LLOSA',                    variable: 'DB_URL'),
                     string(credentialsId: 'DB_USERNAME_LLOSA',               variable: 'DB_USERNAME'),
-                    string(credentialsId: 'DB_PASSWORD_LLOSA',               variable: 'DB_PASSWORD')
+                    string(credentialsId: 'DB_PASSWORD_LLOSA',               variable: 'DB_PASSWORD'),
+                    file(credentialsId:   'FIREBASE_SERVICE_ACCOUNT_LLOSA',  variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
                         set +e
