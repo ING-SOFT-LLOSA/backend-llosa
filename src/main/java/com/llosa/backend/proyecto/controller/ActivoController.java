@@ -7,10 +7,12 @@ import com.llosa.backend.proyecto.dto.response.HitoResponseDTO;
 import com.llosa.backend.proyecto.dto.response.HitoUnidadResponseDTO;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.HitoUnidad;
+import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.repository.ActivoRepository;
 import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.HitoUnidadService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -86,4 +88,17 @@ public class ActivoController {
                 .toList();
         return ResponseEntity.ok(response);
     }
+
+    @PreAuthorize("hasAuthority('PROY_VER')")
+    @GetMapping("/proyecto/{uuidProyecto}")
+    public ResponseEntity<Page<ActivoResponseDTO>> listarActivosPorProyecto(
+            @PathVariable UUID uuidProyecto,
+            @RequestParam(required = false) EstadoComercialActivo estado,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Page<ActivoResponseDTO> resultado = activoService.listarPorProyectoYEstado(uuidProyecto, estado, page, size);
+
+        return ResponseEntity.ok(resultado);
+    }
+
 }
