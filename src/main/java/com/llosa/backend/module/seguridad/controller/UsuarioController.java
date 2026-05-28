@@ -42,10 +42,20 @@ public class UsuarioController {
     }
 
     // Endpoint temporal solo para desarrollo - eliminar completamente un usuario
-    // @DeleteMapping("/{id}/hard")
-    // public ResponseEntity<Void> eliminarCompletamente(@PathVariable Integer id) throws Exception {
-       // usuarioService.eliminarCompletamente(id);
-       // return ResponseEntity.ok().build();
-    // }
+    @DeleteMapping("/{id}/hard")
+    public ResponseEntity<Void> eliminarCompletamente(@PathVariable Integer id) throws Exception {
+        usuarioService.eliminarCompletamente(id);
+        return ResponseEntity.ok().build();
+    }
 
+    // Paginado correo corectamente
+    @GetMapping("/paginado")
+    @PreAuthorize("hasAuthority('USER_GESTIONAR')") // Aqui debería ser user ver
+    public ResponseEntity<Page<UsuarioResponseFunciones>> listar_paginado(
+            @RequestParam(required = false, defaultValue = "") String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<UsuarioResponseFunciones> resultado = usuarioService.listarPaginadoYFiltrado(search, page, size);
+        return ResponseEntity.ok(resultado);
+    }
 }

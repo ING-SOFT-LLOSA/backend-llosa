@@ -107,4 +107,54 @@ public class UsuarioService {
                 : List.of());
         return r;
     }
+    private void sendPasswordResetEmail(String email) throws Exception {
+        String apiKey = "AIzaSyDo_yQ7_tJ3kulCZXaqOcPXAzywtF4pAj0";
+        String url = "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=" + apiKey;
+
+        String body = "{\"requestType\":\"PASSWORD_RESET\",\"email\":\"" + email + "\"}";
+
+        java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+        java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
+                .uri(java.net.URI.create(url))
+                .header("Content-Type", "application/json")
+                .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        java.net.http.HttpResponse<String> response = client.send(httpRequest,
+                java.net.http.HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Error al enviar email de bienvenida: " + response.body());
+        }
+    }
+    @Transactional
+    public void eliminarCompletamente(Integer usuarioId) throws Exception {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Eliminar de Firebase
+        FirebaseAuth.getInstance().deleteUser(usuario.getFirebaseUuid());
+
+        // Eliminar de PostgreSQL
+        usuarioRepository.delete(usuario);
+    }
+
+    @Transactional
+    public Usuario findById(Integer id){
+        return usuarioRepository.findById(id).orElseThrow(
+                () -> new RuntimeException("Usuario no encontrado")
+        );
+    }
+
+    public Page<UsuarioResponseFunciones> listarPaginadoYFiltrado(String search, int pagina, int tamano) {
+        Pageable pageable = PageRequest.of(pagina, tamano);
+        Page<Usuario> usuariosPage = usuarioRepository.buscarUsuariosPaginados(search, pageable);
+        return usuariosPage.map(UsuarioResponseFunciones::fromEntity);
+    }
+
+    public Usuario findByFirebaseUuid(String firebaseUuid) {
+        return usuarioRepository.findByFirebaseUuid(firebaseUuid)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    }
+
 }
