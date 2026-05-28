@@ -39,7 +39,7 @@ public class UsuarioActivo {
     private String faseComercial; // 'Separación', 'Contrato', 'Pagos', etc.
 
     @Column(name = "estado_tramite_legal")
-    private String estadoTramiteLegal; // 'Minuta Pendiente', 'Escritura Firmada', etc.
+    private String estadoTramiteLegal; // 'Minuta Pendiente', 'Escritura Firmada', Partida registral SUNARP
 
     @Column(name = "fecha_adquisicion")
     private LocalDateTime fechaAdquisicion;

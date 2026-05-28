@@ -1,16 +1,15 @@
 package com.llosa.backend.proyecto.controller;
 
 import com.llosa.backend.proyecto.dto.request.ActivoRequestDTO;
-import com.llosa.backend.proyecto.dto.response.ActivoResponseDTO;
-import com.llosa.backend.proyecto.dto.response.AvanceUnidadResponseDTO;
-import com.llosa.backend.proyecto.dto.response.HitoResponseDTO;
-import com.llosa.backend.proyecto.dto.response.HitoUnidadResponseDTO;
+import com.llosa.backend.proyecto.dto.response.*;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.HitoUnidad;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.repository.ActivoRepository;
 import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.HitoUnidadService;
+import com.llosa.backend.proyecto.service.SeguimientoService;
+import com.llosa.backend.proyecto.service.impl.SeguimientoServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +26,7 @@ public class ActivoController {
 
     private final HitoUnidadService hitoUnidadService;
     private final ActivoService activoService;
+    private final SeguimientoService seguimientoService;
 
     // Consulta los hitos de un activo trayendote HITOUNIDAD
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
@@ -99,6 +99,13 @@ public class ActivoController {
         Page<ActivoResponseDTO> resultado = activoService.listarPorProyectoYEstado(uuidProyecto, estado, page, size);
 
         return ResponseEntity.ok(resultado);
+    }
+
+    @PreAuthorize("hasAuthority('PROY_VER')")
+    @GetMapping("/{uuidActivo}/seguimiento")
+    public ResponseEntity<SeguimientoResponseDTO> obtenerSeguimientoObra(@PathVariable UUID uuidActivo) {
+        SeguimientoResponseDTO response = seguimientoService.obtenerSeguimiento(uuidActivo);
+        return ResponseEntity.ok(response);
     }
 
 }
