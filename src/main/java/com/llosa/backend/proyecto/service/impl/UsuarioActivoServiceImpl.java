@@ -1,7 +1,12 @@
 package com.llosa.backend.proyecto.service.impl;
 
+import com.llosa.backend.module.seguridad.entity.Usuario;
+import com.llosa.backend.module.seguridad.service.UsuarioService;
+import com.llosa.backend.proyecto.dto.request.AsignarActivoDTO;
+import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
+import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.UsuarioActivoService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +20,8 @@ import java.util.List;
 public class UsuarioActivoServiceImpl implements UsuarioActivoService {
 
     private final UsuarioActivoRepository usuarioActivoRepository;
+    private final UsuarioService usuarioService;
+    private final ActivoService activoService;
 
     @Override
     @Transactional(readOnly = true)
@@ -42,5 +49,27 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
     @Transactional
     public UsuarioActivo save(UsuarioActivo usuarioActivo) {
         return usuarioActivoRepository.save(usuarioActivo);
+    }
+
+    @Override
+    @Transactional
+    public List<UsuarioActivo> findByUsuarioEmail(String email){
+        return usuarioActivoRepository.findByUsuarioEmail(email);
+    }
+
+    @Override
+    @Transactional
+    public void asignarActivo(AsignarActivoDTO dto) {
+        Usuario usuario = usuarioService.findById(dto.idUsuario());
+        Activo activo = activoService.findById(dto.idActivo());
+        UsuarioActivo usuarioActivo = UsuarioActivo.builder()
+                .usuario(usuario)
+                .activo(activo)
+                .tipoFinanciamiento(dto.tipoFinanciamiento())
+                .faseComercial(dto.faseComercial())
+                .estadoTramiteLegal(dto.estadoTramiteLegal())
+                .fechaAdquisicion(dto.fechaAdquisicion())
+                .build();
+        usuarioActivoRepository.save(usuarioActivo);
     }
 }

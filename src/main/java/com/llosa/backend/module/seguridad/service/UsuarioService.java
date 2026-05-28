@@ -10,7 +10,11 @@ import com.llosa.backend.module.seguridad.repository.RolRepository;
 import com.llosa.backend.module.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.exception.EmailDuplicadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
+import com.llosa.backend.module.seguridad.entity.UsuarioResponseFunciones;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

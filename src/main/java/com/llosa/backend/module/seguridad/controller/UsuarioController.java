@@ -3,10 +3,13 @@ package com.llosa.backend.module.seguridad.controller;
 import com.llosa.backend.module.seguridad.dto.AsignarRolRequest;
 import com.llosa.backend.module.seguridad.dto.CrearUsuarioRequest;
 import com.llosa.backend.module.seguridad.dto.UsuarioResponse;
+import com.llosa.backend.module.seguridad.entity.UsuarioResponseFunciones;
 import com.llosa.backend.module.seguridad.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
