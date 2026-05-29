@@ -4,7 +4,7 @@ import com.llosa.backend.config.FirebaseConfig;
 import com.llosa.backend.config.PostgresTestContainerConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -15,7 +15,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Import(PostgresTestContainerConfig.class)
 class BackendApplicationTests {
 
-    @MockBean
+    @MockitoBean
     FirebaseConfig firebaseConfig;
 
     @Test

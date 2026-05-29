@@ -1,35 +1,32 @@
-# Stage 1: Build the application
-FROM maven:3.9.8-eclipse-temurin-21-alpine AS builder
-WORKDIR /build
+# ==========================================
+# 1. ETAPA DE CONSTRUCCIÓN (Build)
+# ==========================================
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /app
 
-# 1. Crear explícitamente el directorio caché de Maven dentro de la zona de trabajo
-RUN mkdir -p /build/.m2/repository && chmod -R 777 /build
-
+# Copiamos el archivo de configuración de dependencias
 COPY pom.xml .
+
+# Copiamos todo el código fuente de tu aplicación
 COPY src ./src
 
-ARG FIREBASE_API_KEY
-ENV FIREBASE_API_KEY=${FIREBASE_API_KEY}
+# Compilamos y empaquetamos el .jar (saltamos los tests para ahorrar tiempo)
+RUN mvn clean package -DskipTests
 
-# 2. Forzar a Maven a escribir localmente usando parámetros del sistema
-RUN mvn clean package -DskipTests -Dmaven.test.skip=true -Dmaven.repo.local=/build/.m2/repository
-
-# Stage 2: Run the application (Replacing deprecated openjdk image)
+# ==========================================
+# 2. ETAPA DE EJECUCIÓN (Runtime)
+# ==========================================
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# curl es necesario para el healthcheck definido en docker-compose.yml
-RUN apk add --no-cache curl
+# Copiamos el archivo .jar generado en la etapa anterior
+COPY --from=build /app/target/*.jar app.jar
 
-# Alpine uses 'adduser' instead of 'useradd'
-RUN adduser -D -u 1001 appuser
+# CRUCIAL: Copiamos el archivo .env para que la librería 'spring-dotenv' no falle
+COPY .env .env
 
-COPY --from=builder /build/target/backend-*.jar app.jar
-RUN chown appuser:appuser app.jar
-
-RUN mkdir -p /app/secrets && chown appuser:appuser /app/secrets
-
-USER appuser
+# Informamos el puerto en el que escucha la app
 EXPOSE 8080
 
+# Comando optimizado para arrancar Spring Boot
 ENTRYPOINT ["java", "-jar", "app.jar"]

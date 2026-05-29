@@ -11,8 +11,8 @@ import com.llosa.backend.module.seguridad.dto.UsuarioResponse;
 import com.llosa.backend.module.seguridad.service.UsuarioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -34,10 +34,10 @@ class UsuarioControllerTest {
     @Autowired
     ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     UsuarioService usuarioService;
 
-    @MockBean
+    @MockitoBean
     FirebaseConfig firebaseConfig;
 
     // ── POST /api/users/register ─────────────────────────────────────────────

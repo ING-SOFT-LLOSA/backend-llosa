@@ -4,8 +4,8 @@ import com.llosa.backend.module.seguridad.controller.UsuarioController;
 import com.llosa.backend.module.seguridad.service.UsuarioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -17,8 +17,10 @@ class SecurityConfigTest {
     @Autowired
     MockMvc mockMvc;
 
-    @MockBean UsuarioService usuarioService;
-    @MockBean FirebaseConfig firebaseConfig;
+    @MockitoBean
+    UsuarioService usuarioService;
+    @MockitoBean
+    FirebaseConfig firebaseConfig;
 
     // ── Endpoints protegidos requieren autenticación ──────────────────────────
 

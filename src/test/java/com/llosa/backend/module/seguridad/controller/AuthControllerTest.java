@@ -10,8 +10,8 @@ import com.llosa.backend.module.seguridad.service.AuthService;
 import com.llosa.backend.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -41,10 +41,10 @@ class AuthControllerTest {
     @Autowired
     MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     AuthService authService;
 
-    @MockBean
+    @MockitoBean
     FirebaseConfig firebaseConfig;
 
     // ── GET /api/auth/me ──────────────────────────────────────────────────────

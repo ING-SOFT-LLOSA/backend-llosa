@@ -1,4 +1,3 @@
-name: llosa_backend
 services:
   postgres:
     image: postgres:16
@@ -16,12 +15,10 @@ services:
       - llosa_network
 
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        FIREBASE_API_KEY: ${FIREBASE_API_KEY}
+    build: .
     container_name: llosa_backend
+    ports:
+      - "8080:8080"
     environment:
       # Inyectamos el host 'postgres' pero mantenemos el nombre de la base de datos
       DB_URL_LLOSA: jdbc:postgresql://postgres:5432/llosa_db
@@ -37,15 +34,11 @@ services:
     depends_on:
       - postgres
     networks:
-      - proxy_net
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - llosa_network
+
+volumes:
+  postgres_data:
 
 networks:
-  proxy_net:
-    external: true
+  llosa_network:
+    driver: bridge
