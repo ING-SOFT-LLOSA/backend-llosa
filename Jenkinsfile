@@ -74,7 +74,7 @@ pipeline {
 
                         docker compose down
                         docker compose up --build --no-start backend
-                        docker cp ./secrets/firebase-service-account.json llosa_backend:/app/secrets/firebase-service-account.json
+                        docker cp ./secrets/firebase-service-account.json backend-llosa:/app/secrets/firebase-service-account.json
                         docker compose start backend
                     '''
                 }
