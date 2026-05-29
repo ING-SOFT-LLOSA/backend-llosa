@@ -21,7 +21,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    mvn clean package -DskipTests -Dmaven.repo.local=.m2/repository
+                    mvn clean package -Dmaven.test.skip=true -Dmaven.repo.local=.m2/repository
                 '''
             }
         }
@@ -74,7 +74,7 @@ pipeline {
 
                         docker compose down
                         docker compose up --build --no-start backend
-                        docker cp ./secrets/firebase-service-account.json backend-llosa:/app/secrets/firebase-service-account.json
+                        docker cp ./secrets/firebase-service-account.json llosa_backend:/app/secrets/firebase-service-account.json
                         docker compose start backend
                     '''
                 }
@@ -90,7 +90,8 @@ pipeline {
                     string(credentialsId: 'SPRING_FLYWAY_SCHEMAS_LLOSA',     variable: 'SPRING_FLYWAY_SCHEMAS'),
                     string(credentialsId: 'DB_URL_LLOSA',                    variable: 'DB_URL'),
                     string(credentialsId: 'DB_USERNAME_LLOSA',               variable: 'DB_USERNAME'),
-                    string(credentialsId: 'DB_PASSWORD_LLOSA',               variable: 'DB_PASSWORD')
+                    string(credentialsId: 'DB_PASSWORD_LLOSA',               variable: 'DB_PASSWORD'),
+                    file(credentialsId:   'FIREBASE_SERVICE_ACCOUNT_LLOSA',  variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
                         set +e
