@@ -72,9 +72,7 @@ pipeline {
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
 
-                        docker compose down --remove-orphans
-                        docker rm -f llosa_backend 2>/dev/null || true
-                        docker ps -q --filter "publish=8080" | xargs -r docker rm -f 2>/dev/null || true
+                        docker compose down
                         docker compose up --build --no-start backend
                         docker cp ./secrets/firebase-service-account.json llosa_backend:/app/secrets/firebase-service-account.json
                         docker compose start backend
@@ -97,7 +95,7 @@ pipeline {
                 ]) {
                     sh '''
                         set +e
-                        CONTAINER=llosa_backend
+                        CONTAINER=backend-llosa
 
                         echo "Esperando hasta 120s a que el healthcheck reporte healthy..."
                         for i in $(seq 1 15); do
