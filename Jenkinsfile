@@ -58,13 +58,13 @@ pipeline {
         stage('Deploy (Docker Compose)') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'FIREBASE_API_KEY_LLOSA',          variable: 'FIREBASE_API_KEY'),
-                    string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA',       variable: 'DOMINIO_CORPORATIVO'),
-                    string(credentialsId: 'SHOW_SQL_LLOSA',                  variable: 'SHOW_SQL'),
-                    string(credentialsId: 'SPRING_FLYWAY_SCHEMAS_LLOSA',     variable: 'SPRING_FLYWAY_SCHEMAS'),
-                    string(credentialsId: 'DB_URL_LLOSA',                    variable: 'DB_URL'),
-                    string(credentialsId: 'DB_USERNAME_LLOSA',               variable: 'DB_USERNAME'),
-                    string(credentialsId: 'DB_PASSWORD_LLOSA',               variable: 'DB_PASSWORD'),
+                    string(credentialsId: 'FIREBASE_API_KEY_LLOSA',          variable: 'FIREBASE_API_KEY_LLOSA'),
+                    string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA',       variable: 'DOMINIO_CORPORATIVO_LLOSA'),
+                    string(credentialsId: 'SHOW_SQL_LLOSA',                  variable: 'SHOW_SQL_LLOSA'),
+                    string(credentialsId: 'SPRING_FLYWAY_SCHEMAS_LLOSA',     variable: 'SPRING_FLYWAY_SCHEMAS_LLOSA'),
+                    string(credentialsId: 'DB_URL_LLOSA',                    variable: 'DB_URL_LLOSA'),
+                    string(credentialsId: 'DB_USERNAME_LLOSA',               variable: 'DB_USERNAME_LLOSA'),
+                    string(credentialsId: 'DB_PASSWORD_LLOSA',               variable: 'DB_PASSWORD_LLOSA'),
                     file(credentialsId:   'FIREBASE_SERVICE_ACCOUNT_LLOSA',  variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
@@ -72,7 +72,9 @@ pipeline {
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
 
-                        docker compose down
+                        docker compose down --remove-orphans
+                        docker rm -f llosa_backend 2>/dev/null || true
+                        docker ps -q --filter "publish=8080" | xargs -r docker rm -f 2>/dev/null || true
                         docker compose up --build --no-start backend
                         docker cp ./secrets/firebase-service-account.json llosa_backend:/app/secrets/firebase-service-account.json
                         docker compose start backend
@@ -84,13 +86,13 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'FIREBASE_API_KEY_LLOSA',          variable: 'FIREBASE_API_KEY'),
-                    string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA',       variable: 'DOMINIO_CORPORATIVO'),
-                    string(credentialsId: 'SHOW_SQL_LLOSA',                  variable: 'SHOW_SQL'),
-                    string(credentialsId: 'SPRING_FLYWAY_SCHEMAS_LLOSA',     variable: 'SPRING_FLYWAY_SCHEMAS'),
-                    string(credentialsId: 'DB_URL_LLOSA',                    variable: 'DB_URL'),
-                    string(credentialsId: 'DB_USERNAME_LLOSA',               variable: 'DB_USERNAME'),
-                    string(credentialsId: 'DB_PASSWORD_LLOSA',               variable: 'DB_PASSWORD'),
+                    string(credentialsId: 'FIREBASE_API_KEY_LLOSA',          variable: 'FIREBASE_API_KEY_LLOSA'),
+                    string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA',       variable: 'DOMINIO_CORPORATIVO_LLOSA'),
+                    string(credentialsId: 'SHOW_SQL_LLOSA',                  variable: 'SHOW_SQL_LLOSA'),
+                    string(credentialsId: 'SPRING_FLYWAY_SCHEMAS_LLOSA',     variable: 'SPRING_FLYWAY_SCHEMAS_LLOSA'),
+                    string(credentialsId: 'DB_URL_LLOSA',                    variable: 'DB_URL_LLOSA'),
+                    string(credentialsId: 'DB_USERNAME_LLOSA',               variable: 'DB_USERNAME_LLOSA'),
+                    string(credentialsId: 'DB_PASSWORD_LLOSA',               variable: 'DB_PASSWORD_LLOSA'),
                     file(credentialsId:   'FIREBASE_SERVICE_ACCOUNT_LLOSA',  variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
