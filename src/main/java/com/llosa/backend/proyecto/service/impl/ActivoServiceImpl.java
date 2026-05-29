@@ -1,12 +1,17 @@
 package com.llosa.backend.proyecto.service.impl;
 
+import com.llosa.backend.proyecto.dto.response.ActivoResponseDTO;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.Piso;
+import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.repository.ActivoRepository;
 
 import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.PisoService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,4 +62,24 @@ public class ActivoServiceImpl implements ActivoService {
                 () -> new RuntimeException("Activo no encontrado")
         );
     }
+
+    @Override
+    @Transactional
+    public Page<ActivoResponseDTO> listarPorProyectoYEstado(UUID idProyecto, EstadoComercialActivo estado, int page, int size){
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Activo> activos;
+        if(estado == null){
+            activos = activoRepository.findByPisoTorreProyectoId(idProyecto,pageable);
+        }
+        else {
+            activos = activoRepository
+                    .findByPisoTorreProyectoIdAndEstadoComercial(
+                            idProyecto,
+                            estado,
+                            pageable
+                    );
+        }
+        return activos.map(ActivoResponseDTO::fromEntity);
+    }
+
 }

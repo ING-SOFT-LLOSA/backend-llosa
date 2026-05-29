@@ -25,5 +25,4 @@ public interface HitoUnidadRepository extends JpaRepository<HitoUnidad, UUID> {
 
     List<HitoUnidad> findByActivo_IdOrderByHito_OrdenAsc(UUID activoId);
 
-
 }

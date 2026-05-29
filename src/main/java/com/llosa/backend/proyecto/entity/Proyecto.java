@@ -33,7 +33,7 @@ public class Proyecto {
 
     private Boolean precertificacionEdgeLeed = false;
 
-    private String linkRecorridoVirtual = "";
+    private String linkRecorridoVirtual = ""; // cambiar esto a activo
 
     private String departamento;
 
