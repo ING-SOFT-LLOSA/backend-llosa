@@ -74,6 +74,7 @@ pipeline {
 
                         docker compose down --remove-orphans
                         docker rm -f llosa_backend 2>/dev/null || true
+                        docker ps -q --filter "publish=8080" | xargs -r docker rm -f 2>/dev/null || true
                         docker compose up --build --no-start backend
                         docker cp ./secrets/firebase-service-account.json llosa_backend:/app/secrets/firebase-service-account.json
                         docker compose start backend
