@@ -1,30 +1,31 @@
+name: llosa_backend
 services:
-
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        FIREBASE_API_KEY: ${FIREBASE_API_KEY}
     container_name: llosa_backend
-    ports:
-      - "8080:8080"
     environment:
-      # Inyectamos el host 'postgres' pero mantenemos el nombre de la base de datos
-      DB_URL_LLOSA: ${DB_URL_LLOSA}
-      DB_USERNAME_LLOSA: ${DB_USERNAME_LLOSA}
-      DB_PASSWORD_LLOSA: ${DB_PASSWORD_LLOSA}
-      DOMINIO_CORPORATIVO_LLOSA: ${DOMINIO_CORPORATIVO_LLOSA}
-      SHOW_SQL_LLOSA: ${SHOW_SQL_LLOSA}
-      FIREBASE_API_KEY_LLOSA: ${FIREBASE_API_KEY_LLOSA}
-      SPRING_FLYWAY_SCHEMAS_LLOSA: ${SPRING_FLYWAY_SCHEMAS_LLOSA}
-      FIREBASE_CREDENTIALS_PATH_LLOSA: /secrets/firebase-service-account.json
-    volumes:
-      - ./secrets/firebase-service-account.json:/secrets/firebase-service-account.json:ro
-    depends_on:
-      - postgres
+      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      - DOMINIO_CORPORATIVO=${DOMINIO_CORPORATIVO}
+      - SHOW_SQL=${SHOW_SQL}
+      - SPRING_FLYWAY_SCHEMAS=public,proyectos,seguridad,activos,etapas
+      - FIREBASE_CREDENTIALS_PATH=/app/secrets/firebase-service-account.json
+      - DB_URL=${DB_URL}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
     networks:
-      - llosa_network
-
-volumes:
-  postgres_data:
+      - proxy_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
-  llosa_network:
-    driver: bridge
+  proxy_net:
+    external: true
