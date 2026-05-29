@@ -3,11 +3,12 @@ services:
     image: postgres:16
     container_name: llosa_db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Lado izquierdo (exigido por Postgres) : Lado derecho (lo que SÍ está en tu .env)
+      POSTGRES_DB: llosa_db
+      POSTGRES_USER: ${DB_USERNAME_LLOSA}
+      POSTGRES_PASSWORD: ${DB_PASSWORD_LLOSA}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -19,15 +20,16 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Apunta al contenedor 'postgres' dentro de la red de Docker
-      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      DB_USERNAME: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DOMINIO_CORPORATIVO: ${DOMINIO_CORPORATIVO}
-      # Ruta interna dentro del contenedor Docker
-      FIREBASE_CREDENTIALS_PATH: /secrets/firebase-service-account.json
+      # Inyectamos el host 'postgres' pero mantenemos el nombre de la base de datos
+      DB_URL_LLOSA: jdbc:postgresql://postgres:5432/llosa_db
+      DB_USERNAME_LLOSA: ${DB_USERNAME_LLOSA}
+      DB_PASSWORD_LLOSA: ${DB_PASSWORD_LLOSA}
+      DOMINIO_CORPORATIVO_LLOSA: ${DOMINIO_CORPORATIVO_LLOSA}
+      SHOW_SQL_LLOSA: ${SHOW_SQL_LLOSA}
+      FIREBASE_API_KEY_LLOSA: ${FIREBASE_API_KEY_LLOSA}
+      SPRING_FLYWAY_SCHEMAS_LLOSA: ${SPRING_FLYWAY_SCHEMAS_LLOSA}
+      FIREBASE_CREDENTIALS_PATH_LLOSA: /secrets/firebase-service-account.json
     volumes:
-      # Monta tu archivo local seguro dentro del contenedor en modo lectura (ro)
       - ./secrets/firebase-service-account.json:/secrets/firebase-service-account.json:ro
     depends_on:
       - postgres
