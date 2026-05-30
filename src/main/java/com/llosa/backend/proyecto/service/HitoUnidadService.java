@@ -1,5 +1,7 @@
 package com.llosa.backend.proyecto.service;
 
+import com.llosa.backend.proyecto.dto.response.AvanceUnidadResponseDTO;
+import com.llosa.backend.proyecto.dto.response.AvanceUnidadResponsePorcentajeDTO;
 import com.llosa.backend.proyecto.entity.HitoUnidad;
 import com.llosa.backend.proyecto.enums.EstadoHito;
 
@@ -10,4 +12,5 @@ public interface HitoUnidadService {
     HitoUnidad findById(UUID id);
     HitoUnidad cambiarEstado(UUID id, EstadoHito nuevoEstado);
     List<HitoUnidad> findByActivo(UUID activoId);
+    List<AvanceUnidadResponsePorcentajeDTO> obtenerAvancesPorActivo(UUID activoId);
 }

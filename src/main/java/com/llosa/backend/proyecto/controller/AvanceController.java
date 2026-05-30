@@ -6,6 +6,7 @@ import com.llosa.backend.proyecto.service.HitoUnidadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -17,6 +18,7 @@ public class AvanceController {
 
     private final HitoUnidadService hitoUnidadService;
 
+    @PreAuthorize("hasAuthority('OBRA_EDITAR')")
     @PutMapping("/{id}")
     public ResponseEntity<AvanceUnidadResponseDTO> actualizarAvance(@PathVariable UUID id,
                                                                     @Valid @RequestBody HitoUnidadUpdateDTO dto) {

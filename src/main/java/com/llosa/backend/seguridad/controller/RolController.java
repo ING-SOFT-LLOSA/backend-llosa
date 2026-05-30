@@ -6,6 +6,7 @@ import com.llosa.backend.seguridad.service.RolService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,11 +18,13 @@ public class RolController {
 
     private final RolService rolService;
 
+    @PreAuthorize("hasAuthority('ROL_GESTIONAR')")
     @GetMapping
     public ResponseEntity<List<Rol>> listar() {
         return ResponseEntity.ok(rolService.listarTodos());
     }
 
+    @PreAuthorize("hasAuthority('ROL_GESTIONAR')")
     @PutMapping("/{id}/functions")
     public ResponseEntity<Rol> modificarFunciones(@PathVariable Integer id,
                                                   @Valid @RequestBody ModificarFuncionesRequest req) {

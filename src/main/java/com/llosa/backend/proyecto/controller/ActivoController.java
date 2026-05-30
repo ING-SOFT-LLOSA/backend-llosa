@@ -81,12 +81,11 @@ public class ActivoController {
     // Trae los activos que tiene un usario
     @PreAuthorize("hasAuthority('OBRA_VER')")
     @GetMapping("/activos/{uuid_activo}/avances")
-    public ResponseEntity<List<AvanceUnidadResponseDTO>> getAvances(@PathVariable("uuid_activo") UUID id) {
-        List<AvanceUnidadResponseDTO> response = hitoUnidadService.findByActivo(id)
-                .stream()
-                .map(AvanceUnidadResponseDTO::fromEntity)
-                .toList();
-        return ResponseEntity.ok(response);
+    public ResponseEntity<List<AvanceUnidadResponsePorcentajeDTO>> getAvances(
+            @PathVariable("uuid_activo") UUID id) {
+        return ResponseEntity.ok(
+                hitoUnidadService.obtenerAvancesPorActivo(id)
+        );
     }
 
     @PreAuthorize("hasAuthority('PROY_VER')")
