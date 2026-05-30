@@ -21,34 +21,29 @@ public class UsuarioController {
 
     private final UsuarioService usuarioService;
 
-    @PreAuthorize("hasAuthority('USER_GESTIONAR')")
     @PostMapping("/register")
     public ResponseEntity<UsuarioResponse> crear(@Valid @RequestBody CrearUsuarioRequest req)
             throws Exception {
         return ResponseEntity.ok(usuarioService.crearUsuario(req));
     }
 
-    @PreAuthorize("hasAuthority('USER_GESTIONAR')")
     @GetMapping
     public ResponseEntity<List<UsuarioResponse>> listar() {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }
 
-    @PreAuthorize("hasAuthority('USER_GESTIONAR')")
     @PutMapping("/{id}/role")
     public ResponseEntity<UsuarioResponse> asignarRol(@PathVariable Integer id,
                                                       @Valid @RequestBody AsignarRolRequest req) {
         return ResponseEntity.ok(usuarioService.asignarRol(id, req.getIdRol()));
     }
 
-    @PreAuthorize("hasAuthority('USER_GESTIONAR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> desactivar(@PathVariable Integer id) throws Exception {
         usuarioService.cambiarEstado(id, false);
         return ResponseEntity.ok().build();
     }
 
-    @PreAuthorize("hasAuthority('USER_GESTIONAR')")
     // Endpoint temporal solo para desarrollo - eliminar completamente un usuario
     @DeleteMapping("/{id}/hard")
     public ResponseEntity<Void> eliminarCompletamente(@PathVariable Integer id) throws Exception {

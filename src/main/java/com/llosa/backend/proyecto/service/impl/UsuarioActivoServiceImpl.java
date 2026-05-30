@@ -1,13 +1,10 @@
 package com.llosa.backend.proyecto.service.impl;
 
 import com.llosa.backend.module.seguridad.entity.Usuario;
-import com.llosa.backend.module.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.module.seguridad.service.UsuarioService;
 import com.llosa.backend.proyecto.dto.request.AsignarActivoDTO;
 import com.llosa.backend.proyecto.entity.Activo;
-import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
-import com.llosa.backend.proyecto.repository.ActivoRepository;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.UsuarioActivoService;
@@ -17,15 +14,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class UsuarioActivoServiceImpl implements UsuarioActivoService {
 
     private final UsuarioActivoRepository usuarioActivoRepository;
-    private final UsuarioRepository usuarioRepository;
-    private final ActivoRepository activoRepository;
     private final UsuarioService usuarioService;
     private final ActivoService activoService;
 
@@ -78,6 +72,4 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
                 .build();
         usuarioActivoRepository.save(usuarioActivo);
     }
-
-
 }

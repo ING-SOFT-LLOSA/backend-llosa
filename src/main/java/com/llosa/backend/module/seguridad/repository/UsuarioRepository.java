@@ -13,6 +13,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     Optional<Usuario> findByFirebaseUuid(String firebaseUuid);
     Optional<Usuario> findByEmail(String email);
     boolean existsByEmail(String email);
+
     @Query("SELECT u FROM Usuario u WHERE " +
             "LOWER(u.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(u.apellidos) LIKE LOWER(CONCAT('%', :search, '%')) OR " +

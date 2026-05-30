@@ -31,7 +31,7 @@ public record UsuarioResponseFunciones(
                 u.getRol(),
                 u.getActivo(),
                 u.getCreatedAt(),
-                u.getRol().getFunciones()
+                listaFunciones
         );
     }
 }

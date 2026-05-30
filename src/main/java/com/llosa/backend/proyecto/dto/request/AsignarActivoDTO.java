@@ -1,6 +1,6 @@
 package com.llosa.backend.proyecto.dto.request;
 
-import com.google.firebase.database.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
