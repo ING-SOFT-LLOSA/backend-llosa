@@ -2,12 +2,7 @@ HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
-!**/src/test/**/target
-.env
-
-## Claude files ##
-CLAUDE.md
-.claude/
+!**/src/test/**/target/
 
 ### STS ###
 .apt_generated
@@ -22,7 +17,6 @@ CLAUDE.md
 .idea
 *.iws
 *.iml
-*.m2
 *.ipr
 
 ### NetBeans ###
@@ -36,25 +30,7 @@ build/
 !**/src/test/**/build/
 secrets/firebase-service-account.json
 ### VS Code ###
-.vscode/.env.backend
-.env.backend
-env.backend
-casos_prueba.md
+.vscode/
 
-### OS ###
-.DS_Store
-Thumbs.db
-
-### Logs ###
-*.log
-
-### Editor temp files ###
-*.swp
-*.swo
-*~
-
-### Build artifacts ###
-*.jar
-*.war
-*.ear
-
+Dockerfile
+docker-compose.yml
