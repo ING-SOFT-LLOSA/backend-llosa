@@ -32,5 +32,3 @@ secrets/firebase-service-account.json
 ### VS Code ###
 .vscode/
 
-Dockerfile
-docker-compose.yml
