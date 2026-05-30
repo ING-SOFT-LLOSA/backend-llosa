@@ -1,4 +1,4 @@
-package com.llosa.backend.module.seguridad.entity;
+package com.llosa.backend.seguridad.entity;
 
 import java.time.LocalDateTime;
 import java.util.List;

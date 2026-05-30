@@ -1,7 +1,9 @@
 package com.llosa.backend.module.seguridad.repository;
 
 import com.llosa.backend.config.PostgresTestContainerConfig;
-import com.llosa.backend.module.seguridad.entity.Rol;
+import com.llosa.backend.seguridad.entity.Rol;
+import com.llosa.backend.seguridad.repository.FuncionRepository;
+import com.llosa.backend.seguridad.repository.RolRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;

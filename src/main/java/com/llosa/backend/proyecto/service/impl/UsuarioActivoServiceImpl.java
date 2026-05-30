@@ -1,7 +1,7 @@
 package com.llosa.backend.proyecto.service.impl;
 
-import com.llosa.backend.module.seguridad.entity.Usuario;
-import com.llosa.backend.module.seguridad.service.UsuarioService;
+import com.llosa.backend.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.service.UsuarioService;
 import com.llosa.backend.proyecto.dto.request.AsignarActivoDTO;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;

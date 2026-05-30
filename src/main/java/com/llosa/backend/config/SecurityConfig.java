@@ -1,6 +1,6 @@
 package com.llosa.backend.config;
 
-import com.llosa.backend.security.FirebaseTokenFilter;
+import com.llosa.backend.seguridad.security.FirebaseTokenFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

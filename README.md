@@ -3,6 +3,15 @@
 REST API Spring Boot 3.3 / Java 21 para la inmobiliaria Llosa Edificaciones. Implementa autenticación via Firebase, gestión de usuarios, roles y funciones, con un sistema completo de pruebas unitarias, de integración y estrés.
 
 ---
+# Fase desarrollo Importante
+Solo se debe poblar la base de datos con los datos de prueba una sola vez.
+En aplication.properties  hay una linea que ejecuta la data.sql
+>[!warning] 
+*spring.sql.init.mode=never*
+
+Si no tienes ABSOLUTAMENTE NADA EN LA BASE DE DATOS Y DEBES POBLARLO, 
+SIMPLEMENTE COLOCA =always. 1 vez. Luego vuelve a =never.
+De no hacer esto flujo se romperá.
 
 ## 🚀 Inicio rápido
 

@@ -1,8 +1,8 @@
-package com.llosa.backend.module.seguridad.controller;
+package com.llosa.backend.seguridad.controller;
 
-import com.llosa.backend.module.seguridad.dto.PerfilConPermisosResponse;
-import com.llosa.backend.module.seguridad.service.AuthService;
-import com.llosa.backend.security.FirebaseAuthenticationToken;
+import com.llosa.backend.seguridad.dto.PerfilConPermisosResponse;
+import com.llosa.backend.seguridad.service.AuthService;
+import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

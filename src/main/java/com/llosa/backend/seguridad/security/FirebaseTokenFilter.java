@@ -1,4 +1,4 @@
-package com.llosa.backend.security;
+package com.llosa.backend.seguridad.security;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;

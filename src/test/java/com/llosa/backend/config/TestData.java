@@ -1,10 +1,10 @@
 package com.llosa.backend.config;
 
-import com.llosa.backend.module.seguridad.dto.CrearUsuarioRequest;
-import com.llosa.backend.module.seguridad.entity.Funcion;
-import com.llosa.backend.module.seguridad.entity.Rol;
-import com.llosa.backend.module.seguridad.entity.Usuario;
-import com.llosa.backend.security.FirebaseAuthenticationToken;
+import com.llosa.backend.seguridad.dto.CrearUsuarioRequest;
+import com.llosa.backend.seguridad.entity.Funcion;
+import com.llosa.backend.seguridad.entity.Rol;
+import com.llosa.backend.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.LocalDateTime;

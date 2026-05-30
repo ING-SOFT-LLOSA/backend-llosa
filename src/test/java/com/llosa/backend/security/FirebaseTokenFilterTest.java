@@ -2,6 +2,8 @@ package com.llosa.backend.security;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
+import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
+import com.llosa.backend.seguridad.security.FirebaseTokenFilter;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

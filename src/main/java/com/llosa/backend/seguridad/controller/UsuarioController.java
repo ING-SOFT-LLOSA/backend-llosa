@@ -1,10 +1,10 @@
-package com.llosa.backend.module.seguridad.controller;
+package com.llosa.backend.seguridad.controller;
 
-import com.llosa.backend.module.seguridad.dto.AsignarRolRequest;
-import com.llosa.backend.module.seguridad.dto.CrearUsuarioRequest;
-import com.llosa.backend.module.seguridad.dto.UsuarioResponse;
-import com.llosa.backend.module.seguridad.entity.UsuarioResponseFunciones;
-import com.llosa.backend.module.seguridad.service.UsuarioService;
+import com.llosa.backend.seguridad.dto.AsignarRolRequest;
+import com.llosa.backend.seguridad.dto.CrearUsuarioRequest;
+import com.llosa.backend.seguridad.dto.UsuarioResponse;
+import com.llosa.backend.seguridad.entity.UsuarioResponseFunciones;
+import com.llosa.backend.seguridad.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

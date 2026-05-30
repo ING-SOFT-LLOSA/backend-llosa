@@ -1,5 +1,6 @@
 package com.llosa.backend.security;
 
+import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
