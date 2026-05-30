@@ -22,6 +22,7 @@ CLAUDE.md
 .idea
 *.iws
 *.iml
+*.m2
 *.ipr
 
 ### NetBeans ###
@@ -39,4 +40,21 @@ secrets/firebase-service-account.json
 .env.backend
 env.backend
 casos_prueba.md
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Logs ###
+*.log
+
+### Editor temp files ###
+*.swp
+*.swo
+*~
+
+### Build artifacts ###
+*.jar
+*.war
+*.ear
 
