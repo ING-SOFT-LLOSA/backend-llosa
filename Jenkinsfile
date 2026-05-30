@@ -72,7 +72,8 @@ pipeline {
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
 
-                        docker compose down
+                        docker compose down --remove-orphans
+                        docker rm -f llosa_backend llosa_db 2>/dev/null || true
                         docker compose up --build --no-start backend
                         docker cp ./secrets/firebase-service-account.json llosa_backend:/app/secrets/firebase-service-account.json
                         docker compose start backend
