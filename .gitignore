@@ -34,6 +34,6 @@ secrets/firebase-service-account.json
 .vscode/
 
 ### Solo
-.docker-compose.yml
-.Dockerfile
-.pom.xml
+docker-compose.yml
+Dockerfile
+pom.xml
