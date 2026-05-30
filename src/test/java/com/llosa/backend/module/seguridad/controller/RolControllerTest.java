@@ -9,6 +9,8 @@ import com.llosa.backend.module.seguridad.entity.Rol;
 import com.llosa.backend.module.seguridad.service.RolService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
@@ -24,6 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RolController.class)
+@ImportAutoConfiguration(JacksonAutoConfiguration.class)
 class RolControllerTest {
 
     @Autowired
