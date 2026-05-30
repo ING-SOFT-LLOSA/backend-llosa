@@ -18,6 +18,7 @@ target/
 *.iws
 *.iml
 *.ipr
+.gitignore
 
 ### NetBeans ###
 /nbproject/private/
@@ -31,3 +32,8 @@ build/
 secrets/firebase-service-account.json
 ### VS Code ###
 .vscode/
+
+### Solo
+.docker-compose.yml
+.Dockerfile
+.pom.xml
