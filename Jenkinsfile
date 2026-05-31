@@ -58,6 +58,7 @@ pipeline {
         stage('Deploy (Docker Compose)') {
             steps {
                 withCredentials([
+                    // Usando las credenciales originales que ya funcionan
                     string(credentialsId: 'FIREBASE_API_KEY_LLOSA',          variable: 'FIREBASE_API_KEY'),
                     string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA',       variable: 'DOMINIO_CORPORATIVO'),
                     string(credentialsId: 'SHOW_SQL_LLOSA',                  variable: 'SHOW_SQL'),
@@ -72,11 +73,14 @@ pipeline {
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
 
-                        docker compose down --remove-orphans
-                        docker rm -f llosa_backend llosa_db 2>/dev/null || true
-                        docker compose up --build --no-start backend
-                        docker cp ./secrets/firebase-service-account.json llosa_backend:/app/secrets/firebase-service-account.json
-                        docker compose start backend
+                        # Usamos -p llosa_dev para aislar este proyecto de la rama test
+                        docker compose -p llosa_dev down --remove-orphans
+                        docker rm -f llosa_backend_dev llosa_db_dev 2>/dev/null || true
+                        docker compose -p llosa_dev up --build --no-start backend
+
+                        # Copiamos el archivo al contenedor especifico de dev
+                        docker cp ./secrets/firebase-service-account.json llosa_backend_dev:/app/secrets/firebase-service-account.json
+                        docker compose -p llosa_dev start backend
                     '''
                 }
             }
@@ -96,7 +100,8 @@ pipeline {
                 ]) {
                     sh '''
                         set +e
-                        CONTAINER=llosa_backend
+                        # Apuntamos la verificacion al contenedor de dev
+                        CONTAINER=llosa_backend_dev
 
                         echo "Esperando hasta 120s a que el healthcheck reporte healthy..."
                         for i in $(seq 1 15); do
@@ -113,7 +118,7 @@ pipeline {
                         echo "=================================================="
                         echo "  docker compose ps"
                         echo "=================================================="
-                        docker compose ps
+                        docker compose -p llosa_dev ps
 
                         echo ""
                         echo "=================================================="
@@ -126,7 +131,7 @@ pipeline {
                         echo "=================================================="
                         echo "  Últimas 150 líneas de logs"
                         echo "=================================================="
-                        docker compose logs --tail=150 --no-color
+                        docker compose -p llosa_dev logs --tail=150 --no-color
 
                         echo ""
                         echo "=================================================="
