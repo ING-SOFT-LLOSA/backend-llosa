@@ -76,4 +76,16 @@ VALUES (
            'superadmin@llosa.com',
            true,
            CURRENT_TIMESTAMP
-       )
+       );
+-- Firebase project: llosa-edificaciones
+INSERT INTO usuario (firebase_uuid, tipo_usuario, id_rol, nombre, apellidos, email, activo,created_at)
+VALUES (
+    'DqH1tZKj8GU0AcTsev7JmVWt8xj2',
+    'CLIENTE',
+    (SELECT id_rol FROM roles WHERE nombre = 'CLIENTE'),
+    'Jose',
+    'Huaman',
+    'jose.huaman@utec.edu.pe',
+    true,
+    CURRENT_TIMESTAMP
+    )
