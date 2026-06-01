@@ -1,5 +1,6 @@
 package com.llosa.backend.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llosa.backend.security.FirebaseAuthenticationToken;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +17,11 @@ import java.util.List;
 
 @TestConfiguration
 public class SecurityTestConfiguration implements WebMvcConfigurer {
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
+    }
 
     @Bean
     public HandlerMethodArgumentResolver authenticationPrincipalResolver() {

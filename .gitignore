@@ -4,7 +4,8 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target
 .env
-
+**/src/main/**/config/DotEnvEnvironmentPostProcessor.java
+REPORTE_QA_SEGURIDAD.md
 ## Claude files ##
 CLAUDE.md
 .claude/

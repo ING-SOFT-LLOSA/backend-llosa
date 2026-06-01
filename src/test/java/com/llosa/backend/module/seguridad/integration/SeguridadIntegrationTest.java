@@ -18,8 +18,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -47,7 +45,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ImportAutoConfiguration(JacksonAutoConfiguration.class)
 @Testcontainers
 @ActiveProfiles("test")
 @Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class})
@@ -77,7 +74,7 @@ class SeguridadIntegrationTest {
     // ── Flujo completo: crear → asignar rol → consultar /me ──────────────────
 
     @Test
-    void flujoCompleto_crearUsuario_asignarRol_consultarPerfil() throws Exception {
+    void flujoCompleto() throws Exception {
         // 1. Crear usuario vía HTTP (mock Firebase.createUser)
         CrearUsuarioRequest crearReq = TestData.crearUsuarioRequest();
         String firebaseUidGenerado = "integration-uid-001";
@@ -134,7 +131,7 @@ class SeguridadIntegrationTest {
     // ── Desactivar usuario → /me rechazado con 403 ───────────────────────────
 
     @Test
-    void usuarioDesactivado_meDevuelve403() throws Exception {
+    void usuarioDesactivado() throws Exception {
         Usuario u = TestData.usuarioConEmail("suspendido@test.com");
         u.setFirebaseUuid("uid-suspendido");
         usuarioRepository.save(u);
@@ -161,7 +158,7 @@ class SeguridadIntegrationTest {
     // ── Registro con email duplicado → 409 ───────────────────────────────────
 
     @Test
-    void registrarEmailDuplicado_devuelve409() throws Exception {
+    void registrarEmailDuplicado() throws Exception {
         Usuario existente = TestData.usuarioConEmail("duplicado@test.com");
         usuarioRepository.save(existente);
 
@@ -181,14 +178,13 @@ class SeguridadIntegrationTest {
         }
     }
 
-    // ── Brecha de seguridad: usuario suspendido accede a otros endpoints ──────
+    // ── CP08: Usuario suspendido NO debe acceder a endpoints protegidos ──────
 
     @Test
-    void usuarioSuspendido_puedeAccederEndpointsSinCheckActivo() throws Exception {
-        // SECURITY GAP: el FirebaseTokenFilter solo valida el token Firebase,
-        // NO verifica el campo activo en BD. La suspensión solo se chequea en
-        // AuthService.verificarYCargarPerfil (/api/auth/me).
-        // Un usuario suspendido con token válido puede seguir llamando otros endpoints.
+    void usuarioSuspendido_noDebeAccederAEndpoints() throws Exception {
+        // CP08: "Verificar que al desactivar un usuario se invaliden sus tokens JWT
+        // y se cierren sus sesiones"
+        // Un usuario con activo=false debe recibir 403 Forbidden en todos los endpoints protegidos.
         Usuario suspendido = TestData.usuarioConEmail("brecha@test.com");
         suspendido.setFirebaseUuid("uid-brecha");
         suspendido.setActivo(false);
@@ -198,8 +194,9 @@ class SeguridadIntegrationTest {
                 "uid-brecha", "brecha@test.com",
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
 
+        // Usuario suspendido DEBE recibir 403 al acceder a /api/roles
         mockMvc.perform(get("/api/roles").with(securityContext(contextWithAuth(token))))
-                .andExpect(status().isOk()); // debería ser 403 — brecha conocida
+                .andExpect(status().isForbidden());
     }
 
     // ── Listar usuarios ───────────────────────────────────────────────────────
@@ -245,7 +242,8 @@ class SeguridadIntegrationTest {
     // ── UID de Firebase no registrado en BD → 404 ────────────────────────────
 
     @Test
-    void usuarioNoRegistrado_me_devuelve404() throws Exception {
+    void usuarioNoRegistrado_me() throws Exception {
+        // CP06: Usuario autenticado en Firebase pero sin registro en BD → 404 Not Found
         FirebaseAuthenticationToken token = new FirebaseAuthenticationToken(
                 "uid-fantasma", "fantasma@test.com",
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
@@ -258,7 +256,7 @@ class SeguridadIntegrationTest {
     // ── DELETE usuario inexistente → 404 ─────────────────────────────────────
 
     @Test
-    void usuarioInexistente_delete_devuelve404() throws Exception {
+    void usuarioInexistente_delete() throws Exception {
         FirebaseAuth mockAuth = mock(FirebaseAuth.class);
         try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
             ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
@@ -274,7 +272,7 @@ class SeguridadIntegrationTest {
     // ── PUT role usuario inexistente → 404 ───────────────────────────────────
 
     @Test
-    void usuarioInexistente_asignarRol_devuelve404() throws Exception {
+    void usuarioInexistente_asignarRol() throws Exception {
         Rol rolCliente = rolRepository.findByNombre("CLIENTE").orElseThrow();
         AsignarRolRequest req = new AsignarRolRequest();
         req.setIdRol(rolCliente.getIdRol());
@@ -291,7 +289,9 @@ class SeguridadIntegrationTest {
     // ── Reactivar usuario suspendido → /me vuelve a funcionar ────────────────
 
     @Test
-    void usuarioReactivado_meDevuelve200() throws Exception {
+    void usuarioReactivado_me() throws Exception {
+        // CP08: Reactivar un usuario suspendido → /me vuelve a funcionar con su perfil completo
+        // Devuelve 200
         Usuario u = TestData.usuarioConEmail("reactivar@test.com");
         u.setFirebaseUuid("uid-reactivar");
         usuarioRepository.save(u);
@@ -363,7 +363,7 @@ class SeguridadIntegrationTest {
     // ── Asignar rol inexistente → 404 ────────────────────────────────────────
 
     @Test
-    void asignarRolInexistente_devuelve404() throws Exception {
+    void asignarRolInexistente() throws Exception {
         Usuario u = TestData.usuarioConEmail("roltest@test.com");
         usuarioRepository.save(u);
 

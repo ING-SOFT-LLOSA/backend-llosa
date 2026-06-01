@@ -2,6 +2,7 @@ package com.llosa.backend.module.seguridad.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llosa.backend.config.FirebaseConfig;
+import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.module.seguridad.dto.ModificarFuncionesRequest;
@@ -9,10 +10,9 @@ import com.llosa.backend.module.seguridad.entity.Rol;
 import com.llosa.backend.module.seguridad.service.RolService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RolController.class)
-@ImportAutoConfiguration(JacksonAutoConfiguration.class)
+@Import(SecurityTestConfiguration.class)
 class RolControllerTest {
 
     @Autowired
@@ -45,12 +45,14 @@ class RolControllerTest {
 
     @Test
     void listar_sinAutenticar_devuelve401() throws Exception {
+        // CP06/CP07: GET /api/roles sin token DEBE devolver 401 (NO 200)
         mockMvc.perform(get("/api/roles"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void listar_devuelveTodosLosRoles() throws Exception {
+        // Devuelve 200 con la lista de roles
         Rol rol = TestData.rol();
         when(rolService.listarTodos()).thenReturn(List.of(rol));
 
@@ -63,6 +65,7 @@ class RolControllerTest {
 
     @Test
     void listar_conListaVacia_devuelveArrayVacio() throws Exception {
+        // Devuelve 200 con array vacío
         when(rolService.listarTodos()).thenReturn(List.of());
 
         mockMvc.perform(get("/api/roles")
@@ -74,7 +77,8 @@ class RolControllerTest {
     // ── PUT /api/roles/{id}/functions ─────────────────────────────────────────
 
     @Test
-    void modificarFunciones_sinIdFunciones_devuelve400() throws Exception {
+    void modificarFunciones_sinIdFunciones() throws Exception {
+        // Devuelve 400
         ModificarFuncionesRequest req = new ModificarFuncionesRequest();
         // idFunciones es null → @NotNull falla
 
@@ -87,7 +91,8 @@ class RolControllerTest {
     }
 
     @Test
-    void modificarFunciones_valido_devuelve200ConRolActualizado() throws Exception {
+    void modificarFunciones_valido() throws Exception {
+        // Devuelve 200
         ModificarFuncionesRequest req = new ModificarFuncionesRequest();
         req.setIdFunciones(List.of(1, 2, 3));
 
@@ -111,7 +116,8 @@ class RolControllerTest {
     }
 
     @Test
-    void modificarFunciones_listaVacia_devuelve200() throws Exception {
+    void modificarFunciones_listaVacia() throws Exception {
+        // Devuelve 200
         ModificarFuncionesRequest req = new ModificarFuncionesRequest();
         req.setIdFunciones(List.of());
 
@@ -128,7 +134,8 @@ class RolControllerTest {
     }
 
     @Test
-    void modificarFunciones_sinAutenticar_devuelve401() throws Exception {
+    void modificarFunciones_sinAutenticar() throws Exception {
+        // Devuelve 401
         ModificarFuncionesRequest req = new ModificarFuncionesRequest();
         req.setIdFunciones(List.of(1));
 
@@ -140,7 +147,8 @@ class RolControllerTest {
     }
 
     @Test
-    void modificarFunciones_sinContentType_devuelve415() throws Exception {
+    void modificarFunciones_sinContentType() throws Exception {
+        // Devuelve 415
         mockMvc.perform(put("/api/roles/1/functions")
                         .with(authentication(TestData.authToken()))
                         .with(csrf())
@@ -149,7 +157,8 @@ class RolControllerTest {
     }
 
     @Test
-    void modificarFunciones_rolNoEncontrado_devuelve404() throws Exception {
+    void modificarFunciones_rolNoEncontrado() throws Exception {
+        // Devuelve 404
         ModificarFuncionesRequest req = new ModificarFuncionesRequest();
         req.setIdFunciones(List.of(1, 2));
         when(rolService.modificarFunciones(eq(99), any()))
