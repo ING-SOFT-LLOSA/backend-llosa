@@ -1,9 +1,9 @@
-package com.llosa.backend.module.seguridad.service;
+package com.llosa.backend.seguridad.service;
 
-import com.llosa.backend.module.seguridad.dto.PerfilConPermisosResponse;
-import com.llosa.backend.module.seguridad.entity.Funcion;
-import com.llosa.backend.module.seguridad.entity.Usuario;
-import com.llosa.backend.module.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.seguridad.dto.PerfilConPermisosResponse;
+import com.llosa.backend.seguridad.entity.Funcion;
+import com.llosa.backend.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.exception.AccesoDenegadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import lombok.RequiredArgsConstructor;

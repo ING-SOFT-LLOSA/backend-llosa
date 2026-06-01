@@ -1,6 +1,8 @@
 package com.llosa.backend.proyecto.service.impl;
 
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.proyecto.dto.response.AvanceUnidadResponseDTO;
+import com.llosa.backend.proyecto.dto.response.AvanceUnidadResponsePorcentajeDTO;
 import com.llosa.backend.proyecto.entity.HitoUnidad;
 import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.repository.HitoUnidadRepository;
@@ -62,4 +64,32 @@ public class HitoUnidadServiceImpl implements HitoUnidadService {
     public List<HitoUnidad> findByActivo(UUID activoId) {
         return hitoUnidadRepository.findByActivo_IdOrderByHito_OrdenAsc(activoId);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AvanceUnidadResponsePorcentajeDTO> obtenerAvancesPorActivo(UUID idActivo) {
+
+        List<HitoUnidad> hitos = hitoUnidadRepository
+                .findByActivo_IdOrderByHito_OrdenAsc(idActivo);
+
+        if (hitos.isEmpty()) {
+            return List.of();
+        }
+
+        int totalHitos = hitos.size();
+
+        int completados = (int) hitos.stream()
+                .filter(hu -> hu.getEstado() == EstadoHito.COMPLETADO)
+                .count();
+
+        int porcentaje = (completados * 100) / totalHitos;
+
+        return hitos.stream()
+                .map(hu -> AvanceUnidadResponsePorcentajeDTO.fromEntity(
+                        hu,
+                        porcentaje
+                ))
+                .toList();
+    }
+
 }

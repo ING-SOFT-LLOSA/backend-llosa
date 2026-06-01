@@ -1,18 +1,15 @@
-package com.llosa.backend.module.seguridad.dto;
+package com.llosa.backend.seguridad.dto;
 
 import lombok.Data;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-public class UsuarioResponse {
+public class PerfilConPermisosResponse {
     private Integer id;
     private String nombre;
-    private String apellidos;
     private String email;
     private String tipoUsuario;
     private String rol;
     private Boolean activo;
-    private LocalDateTime createdAt;
     private List<String> funciones;
 }
