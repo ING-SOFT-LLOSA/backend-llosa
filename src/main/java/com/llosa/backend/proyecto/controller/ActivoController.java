@@ -28,6 +28,10 @@ public class ActivoController {
     private final ActivoService activoService;
     private final SeguimientoService seguimientoService;
 
+    @GetMapping("/prueba")
+    public String prueba() {
+        return "Status : UP";
+    }
     // Consulta los hitos de un activo trayendote HITOUNIDAD
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @GetMapping("/activos/{id}/hitos")
