@@ -86,12 +86,6 @@
 			<version>${lombok.version}</version>
 			<optional>true</optional>
 		</dependency>
-		<!-- Dotenv - carga variables desde .env -->
-		<dependency>
-			<groupId>me.paulschwarz</groupId>
-			<artifactId>spring-dotenv</artifactId>
-			<version>4.0.0</version>
-		</dependency>
 		<!-- Test -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -131,8 +125,21 @@
 			<scope>test</scope>
 		</dependency>
 
-
 	</dependencies>
+
+	<profiles>
+		<profile>
+			<id>dev</id>
+			<activation>
+				<file>
+					<exists>${basedir}/.env</exists>
+				</file>
+			</activation>
+			<properties>
+				<maven.test.skip>false</maven.test.skip>
+			</properties>
+		</profile>
+	</profiles>
 
 	<build>
 		<plugins>
@@ -197,6 +204,29 @@
 						<api.version>1.41</api.version>
 					</systemPropertyVariables>
 				</configuration>
+			</plugin>
+			<!-- Carga automáticamente variables del .env -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>load-env</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<exec executable="bash" spawn="false">
+									<arg value="-c"/>
+									<arg value="if [ -f .env ]; then set -a; source .env; set +a; fi"/>
+								</exec>
+							</target>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

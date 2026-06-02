@@ -50,13 +50,15 @@ class AuthControllerTest {
     // ── GET /api/auth/me ──────────────────────────────────────────────────────
 
     @Test
-    void getMe_sinAutenticar_devuelve401() throws Exception {
+    void getMe_sinAutenticar() throws Exception {
+        // CP06: Sin token, debe devolver 401 Unauthorized (NO 403)
         mockMvc.perform(get("/api/auth/me"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void getMe_autenticado_devuelve200ConPerfil() throws Exception {
+    void getMe_autenticado() throws Exception {
+        // CP06: Con token válido, debe devolver 200 + perfil completo
         PerfilConPermisosResponse perfil = new PerfilConPermisosResponse();
         perfil.setId(1);
         perfil.setNombre("Juan");
@@ -84,7 +86,8 @@ class AuthControllerTest {
     }
 
     @Test
-    void getMe_usuarioNoRegistrado_devuelve404() throws Exception {
+    void getMe_usuarioNoRegistrado() throws Exception {
+        // CP06: Usuario autenticado pero no en BD → 404
         when(authService.verificarYCargarPerfil("test-uid", "test@test.com"))
                 .thenThrow(new RecursoNoEncontradoException("Usuario no registrado en el sistema"));
 
@@ -98,7 +101,8 @@ class AuthControllerTest {
     }
 
     @Test
-    void getMe_cuentaSuspendida_devuelve403() throws Exception {
+    void getMe_cuentaSuspendida() throws Exception {
+        // CP08: Usuario suspendido (activo=false) → 403 Forbidden
         when(authService.verificarYCargarPerfil("test-uid", "test@test.com"))
                 .thenThrow(new AccesoDenegadoException("Cuenta suspendida. Contacte a la inmobiliaria."));
 
@@ -112,7 +116,8 @@ class AuthControllerTest {
     }
 
     @Test
-    void getMe_empleadoDominioNoAutorizado_devuelve403() throws Exception {
+    void getMe_empleadoDominioNoAutorizado() throws Exception {
+        // CP06: Empleado con email NO corporativo → 403 Forbidden
         when(authService.verificarYCargarPerfil("test-uid", "test@test.com"))
                 .thenThrow(new AccesoDenegadoException("Acceso denegado: dominio no autorizado."));
 

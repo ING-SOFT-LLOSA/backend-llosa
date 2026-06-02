@@ -2,6 +2,7 @@ package com.llosa.backend.module.seguridad.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llosa.backend.config.FirebaseConfig;
+import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
 import com.llosa.backend.exception.EmailDuplicadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
@@ -11,10 +12,9 @@ import com.llosa.backend.module.seguridad.dto.UsuarioResponse;
 import com.llosa.backend.module.seguridad.service.UsuarioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UsuarioController.class)
-@ImportAutoConfiguration(JacksonAutoConfiguration.class)
+@Import(SecurityTestConfiguration.class)
 class UsuarioControllerTest {
 
     @Autowired
@@ -46,7 +46,8 @@ class UsuarioControllerTest {
     // ── POST /api/users/register ─────────────────────────────────────────────
 
     @Test
-    void register_sinAutenticar_devuelve401() throws Exception {
+    void register_sinAutenticar() throws Exception {
+        // Debe devolver 401
         mockMvc.perform(post("/api/users/register")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -55,7 +56,8 @@ class UsuarioControllerTest {
     }
 
     @Test
-    void register_bodyInvalidoSinEmail_devuelve400() throws Exception {
+    void register_bodyInvalidoSinEmail() throws Exception {
+        // Devuelve 400
         CrearUsuarioRequest req = TestData.crearUsuarioRequest();
         req.setEmail(null);
 
@@ -68,7 +70,8 @@ class UsuarioControllerTest {
     }
 
     @Test
-    void register_bodyInvalidoSinNombre_devuelve400() throws Exception {
+    void register_bodyInvalidoSinNombre() throws Exception {
+        // Devuelve 400
         CrearUsuarioRequest req = TestData.crearUsuarioRequest();
         req.setNombre("");
 
@@ -81,7 +84,8 @@ class UsuarioControllerTest {
     }
 
     @Test
-    void register_bodyValido_devuelve200ConRespuesta() throws Exception {
+    void register_bodyValido() throws Exception {
+        // Devuelve 200
         UsuarioResponse resp = new UsuarioResponse();
         resp.setId(1);
         resp.setEmail("ana.garcia@test.com");
@@ -106,6 +110,7 @@ class UsuarioControllerTest {
 
     @Test
     void listar_devuelveListaDeUsuarios() throws Exception {
+        // Devuelve 200
         UsuarioResponse u = new UsuarioResponse();
         u.setId(1);
         u.setEmail("user@test.com");
@@ -125,7 +130,8 @@ class UsuarioControllerTest {
     // ── PUT /api/users/{id}/role ─────────────────────────────────────────────
 
     @Test
-    void asignarRol_sinIdRol_devuelve400() throws Exception {
+    void asignarRol_sinIdRol() throws Exception {
+        // Devuelve 400
         AsignarRolRequest req = new AsignarRolRequest();
         // idRol es null → @NotNull falla
 
@@ -138,7 +144,8 @@ class UsuarioControllerTest {
     }
 
     @Test
-    void asignarRol_valido_devuelve200() throws Exception {
+    void asignarRol_valido() throws Exception {
+        // Devuelve 200
         AsignarRolRequest req = new AsignarRolRequest();
         req.setIdRol(2);
 
@@ -162,7 +169,8 @@ class UsuarioControllerTest {
     // ── DELETE /api/users/{id} ────────────────────────────────────────────────
 
     @Test
-    void desactivar_devuelve200() throws Exception {
+    void desactivar() throws Exception {
+        // Devuelve 200
         doNothing().when(usuarioService).cambiarEstado(eq(5), eq(false));
 
         mockMvc.perform(delete("/api/users/5")
@@ -174,7 +182,8 @@ class UsuarioControllerTest {
     }
 
     @Test
-    void desactivar_sinAutenticar_devuelve401() throws Exception {
+    void desactivar_sinAutenticar() throws Exception {
+        // Devuelve 401
         mockMvc.perform(delete("/api/users/5").with(csrf()))
                 .andExpect(status().isUnauthorized());
     }
@@ -182,7 +191,8 @@ class UsuarioControllerTest {
     // ── Manejo de errores de negocio ──────────────────────────────────────────
 
     @Test
-    void register_emailDuplicado_devuelve409() throws Exception {
+    void register_emailDuplicado() throws Exception {
+        // Devuelve 409
         when(usuarioService.crearUsuario(any()))
                 .thenThrow(new EmailDuplicadoException("ana.garcia@test.com"));
 
@@ -196,7 +206,8 @@ class UsuarioControllerTest {
     }
 
     @Test
-    void register_rolNoEncontrado_devuelve404() throws Exception {
+    void register_rolNoEncontrado() throws Exception {
+        // Devuelve 404
         when(usuarioService.crearUsuario(any()))
                 .thenThrow(new RecursoNoEncontradoException("Rol no encontrado"));
 
@@ -210,7 +221,8 @@ class UsuarioControllerTest {
     }
 
     @Test
-    void asignarRol_usuarioNoEncontrado_devuelve404() throws Exception {
+    void asignarRol_usuarioNoEncontrado() throws Exception {
+        // Devuelve 404
         AsignarRolRequest req = new AsignarRolRequest();
         req.setIdRol(1);
         when(usuarioService.asignarRol(eq(99), eq(1)))
@@ -226,7 +238,8 @@ class UsuarioControllerTest {
     }
 
     @Test
-    void asignarRol_rolNoEncontrado_devuelve404() throws Exception {
+    void asignarRol_rolNoEncontrado() throws Exception {
+        // Devuelve 404
         AsignarRolRequest req = new AsignarRolRequest();
         req.setIdRol(999);
         when(usuarioService.asignarRol(eq(1), eq(999)))
@@ -242,7 +255,8 @@ class UsuarioControllerTest {
     }
 
     @Test
-    void desactivar_usuarioNoEncontrado_devuelve404() throws Exception {
+    void desactivar_usuarioNoEncontrado() throws Exception {
+        // Devuelve 404
         doThrow(new RecursoNoEncontradoException("Usuario no encontrado"))
                 .when(usuarioService).cambiarEstado(eq(99), eq(false));
 
@@ -256,7 +270,8 @@ class UsuarioControllerTest {
     // ── Body vacío y Content-Type ausente ────────────────────────────────────
 
     @Test
-    void register_bodyVacio_devuelve400() throws Exception {
+    void register_bodyVacio() throws Exception {
+        // Devuelve 400
         mockMvc.perform(post("/api/users/register")
                         .with(authentication(TestData.authToken()))
                         .with(csrf())
@@ -266,7 +281,8 @@ class UsuarioControllerTest {
     }
 
     @Test
-    void register_sinContentType_devuelve415() throws Exception {
+    void register_sinContentType() throws Exception {
+        // Devuelve 415
         mockMvc.perform(post("/api/users/register")
                         .with(authentication(TestData.authToken()))
                         .with(csrf())
@@ -277,13 +293,15 @@ class UsuarioControllerTest {
     // ── Autenticación obligatoria en GET y PUT ────────────────────────────────
 
     @Test
-    void listar_sinAutenticar_devuelve401() throws Exception {
+    void listar_sinAutenticar() throws Exception {
+        // Debe devolver 401
         mockMvc.perform(get("/api/users"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void asignarRol_sinAutenticar_devuelve401() throws Exception {
+    void asignarRol_sinAutenticar() throws Exception {
+        // Debe devolver 401
         AsignarRolRequest req = new AsignarRolRequest();
         req.setIdRol(1);
 
@@ -297,7 +315,8 @@ class UsuarioControllerTest {
     // ── Validación de campos adicionales en registro ──────────────────────────
 
     @Test
-    void register_emailMalFormateado_devuelve400() throws Exception {
+    void register_emailMalFormateado() throws Exception {
+        // Devuelve 400
         CrearUsuarioRequest req = TestData.crearUsuarioRequest();
         req.setEmail("no-es-un-email");
 
@@ -310,7 +329,8 @@ class UsuarioControllerTest {
     }
 
     @Test
-    void register_sinApellidos_devuelve400() throws Exception {
+    void register_sinApellidos() throws Exception {
+        // Devuelve 400
         CrearUsuarioRequest req = TestData.crearUsuarioRequest();
         req.setApellidos("");
 
@@ -323,7 +343,8 @@ class UsuarioControllerTest {
     }
 
     @Test
-    void register_sinTipoUsuario_devuelve400() throws Exception {
+    void register_sinTipoUsuario() throws Exception {
+        // Devuelve 400
         CrearUsuarioRequest req = TestData.crearUsuarioRequest();
         req.setTipoUsuario(null);
 

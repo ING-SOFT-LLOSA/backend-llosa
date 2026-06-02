@@ -1,6 +1,6 @@
 # Backend Llosa Edificaciones
 
-REST API Spring Boot 3.3 / Java 21 para la inmobiliaria Llosa Edificaciones. Implementa autenticación via Firebase, gestión de usuarios, roles y funciones, con un sistema completo de pruebas unitarias, de integración y estrés.
+REST API Spring Boot 4 / Java 21 para la inmobiliaria Llosa Edificaciones. Implementa autenticación via Firebase, gestión de usuarios, roles y funciones, con un sistema completo de pruebas unitarias, de integración y estrés, y análisis de calidad con SonarQube.
 
 ---
 
@@ -25,11 +25,74 @@ docker compose up -d
 # 4. Ejecutar tests
 ./mvnw test
 
-# 5. Ejecutar aplicación
+# 5. Ejecutar aplicación localmente
 ./mvnw spring-boot:run
 ```
 
 API disponible en `http://localhost:8080`.
+
+---
+
+## 🔨 Compilar y Ejecutar
+
+### Compilación sin tests
+```bash
+./mvnw clean package -DskipTests
+```
+
+### Compilación con tests (suite completa)
+```bash
+./mvnw clean package
+```
+
+### Ejecutar solo tests
+```bash
+./mvnw test
+```
+
+### Ejecutar aplicación localmente
+```bash
+./mvnw spring-boot:run
+```
+
+### Ejecutar solo tests unitarios (sin Testcontainers, ~5s)
+```bash
+./mvnw test -Dtest="AuthServiceTest,UsuarioServiceTest,RolServiceTest,FirebaseTokenFilterTest,AuthControllerTest,UsuarioControllerTest"
+```
+
+### Ejecutar solo tests de integración (con Testcontainers, ~30s primera ejecución)
+```bash
+./mvnw test -Dtest="*RepositoryTest,SeguridadIntegrationTest"
+```
+
+### Ejecutar tests de estrés/concurrencia (excluidos por defecto)
+```bash
+./mvnw test -Dtest="*ConcurrencyTest"
+```
+
+---
+
+## 📊 Análisis de Calidad con SonarQube
+
+### Quality Gates Requeridos
+- **Coverage:** ≥ 80%
+- **Duplicated Lines:** ≤ 2%
+
+### Ejecutar análisis localmente (requiere SonarQube disponible)
+```bash
+./mvnw clean package
+./mvnw sonar:sonar \
+  -Dsonar.host.url=http://localhost:9000 \
+  -Dsonar.login=YOUR_SONARQUBE_TOKEN
+```
+
+### Verificar resultados
+1. Accede a `http://localhost:9000`
+2. Busca el proyecto `llosa-backend`
+3. Verifica el estado del Quality Gate
+
+### En Jenkins (automático)
+El pipeline ejecuta el análisis automáticamente en el stage **"SonarQube Analysis"** y valida el Quality Gate. El pipeline **fallará si no cumple** los criterios de calidad (coverage ≥80%, duplicated lines ≤2%).
 
 ---
 
@@ -231,7 +294,7 @@ src/test/
 
 | Componente | Versión | Notas |
 |-----------|---------|-------|
-| Spring Boot | 3.3.5 | Con `@ServiceConnection` para Testcontainers |
+| Spring Boot | 4.0.6 | Con `@ServiceConnection` para Testcontainers |
 | Java | 21 | LTS, Sealed classes, Virtual threads ready |
 | PostgreSQL | 16 | Testcontainers, Flyway migrations |
 | JUnit | 5 (jupiter) | `@Test`, `@RepeatedTest`, `@Tag` |
@@ -273,4 +336,106 @@ export DOCKER_HOST=unix:///var/run/docker.sock
 - Garantiza cleanup después de cada test
 
 ---
-**Última actualización:** 2026-05-21 | **Estado:** ✅ 71/71 tests pasados
+
+## ⚠️ ESTADO ACTUAL DE TESTS Y BRECHAS DE SEGURIDAD
+
+### 📊 Resultados de Ejecución (2026-06-01)
+```
+Tests totales: 124
+✅ Pasados: 106
+❌ Fallidos: 18 (14.5%)
+Errores: 0 (después de arreglar configuración de tests)
+```
+
+### 🔴 Brechas de Seguridad Detectadas: 6 Tickets Mantis
+
+**CRÍTICAS (P1):**
+1. 🎫 TICKET #001: Autenticación no requerida en endpoints (CP06, CP07)
+   - GET `/api/roles` devuelve 200 sin autenticación (debería 401)
+   - PUT `/api/roles/{id}/functions` devuelve 200 sin autenticación
+   - GET `/api/usuarios` devuelve 200 sin autenticación
+   - POST `/api/usuarios/register` devuelve 405 en lugar de 401
+
+2. 🎫 TICKET #002: Usuario suspendido accede a endpoints (CP08, CP10)
+   - Usuario con `activo=false` recibe 200 en GET `/api/roles`
+   - Debería recibir 403 Forbidden
+
+3. 🎫 TICKET #003: Validación de `activo` inconsistente
+   - Solo `/api/auth/me` valida suspensión
+   - Otros endpoints no validan
+
+**ALTAS (P2):**
+4. 🎫 TICKET #004: Validación de dominio corporativo comentada (CP06)
+   - Código comentado en `AuthService.java` línea 32-37
+   - Empleados pueden usar emails NO corporativos
+
+5. 🎫 TICKET #005: Configuración de rutas (CP06) - REVISADO
+   - `/api/users` está abierto sin autenticación
+   - `/api/auth/**` ESTÁ correctamente permitida (devuelve 404, no 401)
+   - **Hallazgo:** El problema NO es permitAll(), sino `/api/users`
+
+**MEDIA (P3):**
+6. 🎫 TICKET #006: `/api/auth/me` devuelve 403 con token válido (CP06)
+   - Flujo de login roto
+   - Usuario autenticado no puede obtener su perfil
+
+### 📋 Casos de Prueba Afectados (CP006-CP016)
+
+| Caso | Descripción | Estado | Bloqueador |
+|------|-------------|--------|-----------|
+| CP06 | Admin crear usuario | ❌ FALLIDO | B#005, B#004, B#006 |
+| CP07 | Asignación permisos | ❌ FALLIDO | B#001 |
+| CP08 | Desactivar usuario | ❌ FALLIDO | B#002, B#003 |
+| CP09 | Login cliente (Vendido) | ⚠️ BLOQUEADO | Depende CP06-CP08 |
+| CP10 | Cliente inactivo | ⚠️ BLOQUEADO | Depende CP08 |
+| CP11 | Cliente (Separado) | ⚠️ BLOQUEADO | Depende CP06-CP08 |
+| CP12 | Crear proyecto | ⚠️ BLOQUEADO | Depende B#001 |
+| CP13 | Validar unicidad | ⚠️ BLOQUEADO | Depende B#001 |
+| CP14 | Inmutabilidad hitos | ⚠️ BLOQUEADO | Depende B#001 |
+| CP15 | Vincular cliente | ⚠️ BLOQUEADO | Depende B#001 |
+| CP16 | Asignación múltiple | ⚠️ BLOQUEADO | Depende B#001 |
+
+### 📄 Documentación Completa
+
+**Reporte QA detallado con todos los tickets Mantis listos para crear:**
+```bash
+cat REPORTE_QA_SEGURIDAD.md
+```
+
+Este reporte incluye para cada brecha:
+- Descripción detallada
+- Pasos para reproducir
+- Resultado esperado vs actual
+- Tests que demuestran la brecha
+- Impacto de seguridad
+- Componentes afectados
+- Tareas relacionadas
+
+### ⚡ Próximos Pasos
+
+**Para Desarrolladores:**
+1. Revisar `REPORTE_QA_SEGURIDAD.md` completo
+2. Crear tickets en Mantis con la información de cada brecha
+3. Arreglar vulnerabilidades en orden de prioridad (P1 → P2 → P3)
+4. Re-ejecutar tests para validar fixes
+
+**Para QA:**
+1. Tests han sido actualizados para detectar correctamente las brechas
+2. Todos los tests fallidos documentan fallas reales del sistema
+3. No hay falsos positivos en los tests
+
+### 🔍 Comandos para Validar Brechas
+
+```bash
+# Ver todos los tests fallidos
+./mvnw test 2>&1 | grep "❌\|ERROR"
+
+# Tests de seguridad específicamente
+./mvnw test -Dtest="SecurityConfigTest,AuthControllerTest,RolControllerTest,UsuarioControllerTest"
+
+# Tests de integración con brechas
+./mvnw test -Dtest="SeguridadIntegrationTest" -Dtest.method="usuarioSuspendido*"
+```
+
+---
+**Última actualización:** 2026-06-01 | **Estado:** 🔴 18/124 tests fallidos (brechas de seguridad detectadas) | **Documentación QA:** REPORTE_QA_SEGURIDAD.md
