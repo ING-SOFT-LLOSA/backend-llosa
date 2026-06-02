@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,6 +25,7 @@ public class EtapaController {
     private final HitoService hitoService;
     private final EtapaService etapaService;
 
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PostMapping("/{id}/hitos")
     public ResponseEntity<HitoResponseDTO> crearHito(@PathVariable Long id,
                                                       @Valid @RequestBody HitoCreateDTO dto) {
@@ -39,6 +41,7 @@ public class EtapaController {
                 .body(HitoResponseDTO.fromEntity(hitoService.save(id, hito)));
     }
 
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PutMapping("/{id}")
     public ResponseEntity<EtapaResponseDTO> actualizarEtapa(@PathVariable Long id, @RequestBody EtapaCreateDTO dto) {
         Etapa etapaNueva = etapaService.findById(id);
@@ -48,6 +51,7 @@ public class EtapaController {
         return ResponseEntity.ok(EtapaResponseDTO.fromEntity(etapaNueva));
     }
 
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEtapa(@PathVariable Long id) {
         etapaService.deleteById(id);

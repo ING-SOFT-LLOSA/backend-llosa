@@ -1,7 +1,9 @@
-package com.llosa.backend.security;
+package com.llosa.backend.seguridad.security;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
+import com.llosa.backend.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,12 +16,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class FirebaseTokenFilter extends OncePerRequestFilter {
+
+    // Inyectamos tu repositorio exacto
+    private final UsuarioRepository usuarioRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -42,20 +49,31 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
             String uid   = decoded.getUid();
             String email = decoded.getEmail();
 
+            // 1. Buscamos al usuario usando el método de tu UsuarioRepository
+            Usuario usuario = usuarioRepository.findByFirebaseUuid(uid)
+                    .orElseThrow(() -> new RuntimeException("Usuario verificado en Firebase pero no existe en BD"));
+
+            // 2. Leemos sus funciones de la BD de forma segura
+            List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+
+            if (usuario.getRol() != null && usuario.getRol().getFunciones() != null) {
+                authorities = usuario.getRol().getFunciones().stream()
+                        // 3. Usamos tu getNombreCodigo() de la entidad Funcion
+                        .map(funcion -> new SimpleGrantedAuthority(funcion.getNombreCodigo()))
+                        .collect(Collectors.toList());
+            }
+
+            // 4. Inyectamos la lista de funciones (authorities) a Spring Security
             FirebaseAuthenticationToken authentication =
-                    new FirebaseAuthenticationToken(uid, email,
-                            List.of(new SimpleGrantedAuthority("ROLE_USER")));
+                    new FirebaseAuthenticationToken(uid, email, authorities);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
         } catch (Exception e) {
-            log.warn("Token Firebase inválido: {}", e.getMessage());
+            log.warn("Token Firebase inválido o error de BD: {}", e.getMessage());
             log.warn("Causa: {}", e.getClass().getName());
             SecurityContextHolder.clearContext();
         }
-//        } catch (Exception e) {
-//            log.warn("Token Firebase inválido: {}", e.getMessage());
-//            SecurityContextHolder.clearContext();
-//        }
 
         filterChain.doFilter(request, response);
     }

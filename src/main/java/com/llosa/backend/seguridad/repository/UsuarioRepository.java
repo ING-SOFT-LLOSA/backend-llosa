@@ -1,6 +1,6 @@
-package com.llosa.backend.module.seguridad.repository;
+package com.llosa.backend.seguridad.repository;
 
-import com.llosa.backend.module.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.entity.Usuario;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

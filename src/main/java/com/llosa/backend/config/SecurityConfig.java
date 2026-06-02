@@ -1,6 +1,6 @@
 package com.llosa.backend.config;
 
-import com.llosa.backend.security.FirebaseTokenFilter;
+import com.llosa.backend.seguridad.security.FirebaseTokenFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -66,6 +66,8 @@ public class SecurityConfig {
                 "https://llosa.ingsoftware.lat",
                 "https://llosa-client.ingsoftware.lat",
                 "https://llosa-admin.ingsoftware.lat",
+                "https://backend-llosa-dev.ingsoftware.lat/",
+                "https://backend-llosa-dev.ingsoftware.lat",
                 "https://backend-llosa.ingsoftware.lat"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));

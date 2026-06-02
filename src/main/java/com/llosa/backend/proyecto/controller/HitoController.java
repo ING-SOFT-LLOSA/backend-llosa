@@ -6,6 +6,7 @@ import com.llosa.backend.proyecto.entity.Hito;
 import com.llosa.backend.proyecto.service.HitoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -17,6 +18,7 @@ public class HitoController {
 
     private final HitoService hitoService;
 
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PutMapping("/{id}")
     public ResponseEntity<HitoResponseDTO> actualizarHito(@PathVariable("id") UUID uuid, @RequestBody HitoCreateDTO dto) {
         Hito hitoActualizado = hitoService.findById(uuid);
@@ -27,6 +29,7 @@ public class HitoController {
         return ResponseEntity.ok(HitoResponseDTO.fromEntity(hitoService.save(hitoActualizado)));
     }
 
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteHito(@PathVariable("id") UUID uuid) {
         hitoService.deleteById(uuid);

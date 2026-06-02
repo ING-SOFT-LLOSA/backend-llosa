@@ -1,4 +1,4 @@
-package com.llosa.backend.module.seguridad.dto;
+package com.llosa.backend.seguridad.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
