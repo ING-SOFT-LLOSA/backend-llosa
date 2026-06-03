@@ -2,7 +2,8 @@ package com.llosa.backend.proyecto.service.comercial;
 
 import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
-import com.llosa.backend.proyecto.dto.comercial.*;
+import com.llosa.backend.proyecto.dto.request.HitoComercialRequest;
+import com.llosa.backend.proyecto.dto.response.*;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.entity.comercial.EstadoHitoComercial;
 import com.llosa.backend.proyecto.entity.comercial.EtapaProceso;
@@ -33,22 +34,22 @@ public class HitoComercialServiceImpl implements HitoComercialService {
 
     @Override
     public HitoComercialResponse crearHito(HitoComercialRequest request) {
-        UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(request.getUuidUsuarioActivo())
+        UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(request.uuidUsuarioActivo())
                 .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "UsuarioActivo no encontrado con UUID: " + request.getUuidUsuarioActivo()));
+                        "UsuarioActivo no encontrado con UUID: " + request.uuidUsuarioActivo()));
 
         HitoProcesoCompra hito = HitoProcesoCompra.builder()
                 .usuarioActivo(usuarioActivo)
-                .etapaProceso(request.getEtapaProceso())
-                .nombreHito(request.getNombreHito())
-                .descripcion(request.getDescripcion())
-                .orden(request.getOrden())
+                .etapaProceso(request.etapaProceso())
+                .nombreHito(request.nombreHito())
+                .descripcion(request.descripcion())
+                .orden(request.orden())
                 .estado(EstadoHitoComercial.PENDIENTE)
                 .build();
 
         HitoProcesoCompra guardado = hitoRepository.save(hito);
         log.info("Hito comercial creado: {} para UsuarioActivo: {}",
-                guardado.getUuidHitoComercial(), request.getUuidUsuarioActivo());
+                guardado.getUuidHitoComercial(), request.uuidUsuarioActivo());
 
         return HitoComercialResponse.fromEntity(guardado);
     }

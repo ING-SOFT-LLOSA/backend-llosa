@@ -1,12 +1,9 @@
-package com.llosa.backend.proyecto.dto.comercial;
+package com.llosa.backend.proyecto.dto.response;
 
 import com.llosa.backend.proyecto.entity.comercial.EstadoHitoComercial;
 import com.llosa.backend.proyecto.entity.comercial.EtapaProceso;
 import com.llosa.backend.proyecto.entity.comercial.HitoProcesoCompra;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -14,22 +11,18 @@ import java.util.UUID;
 /**
  * DTO de salida con la representación simple de un hito comercial.
  */
-@Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class HitoComercialResponse {
-
-    private UUID uuidHitoComercial;
-    private UUID uuidUsuarioActivo;
-    private EtapaProceso etapaProceso;
-    private String nombreHito;
-    private String descripcion;
-    private Integer orden;
-    private EstadoHitoComercial estado;
-    private LocalDateTime fechaCompletado;
-    private LocalDateTime createdAt;
-
+public record HitoComercialResponse(
+    UUID uuidHitoComercial,
+    UUID uuidUsuarioActivo,
+    EtapaProceso etapaProceso,
+    String nombreHito,
+    String descripcion,
+    Integer orden,
+    EstadoHitoComercial estado,
+    LocalDateTime fechaCompletado,
+    LocalDateTime createdAt
+) {
     /**
      * Factory method para mapear desde la entidad al DTO de respuesta.
      */

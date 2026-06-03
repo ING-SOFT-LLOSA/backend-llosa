@@ -1,4 +1,8 @@
-package com.llosa.backend.seguridad.entity;
+package com.llosa.backend.seguridad.dto;
+
+import com.llosa.backend.seguridad.entity.Funcion;
+import com.llosa.backend.seguridad.entity.Rol;
+import com.llosa.backend.seguridad.entity.Usuario;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,8 +1,8 @@
 package com.llosa.backend.proyecto.controller.comercial;
 
-import com.llosa.backend.proyecto.dto.comercial.HitoComercialRequest;
-import com.llosa.backend.proyecto.dto.comercial.HitoComercialResponse;
-import com.llosa.backend.proyecto.dto.comercial.StepperResponse;
+import com.llosa.backend.proyecto.dto.request.HitoComercialRequest;
+import com.llosa.backend.proyecto.dto.response.HitoComercialResponse;
+import com.llosa.backend.proyecto.dto.response.StepperResponse;
 import com.llosa.backend.proyecto.entity.comercial.EstadoHitoComercial;
 import com.llosa.backend.proyecto.service.comercial.HitoComercialService;
 import jakarta.validation.Valid;
@@ -14,10 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-/**
- * Controlador REST para la gestión de Hitos Comerciales (Proceso de Compra).
- * Base path: /api/comercial
- */
 @RestController
 @RequestMapping("/api/comercial")
 @RequiredArgsConstructor
