@@ -3,7 +3,9 @@ package com.llosa.backend.seguridad.service;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import com.llosa.backend.seguridad.dto.CrearUsuarioRequest;
+import com.llosa.backend.seguridad.dto.UpdateUsuarioDTO;
 import com.llosa.backend.seguridad.dto.UsuarioResponse;
+import com.llosa.backend.seguridad.entity.Funcion;
 import com.llosa.backend.seguridad.entity.Rol;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.RolRepository;
@@ -101,13 +103,15 @@ public class UsuarioService {
         r.setNombre(u.getNombre());
         r.setApellidos(u.getApellidos());
         r.setEmail(u.getEmail());
+        r.setDocumentoIdentidad(u.getDocumentoIdentidad());
+        r.setTelefono(u.getTelefono());
         r.setTipoUsuario(u.getTipoUsuario());
         r.setRol(u.getRol() != null ? u.getRol().getNombre() : null);
         r.setActivo(u.getActivo());
         r.setCreatedAt(u.getCreatedAt());
         r.setFunciones(u.getRol() != null
                 ? u.getRol().getFunciones().stream()
-                .map(f -> f.getNombreCodigo()).toList()
+                .map(Funcion::getNombreCodigo).toList()
                 : List.of());
         return r;
     }
@@ -159,6 +163,41 @@ public class UsuarioService {
     public Usuario findByFirebaseUuid(String firebaseUuid) {
         return usuarioRepository.findByFirebaseUuid(firebaseUuid)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    }
+
+    @Transactional
+    public UsuarioResponse actualizarUsuario(
+            Integer id,
+            UpdateUsuarioDTO request) {
+
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        if (request.getNombre() != null) {
+            usuario.setNombre(request.getNombre());
+        }
+
+        if (request.getApellidos() != null) {
+            usuario.setApellidos(request.getApellidos());
+        }
+
+        if (request.getTelefono() != null) {
+            usuario.setTelefono(request.getTelefono());
+        }
+
+        if (request.getEmail() != null) {
+            usuario.setEmail(request.getEmail());
+        }
+        if (request.getDocumentoIdentidad() != null) {
+            usuario.setDocumentoIdentidad(request.getDocumentoIdentidad());
+        }
+        if (request.getTipoUsuario() != null) {
+            usuario.setTipoUsuario(request.getTipoUsuario());
+        }
+
+        usuarioRepository.save(usuario);
+
+        return toResponse(usuario);
     }
 
 }

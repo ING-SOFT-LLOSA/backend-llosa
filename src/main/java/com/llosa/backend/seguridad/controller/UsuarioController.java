@@ -1,10 +1,7 @@
 package com.llosa.backend.seguridad.controller;
 
-import com.llosa.backend.seguridad.dto.AsignarRolRequest;
-import com.llosa.backend.seguridad.dto.CrearUsuarioRequest;
-import com.llosa.backend.seguridad.dto.UsuarioResponse;
+import com.llosa.backend.seguridad.dto.*;
 import com.llosa.backend.seguridad.entity.Usuario;
-import com.llosa.backend.seguridad.dto.UsuarioResponseFunciones;
 import com.llosa.backend.seguridad.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -80,12 +77,8 @@ public class UsuarioController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('USER_GESTIONAR')")
-    public ResponseEntity<UsuarioResponse> modificarInformacionUsuario(@PathVariable Integer id, UsuarioReque){
-        Usuario usuario = usuarioService.findById(id);
-
-
+    public ResponseEntity<UsuarioResponse> modificarInformacionUsuario(@PathVariable Integer id, @RequestBody UpdateUsuarioDTO updateUsuarioDTO){
+        UsuarioResponse usuarioResponse = usuarioService.actualizarUsuario(id, updateUsuarioDTO);
+        return ResponseEntity.ok(usuarioResponse);
     }
-
-
-
 }
