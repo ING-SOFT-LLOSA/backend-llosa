@@ -34,7 +34,6 @@ public class UsuarioActivoController {
     @GetMapping("/mis-activos")
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
     public ResponseEntity<List<ActivoResponseDTO>> obtenerMisActivos() {
-// 1. Obtener el objeto de autenticación de Spring Security
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

@@ -95,7 +95,7 @@ public class UsuarioService {
                 .map(this::toResponse).toList();
     }
 
-    private UsuarioResponse toResponse(Usuario u) {
+    public UsuarioResponse toResponse(Usuario u) {
         UsuarioResponse r = new UsuarioResponse();
         r.setId(u.getId());
         r.setNombre(u.getNombre());

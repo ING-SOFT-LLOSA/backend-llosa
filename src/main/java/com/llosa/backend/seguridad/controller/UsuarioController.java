@@ -3,6 +3,7 @@ package com.llosa.backend.seguridad.controller;
 import com.llosa.backend.seguridad.dto.AsignarRolRequest;
 import com.llosa.backend.seguridad.dto.CrearUsuarioRequest;
 import com.llosa.backend.seguridad.dto.UsuarioResponse;
+import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.entity.UsuarioResponseFunciones;
 import com.llosa.backend.seguridad.service.UsuarioService;
 import jakarta.validation.Valid;
@@ -65,5 +66,15 @@ public class UsuarioController {
             @RequestParam(defaultValue = "10") int size) {
         Page<UsuarioResponseFunciones> resultado = usuarioService.listarPaginadoYFiltrado(search, page, size);
         return ResponseEntity.ok(resultado);
+    }
+
+    // Buscar un usario por id.
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('USER_GESTIONAR')")
+    public ResponseEntity<UsuarioResponse> buscarUsuarioPorId(@PathVariable Integer id) {
+
+        Usuario usuario = usuarioService.findById(id);
+
+        return ResponseEntity.ok(usuarioService.toResponse(usuario));
     }
 }
