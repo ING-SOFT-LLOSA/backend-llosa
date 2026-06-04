@@ -17,7 +17,10 @@ import java.util.UUID;
 public class AvanceController {
 
     private final HitoPisoService hitoPisoService;
-
+    /*
+    Endpoint para actualizar un hitoPiso como completado
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('OBRA_EDITAR')")
     @PutMapping("/{id}")
     public ResponseEntity<AvanceUnidadResponseDTO> actualizarAvance(@PathVariable UUID id,

@@ -32,6 +32,7 @@ public class UsuarioActivoController {
     /**
      * Retorna los activos del cliente autenticado.
      * Navega la lista de copropietarios para filtrar los procesos pertenecientes al usuario logueado.
+     * Estado: Funcional
      */
     @GetMapping("/mis-activos")
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
@@ -54,6 +55,10 @@ public class UsuarioActivoController {
         return ResponseEntity.ok(activos);
     }
 
+    /**
+    Endpoint Asignar un activo a un usuario
+    Estado: Funcional
+     */
     @PostMapping("/asignar")
     @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
     public ResponseEntity<String> asignarActivoAUsuario(@Valid @RequestBody AsignarActivoDTO dto) {
@@ -63,6 +68,7 @@ public class UsuarioActivoController {
 
     /**
      * Retorna el contrato/proceso comercial de un activo con la lista completa de copropietarios.
+     * Estado: Funcional
      */
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @GetMapping("/{uuidActivo}/contrato")

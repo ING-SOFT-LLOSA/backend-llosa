@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface HidratationService {
-    public void hidratarActivos(List<Activo> activos, UUID idProyecto);
-    public void hidratarNuevoHito(Hito nuevoHito, List<Activo> activos);
+    void hidratarActivos(List<Activo> activos, UUID idProyecto);
+    void propagateMilestoneToProjectFloors(Hito nuevoHito, UUID idProyecto);
+    void hydrateFloorMilestones(Long idPiso);
 }

@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Repository
 public interface PisoRepository extends JpaRepository<Piso, Long> {
@@ -16,4 +17,6 @@ public interface PisoRepository extends JpaRepository<Piso, Long> {
     @Query("SELECT p FROM Piso p WHERE p.torre.id = :torreId AND " +
            "CAST(p.nroPiso AS string) LIKE %:search%")
     List<Piso> findByTorreIdAndSearch(@Param("torreId") Long torreId, @Param("search") String search);
+
+    List<Piso> findByTorreProyectoId(UUID proyectoId);
 }

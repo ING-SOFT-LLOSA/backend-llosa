@@ -3,6 +3,7 @@ package com.llosa.backend.proyecto.service.impl;
 import com.llosa.backend.proyecto.entity.Piso;
 import com.llosa.backend.proyecto.entity.Torre;
 import com.llosa.backend.proyecto.repository.PisoRepository;
+import com.llosa.backend.proyecto.service.HidratationService;
 import com.llosa.backend.proyecto.service.PisoService;
 import com.llosa.backend.proyecto.service.TorreService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class PisoServiceImpl implements PisoService {
 
     private final PisoRepository pisoRepository;
     private final TorreService torreService;
+    private final HidratationService hidratationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -31,7 +33,9 @@ public class PisoServiceImpl implements PisoService {
     public Piso save(Long torreId, Piso piso){
         Torre torre = torreService.findById(torreId);
         piso.setTorre(torre);
-        return pisoRepository.save(piso);
+        Piso pisoGuardado = pisoRepository.save(piso);
+        hidratationService.hydrateFloorMilestones(pisoGuardado.getId());
+        return pisoGuardado;
     }
 
     @Override

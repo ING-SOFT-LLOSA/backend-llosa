@@ -2,8 +2,8 @@ package com.llosa.backend.proyecto.service.impl;
 
 
 import com.llosa.backend.proyecto.entity.*;
-import com.llosa.backend.proyecto.repository.ActivoRepository;
 import com.llosa.backend.proyecto.repository.HitoRepository;
+import com.llosa.backend.proyecto.service.HidratationService;
 import com.llosa.backend.proyecto.service.ProyectoService;
 import com.llosa.backend.proyecto.service.HitoService;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -20,8 +19,7 @@ public class HitoServiceImpl implements HitoService {
 
     private final HitoRepository hitoRepository;
     private final ProyectoService proyectoService;
-    private final ActivoRepository activoRepository;
-    private final HidratationServiceImpl hidratacionService;
+    private final HidratationService hidratacionService;
 
     @Override
     @Transactional
@@ -30,8 +28,7 @@ public class HitoServiceImpl implements HitoService {
         hito.setProyecto(proyecto);
         Hito hitoGuardado = hitoRepository.save(hito);
 
-        List<Activo> activosDelProyecto = activoRepository.findByPisoTorreProyectoId(proyecto.getId());
-        hidratacionService.hidratarNuevoHito(hitoGuardado, activosDelProyecto);
+        hidratacionService.propagateMilestoneToProjectFloors(hitoGuardado, proyecto.getId());
 
         return hitoGuardado;
     }
@@ -56,3 +53,4 @@ public class HitoServiceImpl implements HitoService {
         return;
     }
 }
+

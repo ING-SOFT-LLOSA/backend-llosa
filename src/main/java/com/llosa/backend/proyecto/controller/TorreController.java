@@ -16,7 +16,10 @@ import java.util.UUID;
 public class TorreController {
 
     private final TorreService torreService;
-
+    /*
+    Endpoint Obtener las torres por proyecto
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping("/{id_proyecto}")
     public ResponseEntity<List<TorreResponseDTO>> getTorresByProyecto(

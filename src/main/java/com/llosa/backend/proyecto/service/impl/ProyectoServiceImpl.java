@@ -99,8 +99,5 @@ public class ProyectoServiceImpl implements ProyectoService {
             }
         }
         proyectoRepository.save(proyecto);
-        if (!activosRecienCreados.isEmpty()) {
-            hidratacionService.hidratarActivos(activosRecienCreados, idProyecto);
-        }
     }
 }

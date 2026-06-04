@@ -7,6 +7,7 @@ import com.llosa.backend.proyecto.entity.HitoPiso;
 import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.repository.HitoRepository;
 import com.llosa.backend.proyecto.repository.HitoPisoRepository;
+import com.llosa.backend.proyecto.repository.PisoRepository;
 import com.llosa.backend.proyecto.service.HidratationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,19 +23,22 @@ public class HidratationServiceImpl implements HidratationService {
 
     private final HitoRepository hitoRepository;
     private final HitoPisoRepository hitoPisoRepository;
+    private final PisoRepository pisoRepository;
 
     @Override
     @Transactional
-    public void hidratarActivos(List<Activo> activos, UUID idProyecto){
+    public void hydrateFloorMilestones(Long idPiso) {
+        Piso piso = pisoRepository.findById(idPiso)
+                .orElseThrow(() -> new RuntimeException("Piso no encontrado"));
+        
+        UUID idProyecto = piso.getTorre().getProyecto().getId();
         List<Hito> hitos = hitoRepository.findByProyectoId(idProyecto);
+        
         if (hitos.isEmpty()) return;
 
         List<HitoPiso> nuevasJunturas = new ArrayList<>();
-
-        List<Piso> pisosUnicos = activos.stream().map(Activo::getPiso).distinct().toList();
-
-        for (Piso piso: pisosUnicos){
-            for (Hito hito: hitos){
+        for (Hito hito : hitos) {
+            if (!hitoPisoRepository.existsByPisoIdAndHitoId(idPiso, hito.getId())) {
                 HitoPiso hitoPiso = HitoPiso.builder()
                         .estado(EstadoHito.PENDIENTE)
                         .fechaCompletado(null)
@@ -44,20 +48,39 @@ public class HidratationServiceImpl implements HidratationService {
                 nuevasJunturas.add(hitoPiso);
             }
         }
-        hitoPisoRepository.saveAll(nuevasJunturas);
+        
+        if (!nuevasJunturas.isEmpty()) {
+            hitoPisoRepository.saveAll(nuevasJunturas);
+        }
     }
 
     @Override
     @Transactional
-    public void hidratarNuevoHito(Hito nuevoHito, List<Activo> activosDelProyecto){
-        List<Piso> pisosUnicos = activosDelProyecto.stream().map(Activo::getPiso).distinct().toList();
-        List<HitoPiso> nuevasJunturas = pisosUnicos.stream()
-                .map(piso -> HitoPiso.builder()
+    public void hidratarActivos(List<Activo> activos, UUID idProyecto) {
+        List<Piso> pisosUnicos = activos.stream().map(Activo::getPiso).distinct().toList();
+        for (Piso piso : pisosUnicos) {
+            hydrateFloorMilestones(piso.getId());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void propagateMilestoneToProjectFloors(Hito nuevoHito, UUID idProyecto) {
+        List<Piso> todosLosPisos = pisoRepository.findByTorreProyectoId(idProyecto);
+        List<HitoPiso> nuevasJunturas = new ArrayList<>();
+        
+        for (Piso piso : todosLosPisos) {
+            if (!hitoPisoRepository.existsByPisoIdAndHitoId(piso.getId(), nuevoHito.getId())) {
+                nuevasJunturas.add(HitoPiso.builder()
                         .piso(piso)
                         .hito(nuevoHito)
                         .estado(EstadoHito.PENDIENTE)
-                        .build())
-                .toList();
-        hitoPisoRepository.saveAll(nuevasJunturas);
+                        .build());
+            }
+        }
+        
+        if (!nuevasJunturas.isEmpty()) {
+            hitoPisoRepository.saveAll(nuevasJunturas);
+        }
     }
 }

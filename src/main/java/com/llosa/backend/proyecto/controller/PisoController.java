@@ -15,7 +15,10 @@ import java.util.List;
 public class PisoController {
 
     private final PisoService pisoService;
-
+    /*
+    Endpoint Obtener los piso por torre_id
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping("/{id_torre}")
     public ResponseEntity<List<PisoResponseDTO>> getPisosByTorre(

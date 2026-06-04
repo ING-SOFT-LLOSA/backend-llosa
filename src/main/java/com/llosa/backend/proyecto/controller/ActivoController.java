@@ -25,7 +25,10 @@ public class ActivoController {
     private final HitoPisoService hitoPisoService;
     private final ActivoService activoService;
     private final SeguimientoService seguimientoService;
-
+    /*
+    Endpoint Obtener los activos por piso_id
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping("/{id_piso}")
     public ResponseEntity<List<ActivoResponseDTO>> getActivosByPiso(
@@ -38,18 +41,10 @@ public class ActivoController {
                 .toList();
         return ResponseEntity.ok(response);
     }
-
-    // Consulta los hitos de un activo trayendote HITOUNIDAD
-    @PreAuthorize("hasAuthority('CONTRATO_VER')")
-    @GetMapping("/{id}/hitos")
-    public ResponseEntity<List<HitoPisoResponseDTO>> getActivos(@PathVariable UUID id) {
-        List<HitoPiso> hitoPisoes = hitoPisoService.findByActivo(id);
-        List<HitoPisoResponseDTO> response = hitoPisoes.stream().map(
-                HitoPisoResponseDTO::fromEntity)
-                .toList();
-        return ResponseEntity.ok(response);
-    }
-
+    /*
+    Endpoint Crear un activo en base a un id_piso
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PostMapping("/{id}/pisos")
     public ResponseEntity<ActivoResponseDTO> crearActivo(@PathVariable Long id, @RequestBody ActivoRequestDTO activoDTO) {
@@ -63,7 +58,10 @@ public class ActivoController {
                 .build();
         return ResponseEntity.ok(ActivoResponseDTO.fromEntity(activoService.saveIndividual(id, activo)));
     }
-
+    /*
+    Endpoint Actualizar un activo
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PutMapping("/{id}")
     public ResponseEntity<ActivoResponseDTO> actualizarActivo(@PathVariable UUID id, @RequestBody ActivoRequestDTO activoDTO) {
@@ -80,7 +78,10 @@ public class ActivoController {
 
         return ResponseEntity.ok(ActivoResponseDTO.fromEntity(actualizado));
     }
-
+    /*
+    Endpoint Eliminar un activo
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarActivo(@PathVariable UUID id) {
@@ -88,8 +89,24 @@ public class ActivoController {
         return ResponseEntity.noContent().build();
     }
 
-    // Correctamente mapeado
-    // Trae los activos que tiene un usario
+    /*
+    Endpoint Obtiene los hitosPisos de un piso pero por activo. Mapeado mas general
+    Estado: Funcional
+     */
+    @PreAuthorize("hasAuthority('CONTRATO_VER')")
+    @GetMapping("/{id}/hitos")
+    public ResponseEntity<List<HitoPisoResponseDTO>> getActivos(@PathVariable UUID id) {
+        List<HitoPiso> hitoPisoes = hitoPisoService.findByActivo(id);
+        List<HitoPisoResponseDTO> response = hitoPisoes.stream().map(
+                HitoPisoResponseDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(response);
+    }
+
+    /*
+    Endpoint Obtiene los hitos de un activo pero con porcentaje
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('OBRA_VER')")
     @GetMapping("/{uuid_activo}/avances")
     public ResponseEntity<List<AvanceUnidadResponsePorcentajeDTO>> getAvances(
@@ -98,7 +115,10 @@ public class ActivoController {
                 hitoPisoService.obtenerAvancesPorActivo(id)
         );
     }
-
+    /*
+    Endpoint Obtiene los activos por proyecto_id, page, y size, además de por estado
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping("/proyecto/{uuidProyecto}")
     public ResponseEntity<Page<ActivoResponseDTO>> listarActivosPorProyecto(
@@ -111,11 +131,17 @@ public class ActivoController {
         return ResponseEntity.ok(resultado);
     }
 
+    /*
+    Endpoint Obtiene com ostepper el seguieinto de un piso (buscando el psio en base al uuidActivo)
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping("/{uuidActivo}/seguimiento")
     public ResponseEntity<SeguimientoResponseDTO> obtenerSeguimientoObra(@PathVariable UUID uuidActivo) {
         SeguimientoResponseDTO response = seguimientoService.obtenerSeguimiento(uuidActivo);
         return ResponseEntity.ok(response);
     }
+
+
 
 }

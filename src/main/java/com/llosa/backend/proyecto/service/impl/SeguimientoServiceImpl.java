@@ -4,10 +4,12 @@ import com.llosa.backend.proyecto.dto.response.SeguimientoResponseDTO;
 import com.llosa.backend.proyecto.dto.shared.FaseActualDTO;
 import com.llosa.backend.proyecto.dto.shared.PasoStepperDTO;
 import com.llosa.backend.proyecto.entity.HitoPiso;
+import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.repository.HitoPisoRepository;
 import com.llosa.backend.proyecto.service.SeguimientoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,8 +23,10 @@ public class SeguimientoServiceImpl implements SeguimientoService {
     private final HitoPisoRepository hitoPisoRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public SeguimientoResponseDTO obtenerSeguimiento(UUID idActivo) {
 
+        // 1. Fetch the milestones assigned to the floor of this active asset
         List<HitoPiso> hitos = hitoPisoRepository.findByActivoIdOrderByHitoOrdenAsc(idActivo);
 
         if (hitos == null || hitos.isEmpty()) {
@@ -33,10 +37,12 @@ public class SeguimientoServiceImpl implements SeguimientoService {
         HitoPiso hitoActualEnProgreso = null;
         boolean hitoActualEncontrado = false;
 
+        // 2. Map milestones to visual states
         for (HitoPiso hp : hitos) {
             String estadoVisual;
 
-            if ("COMPLETADO".equalsIgnoreCase(hp.getEstado().name())) {
+            // Direct Enum comparison (Safer and faster than .name().equalsIgnoreCase)
+            if (hp.getEstado() == EstadoHito.COMPLETADO) {
                 estadoVisual = "COMPLETADO";
             } else if (!hitoActualEncontrado) {
                 estadoVisual = "EN_PROGRESO";
@@ -53,27 +59,28 @@ public class SeguimientoServiceImpl implements SeguimientoService {
                     .build());
         }
 
+        // 3. Build the response DTO
         FaseActualDTO faseActualDTO;
 
         if (hitoActualEnProgreso != null) {
             long completadosTotales = hitos.stream()
-                    .filter(h -> "COMPLETADO".equalsIgnoreCase(h.getEstado().name()))
+                    .filter(h -> h.getEstado() == EstadoHito.COMPLETADO)
                     .count();
 
-            double porcentaje = hitos.isEmpty() ? 0.0 :
-                    ((double) completadosTotales / hitos.size()) * 100.0;
+            double porcentaje = ((double) completadosTotales / hitos.size()) * 100.0;
 
             faseActualDTO = FaseActualDTO.builder()
                     .uuidHitoU(hitoActualEnProgreso.getId())
                     .titulo(hitoActualEnProgreso.getHito().getTitulo())
                     .descripcion("Fase en progreso: " + hitoActualEnProgreso.getHito().getTitulo())
-                    .porcentajeEtapa(Math.round(porcentaje * 100.0) / 100.0)
-                    .fechaInicioFase(hitoActualEnProgreso.getUpdatedAt() != null ? 
+                    .porcentajeEtapa(Math.round(porcentaje * 100.0) / 100.0) // Redondeo seguro a 2 decimales
+                    .fechaInicioFase(hitoActualEnProgreso.getUpdatedAt() != null ?
                             hitoActualEnProgreso.getUpdatedAt() : LocalDateTime.now())
                     .build();
 
         } else {
-            HitoPiso ultimoHito = hitos.get(hitos.size() - 1);
+            // If all milestones are completed, return 100% complete
+            HitoPiso ultimoHito = hitos.getLast();
 
             faseActualDTO = FaseActualDTO.builder()
                     .uuidHitoU(ultimoHito.getId())
@@ -81,7 +88,7 @@ public class SeguimientoServiceImpl implements SeguimientoService {
                     .descripcion("El piso ha completado todas sus fases de construcción al 100%.")
                     .porcentajeEtapa(100.0)
                     .fechaInicioFase(ultimoHito.getFechaCompletado() != null ?
-                            ultimoHito.getFechaCompletado().atStartOfDay() : 
+                            ultimoHito.getFechaCompletado().atStartOfDay() :
                             (ultimoHito.getUpdatedAt() != null ? ultimoHito.getUpdatedAt() : LocalDateTime.now()))
                     .build();
         }
