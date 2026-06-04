@@ -45,6 +45,7 @@ public class HitoComercialServiceImpl implements HitoComercialService {
                 .descripcion(request.descripcion())
                 .orden(request.orden())
                 .estado(EstadoHitoComercial.PENDIENTE)
+                .createdAt(LocalDateTime.now())
                 .build();
 
         HitoProcesoCompra guardado = hitoRepository.save(hito);
@@ -65,14 +66,39 @@ public class HitoComercialServiceImpl implements HitoComercialService {
     }
 
     @Override
-    public HitoComercialResponse actualizarEstado(UUID uuidHitoComercial, EstadoHitoComercial nuevoEstado) {
+    public HitoComercialResponse actualizarEstado(
+            UUID uuidHitoComercial,
+            EstadoHitoComercial nuevoEstado) {
+
         HitoProcesoCompra hito = hitoRepository.findById(uuidHitoComercial)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Hito comercial no encontrado con UUID: " + uuidHitoComercial));
 
+        if (nuevoEstado == EstadoHitoComercial.COMPLETADO) {
+
+            Integer ordenActual = hito.getOrden();
+
+            if (ordenActual > 1) {
+
+                HitoProcesoCompra hitoAnterior = hitoRepository
+                        .findByUsuarioActivo_UuidUsuarioActivoAndOrden(
+                                hito.getUsuarioActivo().getUuidUsuarioActivo(),
+                                ordenActual - 1
+                        )
+                        .orElseThrow(() -> new IllegalStateException(
+                                "No existe el hito anterior para el orden " + (ordenActual - 1)
+                        ));
+
+                if (hitoAnterior.getEstado() != EstadoHitoComercial.COMPLETADO) {
+                    throw new IllegalStateException(
+                            "Debe completar primero el hito anterior: " + hitoAnterior.getNombreHito()
+                    );
+                }
+            }
+        }
+
         hito.setEstado(nuevoEstado);
 
-        // Lógica de negocio: marcar/limpiar fecha de completado automáticamente
         if (nuevoEstado == EstadoHitoComercial.COMPLETADO) {
             hito.setFechaCompletado(LocalDateTime.now());
         } else {
@@ -80,6 +106,7 @@ public class HitoComercialServiceImpl implements HitoComercialService {
         }
 
         HitoProcesoCompra actualizado = hitoRepository.save(hito);
+
         log.info("Estado del hito {} actualizado a: {}", uuidHitoComercial, nuevoEstado);
 
         return HitoComercialResponse.fromEntity(actualizado);
@@ -127,25 +154,6 @@ public class HitoComercialServiceImpl implements HitoComercialService {
                 .build();
     }
 
-    @Override
-    public StepperResponse inicializarHitosPorDefecto(UUID uuidUsuarioActivo) {
-        UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(uuidUsuarioActivo)
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "UsuarioActivo no encontrado con UUID: " + uuidUsuarioActivo));
-
-        // Prevenir doble inicialización
-        if (hitoRepository.existsByUsuarioActivo_UuidUsuarioActivo(uuidUsuarioActivo)) {
-            throw new BusinessException(
-                    "Los hitos ya fueron inicializados para el UsuarioActivo: " + uuidUsuarioActivo);
-        }
-
-        List<HitoProcesoCompra> hitosDefecto = generarHitosPorDefecto(usuarioActivo);
-        hitoRepository.saveAll(hitosDefecto);
-        log.info("Hitos por defecto inicializados para UsuarioActivo: {}", uuidUsuarioActivo);
-
-        return obtenerStepper(uuidUsuarioActivo);
-    }
-
     // ======================== MÉTODOS PRIVADOS ========================
 
     /**
@@ -162,52 +170,4 @@ public class HitoComercialServiceImpl implements HitoComercialService {
         return Math.round(((double) completados / hitos.size()) * 100.0 * 100.0) / 100.0;
     }
 
-    /**
-     * Genera el set de hitos básicos por defecto para las 5 etapas del proceso de compra.
-     */
-    private List<HitoProcesoCompra> generarHitosPorDefecto(UsuarioActivo usuarioActivo) {
-        List<HitoProcesoCompra> hitos = new ArrayList<>();
-
-        // SEPARACIÓN
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.SEPARACION, "Subir voucher de separación", "Adjuntar comprobante de pago de separación", 1));
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.SEPARACION, "Validar voucher", "Confirmar la recepción del pago de separación", 2));
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.SEPARACION, "Generar carta de separación", "Emitir documento oficial de separación del inmueble", 3));
-
-        // CONTRATO
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.CONTRATO, "Firma de Minuta", "Firmar la minuta de compra-venta", 1));
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.CONTRATO, "Escritura Pública", "Elevar la minuta a escritura pública ante notario", 2));
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.CONTRATO, "Inscripción en SUNARP", "Registrar la propiedad en la SUNARP", 3));
-
-        // PAGOS
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.PAGOS, "Pago de cuota inicial", "Registrar el pago de la cuota inicial", 1));
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.PAGOS, "Aprobación de crédito", "Confirmar aprobación del crédito hipotecario/directo", 2));
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.PAGOS, "Desembolso bancario", "Verificar el desembolso del banco al promotor", 3));
-
-        // ENTREGA
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.ENTREGA, "Programar fecha de entrega", "Coordinar la fecha de entrega del inmueble", 1));
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.ENTREGA, "Inspección pre-entrega", "Realizar la inspección del inmueble antes de la entrega", 2));
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.ENTREGA, "Acta de entrega firmada", "Firmar el acta de conformidad de entrega", 3));
-
-        // SANEAMIENTO
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.SANEAMIENTO, "Declaratoria de fábrica", "Tramitar la declaratoria de fábrica del inmueble", 1));
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.SANEAMIENTO, "Independización", "Gestionar la independización de la partida registral", 2));
-        hitos.add(buildHitoDefecto(usuarioActivo, EtapaProceso.SANEAMIENTO, "Partida registral individual", "Obtener la partida registral individual del inmueble", 3));
-
-        return hitos;
-    }
-
-    /**
-     * Builder helper para construir un hito por defecto.
-     */
-    private HitoProcesoCompra buildHitoDefecto(UsuarioActivo usuarioActivo, EtapaProceso etapa,
-                                                 String nombre, String descripcion, int orden) {
-        return HitoProcesoCompra.builder()
-                .usuarioActivo(usuarioActivo)
-                .etapaProceso(etapa)
-                .nombreHito(nombre)
-                .descripcion(descripcion)
-                .orden(orden)
-                .estado(EstadoHitoComercial.PENDIENTE)
-                .build();
-    }
 }

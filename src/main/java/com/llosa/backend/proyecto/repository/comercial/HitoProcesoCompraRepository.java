@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -19,4 +20,9 @@ public interface HitoProcesoCompraRepository extends JpaRepository<HitoProcesoCo
      * Verifica si existen hitos para un UsuarioActivo dado.
      */
     boolean existsByUsuarioActivo_UuidUsuarioActivo(UUID uuidUsuarioActivo);
+
+    Optional<HitoProcesoCompra> findByUsuarioActivo_UuidUsuarioActivoAndOrden(
+            UUID uuidUsuarioActivo,
+            Integer orden
+    );
 }

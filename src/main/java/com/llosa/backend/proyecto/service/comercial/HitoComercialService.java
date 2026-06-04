@@ -20,5 +20,4 @@ public interface HitoComercialService {
 
     StepperResponse obtenerStepper(UUID uuidUsuarioActivo);
 
-    StepperResponse inicializarHitosPorDefecto(UUID uuidUsuarioActivo);
 }

@@ -67,14 +67,4 @@ public class HitoComercialController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * ENDPOINT 5: Inicializar hitos por defecto para un UsuarioActivo.
-     * POST /api/comercial/stepper/{uuidUsuarioActivo}/inicializar
-     */
-    @PostMapping("/stepper/{uuidUsuarioActivo}/inicializar")
-    @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
-    public ResponseEntity<StepperResponse> inicializarHitos(@PathVariable UUID uuidUsuarioActivo) {
-        StepperResponse response = hitoComercialService.inicializarHitosPorDefecto(uuidUsuarioActivo);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
 }
