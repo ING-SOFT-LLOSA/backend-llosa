@@ -1,9 +1,9 @@
-package com.llosa.backend.proyecto.service.comercial;
+package com.llosa.backend.comercial.service;
 
-import com.llosa.backend.proyecto.dto.request.HitoComercialRequest;
-import com.llosa.backend.proyecto.dto.response.HitoComercialResponse;
-import com.llosa.backend.proyecto.dto.response.StepperResponse;
-import com.llosa.backend.proyecto.entity.comercial.EstadoHitoComercial;
+import com.llosa.backend.comercial.enums.EstadoHitoComercial;
+import com.llosa.backend.comercial.dto.HitoComercialRequest;
+import com.llosa.backend.comercial.dto.HitoComercialResponse;
+import com.llosa.backend.comercial.dto.StepperResponse;
 
 import java.util.UUID;
 

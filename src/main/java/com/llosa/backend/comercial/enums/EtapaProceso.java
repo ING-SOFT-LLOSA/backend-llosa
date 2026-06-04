@@ -1,4 +1,4 @@
-package com.llosa.backend.proyecto.entity.comercial;
+package com.llosa.backend.comercial.enums;
 
 public enum EtapaProceso {
     SEPARACION,

@@ -1,10 +1,10 @@
-package com.llosa.backend.proyecto.controller.comercial;
+package com.llosa.backend.comercial.controller;
 
-import com.llosa.backend.proyecto.dto.request.HitoComercialRequest;
-import com.llosa.backend.proyecto.dto.response.HitoComercialResponse;
-import com.llosa.backend.proyecto.dto.response.StepperResponse;
-import com.llosa.backend.proyecto.entity.comercial.EstadoHitoComercial;
-import com.llosa.backend.proyecto.service.comercial.HitoComercialService;
+import com.llosa.backend.comercial.dto.HitoComercialRequest;
+import com.llosa.backend.comercial.dto.HitoComercialResponse;
+import com.llosa.backend.comercial.dto.StepperResponse;
+import com.llosa.backend.comercial.enums.EstadoHitoComercial;
+import com.llosa.backend.comercial.service.HitoComercialService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

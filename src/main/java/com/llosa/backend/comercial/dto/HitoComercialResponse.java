@@ -1,9 +1,8 @@
-package com.llosa.backend.proyecto.dto.response;
+package com.llosa.backend.comercial.dto;
 
-import com.llosa.backend.proyecto.entity.comercial.EstadoHitoComercial;
-
-import com.llosa.backend.proyecto.entity.comercial.EtapaProceso;
-import com.llosa.backend.proyecto.entity.comercial.HitoProcesoCompra;
+import com.llosa.backend.comercial.entity.HitoProcesoCompra;
+import com.llosa.backend.comercial.enums.EstadoHitoComercial;
+import com.llosa.backend.comercial.enums.EtapaProceso;
 import lombok.Builder;
 
 import java.time.LocalDateTime;

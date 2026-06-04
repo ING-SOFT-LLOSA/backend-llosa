@@ -1,6 +1,6 @@
-package com.llosa.backend.proyecto.repository.comercial;
+package com.llosa.backend.comercial.repository;
 
-import com.llosa.backend.proyecto.entity.comercial.HitoProcesoCompra;
+import com.llosa.backend.comercial.entity.HitoProcesoCompra;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,4 +1,4 @@
-package com.llosa.backend.proyecto.entity.comercial;
+package com.llosa.backend.comercial.enums;
 
 /**
  * Estados posibles de un hito dentro del proceso de compra comercial.

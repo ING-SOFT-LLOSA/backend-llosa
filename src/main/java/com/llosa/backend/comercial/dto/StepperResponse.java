@@ -1,4 +1,4 @@
-package com.llosa.backend.proyecto.dto.response;
+package com.llosa.backend.comercial.dto;
 
 import lombok.Builder;
 

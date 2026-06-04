@@ -1,15 +1,17 @@
-package com.llosa.backend.proyecto.service.comercial;
+package com.llosa.backend.comercial.service.impl;
 
-import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.comercial.dto.EtapaStepperResponse;
+import com.llosa.backend.comercial.dto.HitoComercialRequest;
+import com.llosa.backend.comercial.dto.HitoComercialResponse;
+import com.llosa.backend.comercial.dto.StepperResponse;
+import com.llosa.backend.comercial.entity.HitoProcesoCompra;
+import com.llosa.backend.comercial.enums.EstadoHitoComercial;
+import com.llosa.backend.comercial.enums.EtapaProceso;
+import com.llosa.backend.comercial.repository.HitoProcesoCompraRepository;
+import com.llosa.backend.comercial.service.HitoComercialService;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
-import com.llosa.backend.proyecto.dto.request.HitoComercialRequest;
-import com.llosa.backend.proyecto.dto.response.*;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
-import com.llosa.backend.proyecto.entity.comercial.EstadoHitoComercial;
-import com.llosa.backend.proyecto.entity.comercial.EtapaProceso;
-import com.llosa.backend.proyecto.entity.comercial.HitoProcesoCompra;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
-import com.llosa.backend.proyecto.repository.comercial.HitoProcesoCompraRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
