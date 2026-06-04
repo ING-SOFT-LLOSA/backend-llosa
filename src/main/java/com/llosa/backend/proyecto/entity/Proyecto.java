@@ -18,7 +18,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = {"torres", "etapas"})
+@ToString(exclude = {"torres", "hitos"})
 public class Proyecto {
     // Atributos de la relación en la tabla
     @Id
@@ -64,6 +64,6 @@ public class Proyecto {
             fetch = FetchType.LAZY,
             orphanRemoval = true)
     @Builder.Default
-    private List<Etapa> etapas = new ArrayList<>();
+    private List<Hito> hitos = new ArrayList<>();
     // RELACION DE DOCUMENTOS AUN NO REALIZADA
 }

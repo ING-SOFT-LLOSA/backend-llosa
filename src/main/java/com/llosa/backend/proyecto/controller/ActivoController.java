@@ -3,13 +3,11 @@ package com.llosa.backend.proyecto.controller;
 import com.llosa.backend.proyecto.dto.request.ActivoRequestDTO;
 import com.llosa.backend.proyecto.dto.response.*;
 import com.llosa.backend.proyecto.entity.Activo;
-import com.llosa.backend.proyecto.entity.HitoUnidad;
+import com.llosa.backend.proyecto.entity.HitoPiso;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
-import com.llosa.backend.proyecto.repository.ActivoRepository;
 import com.llosa.backend.proyecto.service.ActivoService;
-import com.llosa.backend.proyecto.service.HitoUnidadService;
+import com.llosa.backend.proyecto.service.HitoPisoService;
 import com.llosa.backend.proyecto.service.SeguimientoService;
-import com.llosa.backend.proyecto.service.impl.SeguimientoServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -20,27 +18,35 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/activos")
 @RequiredArgsConstructor
 public class ActivoController {
 
-    private final HitoUnidadService hitoUnidadService;
+    private final HitoPisoService hitoPisoService;
     private final ActivoService activoService;
     private final SeguimientoService seguimientoService;
-
-    // Consulta los hitos de un activo trayendote HITOUNIDAD
-    @PreAuthorize("hasAuthority('CONTRATO_VER')")
-    @GetMapping("/activos/{id}/hitos")
-    public ResponseEntity<List<HitoUnidadResponseDTO>> getActivos(@PathVariable UUID id) {
-        List<HitoUnidad> hitoUnidades = hitoUnidadService.findByActivo(id);
-        List<HitoUnidadResponseDTO> response = hitoUnidades.stream().map(
-                HitoUnidadResponseDTO::fromEntity)
+    /*
+    Endpoint Obtener los activos por piso_id
+    Estado: Funcional
+     */
+    @PreAuthorize("hasAuthority('PROY_VER')")
+    @GetMapping("/{id_piso}")
+    public ResponseEntity<List<ActivoResponseDTO>> getActivosByPiso(
+            @PathVariable("id_piso") Long pisoId,
+            @RequestParam(required = false) String search) {
+        
+        List<ActivoResponseDTO> response = activoService.findByPiso(pisoId, search)
+                .stream()
+                .map(ActivoResponseDTO::fromEntity)
                 .toList();
         return ResponseEntity.ok(response);
     }
-
+    /*
+    Endpoint Crear un activo en base a un id_piso
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
-    @PostMapping("/activos/{id}/pisos")
+    @PostMapping("/{id}/pisos")
     public ResponseEntity<ActivoResponseDTO> crearActivo(@PathVariable Long id, @RequestBody ActivoRequestDTO activoDTO) {
         Activo activo = Activo.builder()
                 .nro(activoDTO.nro())
@@ -52,9 +58,12 @@ public class ActivoController {
                 .build();
         return ResponseEntity.ok(ActivoResponseDTO.fromEntity(activoService.saveIndividual(id, activo)));
     }
-
+    /*
+    Endpoint Actualizar un activo
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
-    @PutMapping("/activos/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<ActivoResponseDTO> actualizarActivo(@PathVariable UUID id, @RequestBody ActivoRequestDTO activoDTO) {
         Activo activoExistente = activoService.findById(id);
 
@@ -69,26 +78,47 @@ public class ActivoController {
 
         return ResponseEntity.ok(ActivoResponseDTO.fromEntity(actualizado));
     }
-
+    /*
+    Endpoint Eliminar un activo
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
-    @DeleteMapping("/activos/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarActivo(@PathVariable UUID id) {
         activoService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
-    // Correctamente mapeado
-    // Trae los activos que tiene un usario
-    @PreAuthorize("hasAuthority('OBRA_VER')")
-    @GetMapping("/activos/{uuid_activo}/avances")
-    public ResponseEntity<List<AvanceUnidadResponseDTO>> getAvances(@PathVariable("uuid_activo") UUID id) {
-        List<AvanceUnidadResponseDTO> response = hitoUnidadService.findByActivo(id)
-                .stream()
-                .map(AvanceUnidadResponseDTO::fromEntity)
+    /*
+    Endpoint Obtiene los hitosPisos de un piso pero por activo. Mapeado mas general
+    Estado: Funcional
+     */
+    @PreAuthorize("hasAuthority('CONTRATO_VER')")
+    @GetMapping("/{id}/hitos")
+    public ResponseEntity<List<HitoPisoResponseDTO>> getActivos(@PathVariable UUID id) {
+        List<HitoPiso> hitoPisoes = hitoPisoService.findByActivo(id);
+        List<HitoPisoResponseDTO> response = hitoPisoes.stream().map(
+                HitoPisoResponseDTO::fromEntity)
                 .toList();
         return ResponseEntity.ok(response);
     }
 
+    /*
+    Endpoint Obtiene los hitos de un activo pero con porcentaje
+    Estado: Funcional
+     */
+    @PreAuthorize("hasAuthority('OBRA_VER')")
+    @GetMapping("/{uuid_activo}/avances")
+    public ResponseEntity<List<AvanceUnidadResponsePorcentajeDTO>> getAvances(
+            @PathVariable("uuid_activo") UUID id) {
+        return ResponseEntity.ok(
+                hitoPisoService.obtenerAvancesPorActivo(id)
+        );
+    }
+    /*
+    Endpoint Obtiene los activos por proyecto_id, page, y size, además de por estado
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping("/proyecto/{uuidProyecto}")
     public ResponseEntity<Page<ActivoResponseDTO>> listarActivosPorProyecto(
@@ -101,11 +131,17 @@ public class ActivoController {
         return ResponseEntity.ok(resultado);
     }
 
+    /*
+    Endpoint Obtiene com ostepper el seguieinto de un piso (buscando el psio en base al uuidActivo)
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping("/{uuidActivo}/seguimiento")
     public ResponseEntity<SeguimientoResponseDTO> obtenerSeguimientoObra(@PathVariable UUID uuidActivo) {
         SeguimientoResponseDTO response = seguimientoService.obtenerSeguimiento(uuidActivo);
         return ResponseEntity.ok(response);
     }
+
+
 
 }

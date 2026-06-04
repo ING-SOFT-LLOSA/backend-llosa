@@ -18,7 +18,11 @@ public class HitoController {
 
     private final HitoService hitoService;
 
-    @PreAuthorize("hasAuthority('OBRA_EDITAR')")
+    /*
+    Endpoint para actualizar un hito(etapa)
+    Estado: Funcional
+     */
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PutMapping("/{id}")
     public ResponseEntity<HitoResponseDTO> actualizarHito(@PathVariable("id") UUID uuid, @RequestBody HitoCreateDTO dto) {
         Hito hitoActualizado = hitoService.findById(uuid);
@@ -28,8 +32,11 @@ public class HitoController {
         hitoActualizado.setFechaCompletado(dto.fechaCompletado());
         return ResponseEntity.ok(HitoResponseDTO.fromEntity(hitoService.save(hitoActualizado)));
     }
-
-    @PreAuthorize("hasAuthority('OBRA_EDITAR')")
+    /*
+    Endpoint para eliminar un hito
+    Estado: Funcional
+     */
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteHito(@PathVariable("id") UUID uuid) {
         hitoService.deleteById(uuid);

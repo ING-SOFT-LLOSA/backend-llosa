@@ -1,24 +1,18 @@
 package com.llosa.backend.proyecto.entity;
 
-import com.llosa.backend.module.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.entity.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(
-        name = "usuario_activo",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_usuario_activo",
-                        columnNames = {"id_usuario", "uuid_activo"} // Impide duplicados de compra
-                )
-        }
-)
+@Table(name = "usuario_activo")
 @Getter
 @Setter
 @Builder
@@ -28,7 +22,7 @@ import java.util.UUID;
 public class UsuarioActivo {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID) // UUID Seguro para el expediente
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "uuid_usuario_activo")
     private UUID uuidUsuarioActivo;
 
@@ -39,7 +33,7 @@ public class UsuarioActivo {
     private String faseComercial; // 'Separación', 'Contrato', 'Pagos', etc.
 
     @Column(name = "estado_tramite_legal")
-    private String estadoTramiteLegal; // 'Minuta Pendiente', 'Escritura Firmada', Partida registral SUNARP
+    private String estadoTramiteLegal; // 'Minuta Pendiente', 'Escritura Firmada', 'Partida registral SUNARP'
 
     @Column(name = "fecha_adquisicion")
     private LocalDateTime fechaAdquisicion;
@@ -54,9 +48,19 @@ public class UsuarioActivo {
 
     // RELACIONES CON OTRAS TABLAS
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", nullable = false)
-    private Usuario usuario;
+    /**
+     * Lista de copropietarios del proceso comercial.
+     * Un proceso puede pertenecer a múltiples clientes (ej: esposos, socios).
+     * La tabla intermedia "usuario_activo_clientes" gestiona la relación N:M.
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "usuario_activo_clientes",
+            joinColumns = @JoinColumn(name = "uuid_usuario_activo"),
+            inverseJoinColumns = @JoinColumn(name = "id_usuario")
+    )
+    @Builder.Default
+    private List<Usuario> clientes = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uuid_activo", nullable = false)

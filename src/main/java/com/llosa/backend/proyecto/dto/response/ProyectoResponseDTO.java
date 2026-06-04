@@ -24,7 +24,7 @@ public record ProyectoResponseDTO(
         return new ProyectoResponseDTO(
                 p.getId(),
                 p.getNombre(),
-                p.getDistrito(),
+                p.getDescripcion(),
                 p.getPrecertificacionEdgeLeed(),
                 p.getLinkRecorridoVirtual(),
                 p.getDepartamento(),

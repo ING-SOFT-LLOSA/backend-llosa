@@ -7,6 +7,7 @@ import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.repository.ActivoRepository;
 
 import com.llosa.backend.proyecto.service.ActivoService;
+import com.llosa.backend.proyecto.service.HidratationService;
 import com.llosa.backend.proyecto.service.PisoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,7 +25,7 @@ public class ActivoServiceImpl implements ActivoService {
 
     private final ActivoRepository activoRepository;
     private final PisoService pisoService;
-    private final HidratationServiceImpl hidratationServiceImpl;
+    private final HidratationService hidratationService;
 
     @Override
     @Transactional
@@ -37,10 +38,7 @@ public class ActivoServiceImpl implements ActivoService {
     @Override
     @Transactional
     public Activo saveIndividual(Long pisoId, Activo activo){
-        Activo activoGuardado = this.saveFisico(pisoId, activo);
-        UUID idProyecto = activoGuardado.getPiso().getTorre().getProyecto().getId();
-        hidratationServiceImpl.hidratarActivos(List.of(activoGuardado), idProyecto);
-        return activoGuardado;
+        return this.saveFisico(pisoId, activo);
     }
 
     @Override
@@ -61,6 +59,15 @@ public class ActivoServiceImpl implements ActivoService {
         return activoRepository.findById(id).orElseThrow(
                 () -> new RuntimeException("Activo no encontrado")
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Activo> findByPiso(Long pisoId, String search) {
+        if (search == null || search.isBlank()) {
+            return activoRepository.findByPisoId(pisoId);
+        }
+        return activoRepository.findByPisoIdAndNroContainingIgnoreCase(pisoId, search);
     }
 
     @Override

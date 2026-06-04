@@ -18,7 +18,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = {"etapa","hitosUnidad"})
+@ToString(exclude = {"proyecto","hitosPiso"})
 public class Hito {
 
     // Atributos de la clase
@@ -47,9 +47,9 @@ public class Hito {
     // RELACIONES A LAS DIFERENTES TABLAS
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_etapa", nullable = false)
-    private Etapa etapa;
+    @JoinColumn(name = "uuid_proyecto", nullable = false)
+    private Proyecto proyecto;
 
     @OneToMany(mappedBy = "hito", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<HitoUnidad> hitosUnidad = new ArrayList<>();
+    private List<HitoPiso> hitosPiso = new ArrayList<>();
 }

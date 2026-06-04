@@ -1,16 +1,16 @@
 package com.llosa.backend.proyecto.controller;
 
-import com.llosa.backend.proyecto.dto.request.EtapaCreateDTO;
 import com.llosa.backend.proyecto.dto.request.ProyectoCargaDTO;
 import com.llosa.backend.proyecto.dto.request.ProyectoCreateDTO;
 import com.llosa.backend.proyecto.dto.response.DashboardProyectoDTO;
-import com.llosa.backend.proyecto.dto.response.EtapaResponseDTO;
 import com.llosa.backend.proyecto.dto.response.ProyectoResponseDTO;
-import com.llosa.backend.proyecto.entity.Etapa;
 import com.llosa.backend.proyecto.entity.Proyecto;
-import com.llosa.backend.proyecto.enums.EstadoEtapa;
-import com.llosa.backend.proyecto.service.EtapaService;
 import com.llosa.backend.proyecto.service.ProyectoService;
+import com.llosa.backend.proyecto.dto.request.HitoCreateDTO;
+import com.llosa.backend.proyecto.dto.response.HitoResponseDTO;
+import com.llosa.backend.proyecto.entity.Hito;
+import com.llosa.backend.proyecto.enums.EstadoHito;
+import com.llosa.backend.proyecto.service.HitoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,9 +27,12 @@ import java.util.UUID;
 public class ProyectoController {
 
     private final ProyectoService proyectoService;
-    private final EtapaService etapaService;
+    private final HitoService hitoService;
 
-    // Funcionando correctamente
+    /*
+    Endpoint para crear proyecto
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_CREAR')")
     @PostMapping
     public ResponseEntity<ProyectoResponseDTO> crearProyecto(@Valid @RequestBody ProyectoCreateDTO proyecto) {
@@ -46,7 +49,10 @@ public class ProyectoController {
                 .build();
         return ResponseEntity.status(HttpStatus.CREATED).body(ProyectoResponseDTO.fromEntity(proyectoService.save(nuevo_proyecto)));
     }
-
+    /*
+    Endpoint para editar con put proyecto
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PutMapping("/{uuid}")
     public ResponseEntity<ProyectoResponseDTO> actualizarProyecto(@PathVariable("uuid") UUID id, @Valid @RequestBody ProyectoCreateDTO proyecto) {
@@ -62,7 +68,10 @@ public class ProyectoController {
         proyectoActualizado.setFechaFin(proyecto.fechaFin());
         return ResponseEntity.ok(ProyectoResponseDTO.fromEntity(proyectoService.save(proyectoActualizado)));
     }
-
+    /*
+    Endpoint para eliminar proyecto
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @DeleteMapping("/{uuid}")
     public ResponseEntity<Void> deleteProyecto(@PathVariable("uuid") UUID id) {
@@ -70,34 +79,44 @@ public class ProyectoController {
         return ResponseEntity.noContent().build();
     }
 
-    // Funcionando correctamente
+    /*
+    Endpoint para traer todos los proyectos con metodo de search
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping
-    public ResponseEntity<List<ProyectoResponseDTO>> findAll() {
-        List<ProyectoResponseDTO> response = proyectoService.findAll()
+    public ResponseEntity<List<ProyectoResponseDTO>> findAll(@RequestParam(required = false) String search) {
+        List<ProyectoResponseDTO> response = proyectoService.findAll(search)
                 .stream()
                 .map(ProyectoResponseDTO::fromEntity)
                 .toList();
         return ResponseEntity.ok(response);
     }
-    // Funcionando correctamente
-
-    @PreAuthorize("hasAuthority('PROY_CREAR')")
-    @PostMapping("/{uuid}/etapas")
-    public ResponseEntity<EtapaResponseDTO> crearEtapa(@PathVariable("uuid") UUID id_proyecto,
-                                                       @Valid @RequestBody EtapaCreateDTO dto) {
-        Etapa etapa = Etapa.builder()
-                .nombre(dto.nombre())
-                .descripcion(dto.descripcion())
+    /*
+    Endpoint para crear hito con el uuid del proyecto
+    Estado: Funcional
+     */
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
+    @PostMapping("/{uuid}/hitos")
+    public ResponseEntity<HitoResponseDTO> crearHito(@PathVariable("uuid") UUID id_proyecto,
+                                                       @Valid @RequestBody HitoCreateDTO dto) {
+        Hito hito = Hito.builder()
+                .titulo(dto.titulo())
                 .orden(dto.orden())
-                .estado(EstadoEtapa.PENDIENTE)
+                .tipo(dto.tipo())
+                .estado(EstadoHito.PENDIENTE)
                 .build();
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(EtapaResponseDTO.fromEntity(etapaService.save(id_proyecto, etapa)));
+                .body(HitoResponseDTO.fromEntity(hitoService.save(id_proyecto, hito)));
     }
-    // Super endopint para la creacion de torres , pisos y activos
-    @PreAuthorize("hasAuthority('PROY_CREAR')")
+
+
+    /*
+    Endpoint para crear proyecto con torre, piso, activo
+    Estado: Funcional
+     */
+    @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PostMapping("{id_proyecto}/estructura-fisica")
     public ResponseEntity<Void> crearEstructuraFisica(@PathVariable("id_proyecto") UUID id_proyecto,
                                                       @Valid @RequestBody ProyectoCargaDTO estructuraFisica) {
@@ -105,8 +124,11 @@ public class ProyectoController {
         return ResponseEntity.ok().build();
     }
 
-    // Funciona correctamente
-    // Genera el porcentaje total de avance de un proyecto por sus hitos
+
+    /*
+    Endpoint Obtener el avance general en base a los hitos del proyecto (contando los completados por HitoPiso)
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping("/{uuid}/avance-general")
     public ResponseEntity<DashboardProyectoDTO> getAvanceGeneral(@PathVariable("uuid") UUID id) {
