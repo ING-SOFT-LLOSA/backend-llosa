@@ -78,7 +78,23 @@ public class UsuarioActivoController {
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
-
+    /**
+     * Retorna contrato de un usario
+     * Estado: Funcional
+     */
+    @PreAuthorize("hasAuthority('CONTRATO_VER')")
+    @GetMapping("/{id_usuario}")
+    public ResponseEntity<List<UsuarioActivoResponseDTO>> obtenerActivosPorUsuario(@PathVariable Integer id_usuario) {
+        List<UsuarioActivo> activos = usuarioActivoService.findByUsuario(id_usuario);
+        List<UsuarioActivoResponseDTO> response = activos.stream()
+                .map(UsuarioActivoResponseDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(response);
+    }
+    /**
+     * Retorna el usuario eliminado
+     * Estado: Funcional
+     */
     @DeleteMapping("/delete/{uuidUsuarioActivo}")
     @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
     public ResponseEntity<Void> desvicularActivoAUsuario(@PathVariable UUID uuidUsuarioActivo) {
