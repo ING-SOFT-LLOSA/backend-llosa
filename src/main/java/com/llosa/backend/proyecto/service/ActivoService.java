@@ -14,5 +14,6 @@ public interface ActivoService {
     Activo save(Activo activo);
     Activo findById(UUID id);
     void deleteById(UUID id);
+    List<Activo> findByPiso(Long pisoId, String search);
     Page<ActivoResponseDTO> listarPorProyectoYEstado(UUID idProyecto, EstadoComercialActivo estado, int page, int size);
 }

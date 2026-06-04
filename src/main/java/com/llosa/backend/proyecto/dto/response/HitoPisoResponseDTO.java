@@ -1,13 +1,13 @@
 package com.llosa.backend.proyecto.dto.response;
 
-import com.llosa.backend.proyecto.entity.HitoUnidad;
+import com.llosa.backend.proyecto.entity.HitoPiso;
 import com.llosa.backend.proyecto.enums.EstadoHito;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record HitoUnidadResponseDTO(
+public record HitoPisoResponseDTO(
         UUID id,
         String nombre,
         EstadoHito estado,
@@ -16,8 +16,8 @@ public record HitoUnidadResponseDTO(
         LocalDateTime updatedAt,
         String observaciones
 ) {
-    public static HitoUnidadResponseDTO fromEntity(HitoUnidad hu) {
-        return new HitoUnidadResponseDTO(
+    public static HitoPisoResponseDTO fromEntity(HitoPiso hu) {
+        return new HitoPisoResponseDTO(
                 hu.getId(),
                 hu.getHito().getTitulo(),
                 hu.getEstado(),

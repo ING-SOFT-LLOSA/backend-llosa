@@ -1,8 +1,8 @@
 package com.llosa.backend.proyecto.controller;
 
-import com.llosa.backend.proyecto.dto.request.HitoUnidadUpdateDTO;
+import com.llosa.backend.proyecto.dto.request.HitoPisoUpdateDTO;
 import com.llosa.backend.proyecto.dto.response.AvanceUnidadResponseDTO;
-import com.llosa.backend.proyecto.service.HitoUnidadService;
+import com.llosa.backend.proyecto.service.HitoPisoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,14 +16,17 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AvanceController {
 
-    private final HitoUnidadService hitoUnidadService;
-
+    private final HitoPisoService hitoPisoService;
+    /*
+    Endpoint para actualizar un hitoPiso como completado
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('OBRA_EDITAR')")
     @PutMapping("/{id}")
     public ResponseEntity<AvanceUnidadResponseDTO> actualizarAvance(@PathVariable UUID id,
-                                                                    @Valid @RequestBody HitoUnidadUpdateDTO dto) {
+                                                                    @Valid @RequestBody HitoPisoUpdateDTO dto) {
         return ResponseEntity.ok(
-            AvanceUnidadResponseDTO.fromEntity(hitoUnidadService.cambiarEstado(id, dto.estado()))
+            AvanceUnidadResponseDTO.fromEntity(hitoPisoService.cambiarEstado(id, dto.estado()))
         );
     }
 }

@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public record HitoResponseDTO(
         UUID id,
-        Long etapaId,
+        UUID proyectoId,
         Integer orden,
         TipoHito tipo,
         String titulo,
@@ -19,7 +19,7 @@ public record HitoResponseDTO(
     public static HitoResponseDTO fromEntity(Hito h) {
         return new HitoResponseDTO(
                 h.getId(),
-                h.getEtapa().getId(),
+                h.getProyecto().getId(),
                 h.getOrden(),
                 h.getTipo(),
                 h.getTitulo(),

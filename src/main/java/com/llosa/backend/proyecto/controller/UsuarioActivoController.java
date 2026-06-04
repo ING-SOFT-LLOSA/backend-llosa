@@ -6,7 +6,6 @@ import com.llosa.backend.seguridad.service.UsuarioService;
 import com.llosa.backend.proyecto.dto.request.AsignarActivoDTO;
 import com.llosa.backend.proyecto.dto.response.ActivoResponseDTO;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
-
 import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.UsuarioActivoService;
 import jakarta.validation.Valid;
@@ -19,7 +18,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -31,10 +29,14 @@ public class UsuarioActivoController {
     private final ActivoService activoService;
     private final UsuarioService usuarioService;
 
+    /**
+     * Retorna los activos del cliente autenticado.
+     * Navega la lista de copropietarios para filtrar los procesos pertenecientes al usuario logueado.
+     * Estado: Funcional
+     */
     @GetMapping("/mis-activos")
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
     public ResponseEntity<List<ActivoResponseDTO>> obtenerMisActivos() {
-// 1. Obtener el objeto de autenticación de Spring Security
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -43,30 +45,40 @@ public class UsuarioActivoController {
         String firebaseUuid = authentication.getName();
         Usuario usuarioLogueado = usuarioService.findByFirebaseUuid(firebaseUuid);
         Integer idUsuario = usuarioLogueado.getId();
+
+        // Recupera todos los procesos en los que el usuario es copropietario
         List<UsuarioActivo> misExpedientes = usuarioActivoService.findByUsuario(idUsuario);
-        List<ActivoResponseDTO> activos = misExpedientes.stream().map(
-                expediente -> ActivoResponseDTO.fromEntity(expediente.getActivo())
-        ).toList();
+        List<ActivoResponseDTO> activos = misExpedientes.stream()
+                .map(expediente -> ActivoResponseDTO.fromEntity(expediente.getActivo()))
+                .toList();
+
         return ResponseEntity.ok(activos);
     }
 
+    /**
+    Endpoint Asignar un activo a un usuario
+    Estado: Funcional
+     */
     @PostMapping("/asignar")
-    @PreAuthorize("hasAuthority('CONTRATO_EDITAR')") // Solo personal autorizado
+    @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
     public ResponseEntity<String> asignarActivoAUsuario(@Valid @RequestBody AsignarActivoDTO dto) {
         usuarioActivoService.asignarActivo(dto);
         return ResponseEntity.ok("Activo asignación registrada con éxito.");
     }
 
-    // ver el contrato con el usuario y activo
+    /**
+     * Retorna el contrato/proceso comercial de un activo con la lista completa de copropietarios.
+     * Estado: Funcional
+     */
+    @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @GetMapping("/{uuidActivo}/contrato")
     public ResponseEntity<UsuarioActivoResponseDTO> verContratoActivoUsuario(@PathVariable UUID uuidActivo) {
         return usuarioActivoService.findByActivo(uuidActivo)
-                .map(UsuarioActivoResponseDTO::fromEntity) // Si existe, mapea a DTO
-                .map(ResponseEntity::ok)                   // Y mete el DTO en un 200 OK
-                .orElseGet(() -> ResponseEntity.notFound().build()); // Si no, 404
+                .map(UsuarioActivoResponseDTO::fromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // Borrar el contrato con el usuario y activo
     @DeleteMapping("/delete/{uuidUsuarioActivo}")
     @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
     public ResponseEntity<Void> desvicularActivoAUsuario(@PathVariable UUID uuidUsuarioActivo) {

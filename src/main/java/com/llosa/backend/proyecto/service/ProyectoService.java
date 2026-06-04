@@ -10,7 +10,7 @@ public interface ProyectoService {
 
     Proyecto findById(UUID id);
 
-    List<Proyecto> findAll();
+    List<Proyecto> findAll(String search);
 
     double getPorcentajeAvance(UUID id);
 

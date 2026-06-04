@@ -1,11 +1,13 @@
 package com.llosa.backend.proyecto.service.impl;
 
 import com.llosa.backend.proyecto.entity.Activo;
+import com.llosa.backend.proyecto.entity.Piso;
 import com.llosa.backend.proyecto.entity.Hito;
-import com.llosa.backend.proyecto.entity.HitoUnidad;
+import com.llosa.backend.proyecto.entity.HitoPiso;
 import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.repository.HitoRepository;
-import com.llosa.backend.proyecto.repository.HitoUnidadRepository;
+import com.llosa.backend.proyecto.repository.HitoPisoRepository;
+import com.llosa.backend.proyecto.repository.PisoRepository;
 import com.llosa.backend.proyecto.service.HidratationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,40 +22,65 @@ import java.util.UUID;
 public class HidratationServiceImpl implements HidratationService {
 
     private final HitoRepository hitoRepository;
-    private final HitoUnidadRepository hitoUnidadRepository;
+    private final HitoPisoRepository hitoPisoRepository;
+    private final PisoRepository pisoRepository;
 
     @Override
     @Transactional
-    public void hidratarActivos(List<Activo> activos, UUID idProyecto){
-        List<Hito> hitos = hitoRepository.findByEtapaProyectoId(idProyecto);
+    public void hydrateFloorMilestones(Long idPiso) {
+        Piso piso = pisoRepository.findById(idPiso)
+                .orElseThrow(() -> new RuntimeException("Piso no encontrado"));
+        
+        UUID idProyecto = piso.getTorre().getProyecto().getId();
+        List<Hito> hitos = hitoRepository.findByProyectoId(idProyecto);
+        
         if (hitos.isEmpty()) return;
 
-        List<HitoUnidad> nuevasJunturas = new ArrayList<>();
-
-        for (Activo activo: activos){
-            for (Hito hito: hitos){
-                HitoUnidad hitoUnidad = HitoUnidad.builder()
+        List<HitoPiso> nuevasJunturas = new ArrayList<>();
+        for (Hito hito : hitos) {
+            if (!hitoPisoRepository.existsByPisoIdAndHitoId(idPiso, hito.getId())) {
+                HitoPiso hitoPiso = HitoPiso.builder()
                         .estado(EstadoHito.PENDIENTE)
                         .fechaCompletado(null)
-                        .activo(activo)
+                        .piso(piso)
                         .hito(hito)
                         .build();
-                nuevasJunturas.add(hitoUnidad);
+                nuevasJunturas.add(hitoPiso);
             }
         }
-        hitoUnidadRepository.saveAll(nuevasJunturas);
+        
+        if (!nuevasJunturas.isEmpty()) {
+            hitoPisoRepository.saveAll(nuevasJunturas);
+        }
     }
 
     @Override
     @Transactional
-    public void hidratarNuevoHito(Hito nuevoHito, List<Activo> activosDelProyecto){
-        List<HitoUnidad> nuevasJunturas = activosDelProyecto.stream()
-                .map(activo -> HitoUnidad.builder()
-                        .activo(activo)
+    public void hidratarActivos(List<Activo> activos, UUID idProyecto) {
+        List<Piso> pisosUnicos = activos.stream().map(Activo::getPiso).distinct().toList();
+        for (Piso piso : pisosUnicos) {
+            hydrateFloorMilestones(piso.getId());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void propagateMilestoneToProjectFloors(Hito nuevoHito, UUID idProyecto) {
+        List<Piso> todosLosPisos = pisoRepository.findByTorreProyectoId(idProyecto);
+        List<HitoPiso> nuevasJunturas = new ArrayList<>();
+        
+        for (Piso piso : todosLosPisos) {
+            if (!hitoPisoRepository.existsByPisoIdAndHitoId(piso.getId(), nuevoHito.getId())) {
+                nuevasJunturas.add(HitoPiso.builder()
+                        .piso(piso)
                         .hito(nuevoHito)
                         .estado(EstadoHito.PENDIENTE)
-                        .build())
-                .toList();
-        hitoUnidadRepository.saveAll(nuevasJunturas);
+                        .build());
+            }
+        }
+        
+        if (!nuevasJunturas.isEmpty()) {
+            hitoPisoRepository.saveAll(nuevasJunturas);
+        }
     }
 }

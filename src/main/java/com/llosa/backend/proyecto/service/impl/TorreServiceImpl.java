@@ -29,4 +29,10 @@ public class TorreServiceImpl implements TorreService {
         );
     }
 
+    public java.util.List<Torre> findByProyecto(UUID proyectoId, String search) {
+        if (search == null || search.isBlank()) {
+            return torreRepository.findByProyectoId(proyectoId);
+        }
+        return torreRepository.findByProyectoIdAndNombreContainingIgnoreCase(proyectoId, search);
+    }
 }

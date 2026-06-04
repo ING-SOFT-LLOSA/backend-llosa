@@ -21,7 +21,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = {"piso","hitosUnidad"})
+@ToString(exclude = {"piso"})
 public class Activo {
 
     // ATRIBUTOS DE LA CLASE
@@ -62,7 +62,4 @@ public class Activo {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_piso", nullable = false)
     private Piso piso;
-
-    @OneToMany(mappedBy = "activo", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<HitoUnidad> hitosUnidad = new ArrayList<>();
 }
