@@ -1,6 +1,6 @@
 package com.llosa.backend.proyecto.dto.response;
 
-import com.llosa.backend.proyecto.entity.HitoUnidad;
+import com.llosa.backend.proyecto.entity.HitoPiso;
 import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.enums.TipoHito;
 
@@ -16,7 +16,7 @@ public record AvanceUnidadResponsePorcentajeDTO(
         LocalDate fechaCompletado,
         Integer porcentaje
 ) {
-    public static AvanceUnidadResponsePorcentajeDTO fromEntity(HitoUnidad hu, Integer porcentaje) {
+    public static AvanceUnidadResponsePorcentajeDTO fromEntity(HitoPiso hu, Integer porcentaje) {
         return new AvanceUnidadResponsePorcentajeDTO(
                 hu.getId(),
                 hu.getHito().getTitulo(),

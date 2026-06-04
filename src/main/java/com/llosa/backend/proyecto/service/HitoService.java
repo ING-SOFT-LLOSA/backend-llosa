@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public interface HitoService {
 
-    Hito save(Long etapaId, Hito hito);
+    Hito save(UUID proyectoId, Hito hito);
     Hito save(Hito hito);
     Hito findById(UUID id);
     void deleteById(UUID id);

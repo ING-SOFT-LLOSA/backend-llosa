@@ -1,6 +1,7 @@
 package com.llosa.backend.proyecto.dto.response;
 
 import com.llosa.backend.proyecto.entity.comercial.EstadoHitoComercial;
+
 import com.llosa.backend.proyecto.entity.comercial.EtapaProceso;
 import com.llosa.backend.proyecto.entity.comercial.HitoProcesoCompra;
 import lombok.Builder;

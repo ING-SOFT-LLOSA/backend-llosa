@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "hito_unidad", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"uuid_activo", "uuid_hito"})
+@Table(name = "hito_piso", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"id_piso", "uuid_hito"})
 })
 @Getter
 @Setter
@@ -20,13 +20,11 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-public class HitoUnidad {
-
-    // Atributos de la clase
+public class HitoPiso {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "uuid_hito_unidad", updatable = false, nullable = false)
+    @Column(name = "uuid_hito_piso", updatable = false, nullable = false)
     private UUID id;
 
     @Enumerated(EnumType.STRING)
@@ -46,11 +44,9 @@ public class HitoUnidad {
 
     private String observaciones;
 
-    // Relaciones con otras tablas
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uuid_activo", nullable = false)
-    private Activo activo;
+    @JoinColumn(name = "id_piso", nullable = false)
+    private Piso piso;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uuid_hito", nullable = false)

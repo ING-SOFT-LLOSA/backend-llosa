@@ -6,7 +6,7 @@ import com.llosa.backend.proyecto.entity.Piso;
 import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.entity.Torre;
 import com.llosa.backend.proyecto.enums.EstadoHito;
-import com.llosa.backend.proyecto.repository.HitoUnidadRepository;
+import com.llosa.backend.proyecto.repository.HitoPisoRepository;
 import com.llosa.backend.proyecto.repository.ProyectoRepository;
 import com.llosa.backend.proyecto.service.PisoService;
 import com.llosa.backend.proyecto.service.ProyectoService;
@@ -24,7 +24,7 @@ import java.util.UUID;
 public class ProyectoServiceImpl implements ProyectoService {
 
     private final ProyectoRepository proyectoRepository;
-    private final HitoUnidadRepository hitoUnidadRepository;
+    private final HitoPisoRepository hitoPisoRepository;
     private final TorreServiceImpl torreService;
     private final ActivoServiceImpl activoService;
     private final PisoService pisoService;
@@ -51,9 +51,9 @@ public class ProyectoServiceImpl implements ProyectoService {
     @Override
     @Transactional(readOnly = true)
     public double getPorcentajeAvance(UUID id) {
-        long totales = hitoUnidadRepository.countByProyectoId(id);
+        long totales = hitoPisoRepository.countByProyectoId(id);
         if (totales == 0) return 0.0;
-        long completados = hitoUnidadRepository.countByProyectoIdAndEstado(id, EstadoHito.COMPLETADO);
+        long completados = hitoPisoRepository.countByProyectoIdAndEstado(id, EstadoHito.COMPLETADO);
         return (double) completados * 100 / totales;
     }
 

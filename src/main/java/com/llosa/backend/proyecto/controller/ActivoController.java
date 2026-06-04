@@ -3,11 +3,11 @@ package com.llosa.backend.proyecto.controller;
 import com.llosa.backend.proyecto.dto.request.ActivoRequestDTO;
 import com.llosa.backend.proyecto.dto.response.*;
 import com.llosa.backend.proyecto.entity.Activo;
-import com.llosa.backend.proyecto.entity.HitoUnidad;
+import com.llosa.backend.proyecto.entity.HitoPiso;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.repository.ActivoRepository;
 import com.llosa.backend.proyecto.service.ActivoService;
-import com.llosa.backend.proyecto.service.HitoUnidadService;
+import com.llosa.backend.proyecto.service.HitoPisoService;
 import com.llosa.backend.proyecto.service.SeguimientoService;
 import com.llosa.backend.proyecto.service.impl.SeguimientoServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -24,17 +24,17 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ActivoController {
 
-    private final HitoUnidadService hitoUnidadService;
+    private final HitoPisoService hitoPisoService;
     private final ActivoService activoService;
     private final SeguimientoService seguimientoService;
 
     // Consulta los hitos de un activo trayendote HITOUNIDAD
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @GetMapping("/activos/{id}/hitos")
-    public ResponseEntity<List<HitoUnidadResponseDTO>> getActivos(@PathVariable UUID id) {
-        List<HitoUnidad> hitoUnidades = hitoUnidadService.findByActivo(id);
-        List<HitoUnidadResponseDTO> response = hitoUnidades.stream().map(
-                HitoUnidadResponseDTO::fromEntity)
+    public ResponseEntity<List<HitoPisoResponseDTO>> getActivos(@PathVariable UUID id) {
+        List<HitoPiso> hitoPisoes = hitoPisoService.findByActivo(id);
+        List<HitoPisoResponseDTO> response = hitoPisoes.stream().map(
+                HitoPisoResponseDTO::fromEntity)
                 .toList();
         return ResponseEntity.ok(response);
     }
@@ -84,7 +84,7 @@ public class ActivoController {
     public ResponseEntity<List<AvanceUnidadResponsePorcentajeDTO>> getAvances(
             @PathVariable("uuid_activo") UUID id) {
         return ResponseEntity.ok(
-                hitoUnidadService.obtenerAvancesPorActivo(id)
+                hitoPisoService.obtenerAvancesPorActivo(id)
         );
     }
 

@@ -14,7 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = {"torre", "activos"})
+@ToString(exclude = {"torre", "activos", "hitosPiso"})
 public class Piso {
 
     // ATRIBUTOS DE LA CLASE
@@ -40,4 +40,10 @@ public class Piso {
     @JoinColumn(name = "id_torre", nullable = false)
     private Torre torre;
 
+    @OneToMany(mappedBy = "piso",
+               cascade = CascadeType.ALL,
+               fetch = FetchType.LAZY,
+               orphanRemoval = true)
+    @Builder.Default
+    private List<HitoPiso> hitosPiso = new ArrayList<>();
 }

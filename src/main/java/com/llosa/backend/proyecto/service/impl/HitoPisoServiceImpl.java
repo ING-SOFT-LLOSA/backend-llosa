@@ -3,10 +3,10 @@ package com.llosa.backend.proyecto.service.impl;
 import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.proyecto.dto.response.AvanceUnidadResponseDTO;
 import com.llosa.backend.proyecto.dto.response.AvanceUnidadResponsePorcentajeDTO;
-import com.llosa.backend.proyecto.entity.HitoUnidad;
+import com.llosa.backend.proyecto.entity.HitoPiso;
 import com.llosa.backend.proyecto.enums.EstadoHito;
-import com.llosa.backend.proyecto.repository.HitoUnidadRepository;
-import com.llosa.backend.proyecto.service.HitoUnidadService;
+import com.llosa.backend.proyecto.repository.HitoPisoRepository;
+import com.llosa.backend.proyecto.service.HitoPisoService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,37 +19,37 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class HitoUnidadServiceImpl implements HitoUnidadService {
+public class HitoPisoServiceImpl implements HitoPisoService {
 
-    private final HitoUnidadRepository hitoUnidadRepository;
+    private final HitoPisoRepository hitoPisoRepository;
 
     @Override
     @Transactional(readOnly = true)
-    public HitoUnidad findById(UUID id) {
-        return hitoUnidadRepository.findById(id)
+    public HitoPiso findById(UUID id) {
+        return hitoPisoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Hito de unidad no encontrado: " + id));
     }
 
     @Override
     @Transactional
-    public HitoUnidad cambiarEstado(UUID id, EstadoHito nuevoEstado) {
-        HitoUnidad hitoUnidad = findById(id);
+    public HitoPiso cambiarEstado(UUID id, EstadoHito nuevoEstado) {
+        HitoPiso hitoPiso = findById(id);
 
         if (nuevoEstado == EstadoHito.COMPLETADO) {
-            validarHitoAnterior(hitoUnidad);
-            hitoUnidad.setFechaCompletado(LocalDate.now());
+            validarHitoAnterior(hitoPiso);
+            hitoPiso.setFechaCompletado(LocalDate.now());
         } else {
-            hitoUnidad.setFechaCompletado(null);
+            hitoPiso.setFechaCompletado(null);
         }
 
-        hitoUnidad.setEstado(nuevoEstado);
-        return hitoUnidadRepository.save(hitoUnidad);
+        hitoPiso.setEstado(nuevoEstado);
+        return hitoPisoRepository.save(hitoPiso);
     }
 
-    private void validarHitoAnterior(HitoUnidad hitoUnidad) {
-        int ordenAnterior = hitoUnidad.getHito().getOrden() - 1;
+    private void validarHitoAnterior(HitoPiso hitoPiso) {
+        int ordenAnterior = hitoPiso.getHito().getOrden() - 1;
         if (ordenAnterior >= 1) { // Asumiendo que el orden empieza en 1
-            HitoUnidad anterior = hitoUnidadRepository.findByActivoAndHito_Orden(hitoUnidad.getActivo(), ordenAnterior)
+            HitoPiso anterior = hitoPisoRepository.findByPisoAndHito_Orden(hitoPiso.getPiso(), ordenAnterior)
                     .orElseThrow(() -> new BusinessException("No se encontró el hito anterior con orden " + ordenAnterior));
 
             if (anterior.getEstado() != EstadoHito.COMPLETADO) {
@@ -61,16 +61,16 @@ public class HitoUnidadServiceImpl implements HitoUnidadService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<HitoUnidad> findByActivo(UUID activoId) {
-        return hitoUnidadRepository.findByActivo_IdOrderByHito_OrdenAsc(activoId);
+    public List<HitoPiso> findByActivo(UUID activoId) {
+        return hitoPisoRepository.findByActivoIdOrderByHitoOrdenAsc(activoId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<AvanceUnidadResponsePorcentajeDTO> obtenerAvancesPorActivo(UUID idActivo) {
 
-        List<HitoUnidad> hitos = hitoUnidadRepository
-                .findByActivo_IdOrderByHito_OrdenAsc(idActivo);
+        List<HitoPiso> hitos = hitoPisoRepository
+                .findByActivoIdOrderByHitoOrdenAsc(idActivo);
 
         if (hitos.isEmpty()) {
             return List.of();

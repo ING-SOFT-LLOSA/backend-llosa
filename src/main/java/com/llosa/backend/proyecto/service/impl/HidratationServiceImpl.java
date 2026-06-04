@@ -1,11 +1,12 @@
 package com.llosa.backend.proyecto.service.impl;
 
 import com.llosa.backend.proyecto.entity.Activo;
+import com.llosa.backend.proyecto.entity.Piso;
 import com.llosa.backend.proyecto.entity.Hito;
-import com.llosa.backend.proyecto.entity.HitoUnidad;
+import com.llosa.backend.proyecto.entity.HitoPiso;
 import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.repository.HitoRepository;
-import com.llosa.backend.proyecto.repository.HitoUnidadRepository;
+import com.llosa.backend.proyecto.repository.HitoPisoRepository;
 import com.llosa.backend.proyecto.service.HidratationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,40 +21,43 @@ import java.util.UUID;
 public class HidratationServiceImpl implements HidratationService {
 
     private final HitoRepository hitoRepository;
-    private final HitoUnidadRepository hitoUnidadRepository;
+    private final HitoPisoRepository hitoPisoRepository;
 
     @Override
     @Transactional
     public void hidratarActivos(List<Activo> activos, UUID idProyecto){
-        List<Hito> hitos = hitoRepository.findByEtapaProyectoId(idProyecto);
+        List<Hito> hitos = hitoRepository.findByProyectoId(idProyecto);
         if (hitos.isEmpty()) return;
 
-        List<HitoUnidad> nuevasJunturas = new ArrayList<>();
+        List<HitoPiso> nuevasJunturas = new ArrayList<>();
 
-        for (Activo activo: activos){
+        List<Piso> pisosUnicos = activos.stream().map(Activo::getPiso).distinct().toList();
+
+        for (Piso piso: pisosUnicos){
             for (Hito hito: hitos){
-                HitoUnidad hitoUnidad = HitoUnidad.builder()
+                HitoPiso hitoPiso = HitoPiso.builder()
                         .estado(EstadoHito.PENDIENTE)
                         .fechaCompletado(null)
-                        .activo(activo)
+                        .piso(piso)
                         .hito(hito)
                         .build();
-                nuevasJunturas.add(hitoUnidad);
+                nuevasJunturas.add(hitoPiso);
             }
         }
-        hitoUnidadRepository.saveAll(nuevasJunturas);
+        hitoPisoRepository.saveAll(nuevasJunturas);
     }
 
     @Override
     @Transactional
     public void hidratarNuevoHito(Hito nuevoHito, List<Activo> activosDelProyecto){
-        List<HitoUnidad> nuevasJunturas = activosDelProyecto.stream()
-                .map(activo -> HitoUnidad.builder()
-                        .activo(activo)
+        List<Piso> pisosUnicos = activosDelProyecto.stream().map(Activo::getPiso).distinct().toList();
+        List<HitoPiso> nuevasJunturas = pisosUnicos.stream()
+                .map(piso -> HitoPiso.builder()
+                        .piso(piso)
                         .hito(nuevoHito)
                         .estado(EstadoHito.PENDIENTE)
                         .build())
                 .toList();
-        hitoUnidadRepository.saveAll(nuevasJunturas);
+        hitoPisoRepository.saveAll(nuevasJunturas);
     }
 }
