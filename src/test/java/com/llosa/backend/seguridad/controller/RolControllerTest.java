@@ -1,13 +1,13 @@
-package com.llosa.backend.module.seguridad.controller;
+package com.llosa.backend.seguridad.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llosa.backend.config.FirebaseConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
-import com.llosa.backend.module.seguridad.dto.ModificarFuncionesRequest;
-import com.llosa.backend.module.seguridad.entity.Rol;
-import com.llosa.backend.module.seguridad.service.RolService;
+import com.llosa.backend.seguridad.dto.ModificarFuncionesRequest;
+import com.llosa.backend.seguridad.entity.Rol;
+import com.llosa.backend.seguridad.service.RolService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RolController.class)
-@Import(SecurityTestConfiguration.class)
+@Import({com.llosa.backend.config.SecurityConfig.class, SecurityTestConfiguration.class})
 class RolControllerTest {
 
     @Autowired
@@ -40,6 +40,9 @@ class RolControllerTest {
 
     @MockitoBean
     FirebaseConfig firebaseConfig;
+
+    @MockitoBean
+    com.llosa.backend.seguridad.repository.UsuarioRepository usuarioRepository;
 
     // ── GET /api/roles ────────────────────────────────────────────────────────
 

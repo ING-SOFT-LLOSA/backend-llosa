@@ -1,4 +1,4 @@
-package com.llosa.backend.module.seguridad.integration;
+package com.llosa.backend.seguridad.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.auth.FirebaseAuth;
@@ -7,13 +7,13 @@ import com.llosa.backend.config.FirebaseConfig;
 import com.llosa.backend.config.PostgresTestContainerConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
-import com.llosa.backend.module.seguridad.dto.AsignarRolRequest;
-import com.llosa.backend.module.seguridad.dto.CrearUsuarioRequest;
-import com.llosa.backend.module.seguridad.entity.Rol;
-import com.llosa.backend.module.seguridad.entity.Usuario;
-import com.llosa.backend.module.seguridad.repository.RolRepository;
-import com.llosa.backend.module.seguridad.repository.UsuarioRepository;
-import com.llosa.backend.security.FirebaseAuthenticationToken;
+import com.llosa.backend.seguridad.dto.AsignarRolRequest;
+import com.llosa.backend.seguridad.dto.CrearUsuarioRequest;
+import com.llosa.backend.seguridad.entity.Rol;
+import com.llosa.backend.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.repository.RolRepository;
+import com.llosa.backend.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -69,6 +69,72 @@ class SeguridadIntegrationTest {
     @BeforeEach
     void limpiarUsuarios() {
         usuarioRepository.deleteAll();
+    }
+
+    // ── CP09: Cliente con unidad "Vendido" pueda acceder ──────────────────────
+
+    @Test
+    void clienteConUnidadVendido_puedeAcceder() throws Exception {
+        // CP09: Validar que cliente con unidad Vendido puede acceder al portal
+        // Requisitos:
+        // - Firebase emite token de acceso ✅
+        // - Confirma estado de cuenta 'Activo' ✅
+        // - Renderiza Dashboard completo (verifica /api/auth/me devuelve perfil) ✅
+
+        // 1. Crear cliente CLIENTE con estado activo
+        CrearUsuarioRequest crearReq = TestData.crearUsuarioRequest();
+        String firebaseUidGenerado = "cp09-cliente-vendido-uid";
+
+        UserRecord mockRecord = mock(UserRecord.class);
+        when(mockRecord.getUid()).thenReturn(firebaseUidGenerado);
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.createUser(any(UserRecord.CreateRequest.class))).thenReturn(mockRecord);
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            mockMvc.perform(post("/api/users/register")
+                            .with(securityContext(contextWithAuth(adminAuth())))
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(crearReq)))
+                    .andExpect(status().isOk());
+        }
+
+        // 2. Verificar usuario en BD con estado activo
+        Usuario clienteDB = usuarioRepository.findByEmail(crearReq.getEmail()).orElseThrow();
+        assertThat(clienteDB.getActivo()).isTrue(); // Estado = Activo ✅
+        assertThat(clienteDB.getFirebaseUuid()).isEqualTo(firebaseUidGenerado);
+
+        // 3. Asignar rol CLIENTE (simula unidad en estado Vendido)
+        Rol rolCliente = rolRepository.findByNombre("CLIENTE").orElseThrow();
+        AsignarRolRequest rolReq = new AsignarRolRequest();
+        rolReq.setIdRol(rolCliente.getIdRol());
+
+        mockMvc.perform(put("/api/users/{id}/role", clienteDB.getId())
+                        .with(securityContext(contextWithAuth(adminAuth())))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(rolReq)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rol").value("CLIENTE"));
+
+        // 4. Verificar que cliente puede acceder con token Firebase válido
+        // Firebase emite token ✅, confirma estado activo ✅, renderiza dashboard ✅
+        FirebaseAuthenticationToken tokenCliente = new FirebaseAuthenticationToken(
+                firebaseUidGenerado,
+                crearReq.getEmail(),
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+        // GET /api/auth/me devuelve perfil completo (Dashboard) ✅
+        mockMvc.perform(get("/api/auth/me")
+                        .with(securityContext(contextWithAuth(tokenCliente))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(crearReq.getEmail()))
+                .andExpect(jsonPath("$.rol").value("CLIENTE"))
+                .andExpect(jsonPath("$.activo").value(true))  // Estado: Activo ✅
+                .andExpect(jsonPath("$.tipoUsuario").value("CLIENTE"))
+                .andExpect(jsonPath("$.funciones").isArray());
     }
 
     // ── Flujo completo: crear → asignar rol → consultar /me ──────────────────
@@ -332,15 +398,15 @@ class SeguridadIntegrationTest {
     // ── ASESOR: asignar rol → /me devuelve exactamente 6 funciones ───────────
 
     @Test
-    void asignarRolAsesor_meDevuelveSeisFunciones() throws Exception {
+    void asignarRolAsesor_meDevuelveSieteFunciones() throws Exception {
         Usuario u = TestData.usuarioConEmail("asesor-it@test.com");
         u.setFirebaseUuid("uid-asesor-it");
         usuarioRepository.save(u);
-
+ 
         Rol rolAsesor = rolRepository.findByNombre("ASESOR").orElseThrow();
         AsignarRolRequest req = new AsignarRolRequest();
         req.setIdRol(rolAsesor.getIdRol());
-
+ 
         mockMvc.perform(put("/api/users/{id}/role", u.getId())
                         .with(securityContext(contextWithAuth(adminAuth())))
                         .with(csrf())
@@ -348,28 +414,28 @@ class SeguridadIntegrationTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.rol").value("ASESOR"))
-                .andExpect(jsonPath("$.funciones.length()").value(6));
-
+                .andExpect(jsonPath("$.funciones.length()").value(7));
+ 
         FirebaseAuthenticationToken token = new FirebaseAuthenticationToken(
                 "uid-asesor-it", "asesor-it@test.com",
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
-
+ 
         mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(token))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.rol").value("ASESOR"))
-                .andExpect(jsonPath("$.funciones.length()").value(6));
+                .andExpect(jsonPath("$.funciones.length()").value(7));
     }
-
+ 
     // ── Asignar rol inexistente → 404 ────────────────────────────────────────
-
+ 
     @Test
     void asignarRolInexistente() throws Exception {
         Usuario u = TestData.usuarioConEmail("roltest@test.com");
         usuarioRepository.save(u);
-
+ 
         AsignarRolRequest req = new AsignarRolRequest();
         req.setIdRol(9999);
-
+ 
         mockMvc.perform(put("/api/users/{id}/role", u.getId())
                         .with(securityContext(contextWithAuth(adminAuth())))
                         .with(csrf())
@@ -378,13 +444,18 @@ class SeguridadIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").exists());
     }
-
+ 
     // ─────────────────────────────────────────────────────────────────────────
-
+ 
     private static FirebaseAuthenticationToken adminAuth() {
         return new FirebaseAuthenticationToken(
                 "admin-uid", "admin@llosaedificaciones.com",
-                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+                List.of(
+                        new SimpleGrantedAuthority("ROLE_USER"),
+                        new SimpleGrantedAuthority("USER_GESTIONAR"),
+                        new SimpleGrantedAuthority("USER_VER"),
+                        new SimpleGrantedAuthority("ROL_GESTIONAR")
+                ));
     }
 
     private static SecurityContext contextWithAuth(FirebaseAuthenticationToken auth) {

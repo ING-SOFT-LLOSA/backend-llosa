@@ -1,4 +1,4 @@
-package com.llosa.backend.security;
+package com.llosa.backend.seguridad.security;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

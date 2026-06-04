@@ -1,7 +1,7 @@
 package com.llosa.backend.config;
 
-import com.llosa.backend.module.seguridad.controller.UsuarioController;
-import com.llosa.backend.module.seguridad.service.UsuarioService;
+import com.llosa.backend.seguridad.controller.UsuarioController;
+import com.llosa.backend.seguridad.service.UsuarioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -22,6 +22,8 @@ class SecurityConfigTest {
     UsuarioService usuarioService;
     @MockitoBean
     FirebaseConfig firebaseConfig;
+    @MockitoBean
+    com.llosa.backend.seguridad.repository.UsuarioRepository usuarioRepository;
 
     // ── Endpoints protegidos requieren autenticación ──────────────────────────
 

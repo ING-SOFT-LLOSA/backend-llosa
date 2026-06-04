@@ -1,7 +1,7 @@
-package com.llosa.backend.module.seguridad.repository;
+package com.llosa.backend.seguridad.repository;
 
 import com.llosa.backend.config.PostgresTestContainerConfig;
-import com.llosa.backend.module.seguridad.entity.Rol;
+import com.llosa.backend.seguridad.entity.Rol;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
@@ -62,30 +62,30 @@ class RolRepositoryTest {
     }
 
     @Test
-    void rolAdmin_tieneTodas12Funciones() {
+    void rolAdmin_tieneTodasFunciones() {
         Rol admin = rolRepository.findByNombre("ADMIN").orElseThrow();
         long totalFunciones = funcionRepository.count();
-
+ 
         assertThat(admin.getFunciones()).hasSize((int) totalFunciones);
     }
-
+ 
     @Test
     void rolLegal_tieneFuncionesCorrectas() {
         Rol legal = rolRepository.findByNombre("LEGAL").orElseThrow();
-
+ 
         assertThat(legal.getFunciones())
                 .extracting("nombreCodigo")
                 .containsExactlyInAnyOrder("CONTRATO_VER", "CONTRATO_EDITAR", "DOCS_VER");
     }
-
+ 
     @Test
     void rolAsesor_tieneFuncionesCorrectas() {
         Rol asesor = rolRepository.findByNombre("ASESOR").orElseThrow();
-
+ 
         assertThat(asesor.getFunciones())
                 .extracting("nombreCodigo")
                 .containsExactlyInAnyOrder(
-                        "PROY_VER", "USER_GESTIONAR", "DOCS_VER", "DOCS_SUBIR", "PAGOS_VER", "CONTRATO_VER");
+                        "PROY_VER", "USER_GESTIONAR", "DOCS_VER", "DOCS_SUBIR", "PAGOS_VER", "CONTRATO_VER", "USER_VER");
     }
 
     @Test

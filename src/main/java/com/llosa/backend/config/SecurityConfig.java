@@ -22,61 +22,60 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final FirebaseTokenFilter firebaseTokenFilter;
+        private final FirebaseTokenFilter firebaseTokenFilter;
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(firebaseTokenFilter,
-                        UsernamePasswordAuthenticationFilter.class);
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+                http
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                                .csrf(csrf -> csrf.disable())
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers("/actuator/health").permitAll()
+                                                .anyRequest().authenticated())
+                                .addFilterBefore(firebaseTokenFilter,
+                                                UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
-    /*
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
-                );
+                return http.build();
+        }
 
-        return http.build();
-    }
-    */
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://localhost:4200",
-                "https://llosa.ingsoftware.lat",
-                "https://llosa-client.ingsoftware.lat",
-                "https://llosa-admin.ingsoftware.lat",
-                "https://backend-llosa-dev.ingsoftware.lat/",
-                "https://backend-llosa-dev.ingsoftware.lat",
-                "https://backend-llosa.ingsoftware.lat"
-        ));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
-        return source -> {
-            UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
-            src.registerCorsConfiguration("/**", config);
-            return src.getCorsConfiguration(source);
-        };
-    }
+        /*
+         * @Bean
+         * public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+         * http
+         * .csrf(csrf -> csrf.disable())
+         * .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+         * .sessionManagement(session ->
+         * session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+         * .authorizeHttpRequests(auth -> auth
+         * .anyRequest().permitAll()
+         * );
+         * 
+         * return http.build();
+         * }
+         */
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration config = new CorsConfiguration();
+                config.setAllowedOrigins(List.of(
+                                "http://localhost:3000",
+                                "http://localhost:5173",
+                                "http://localhost:4200",
+                                "https://llosa.ingsoftware.lat",
+                                "https://llosa-client.ingsoftware.lat",
+                                "https://llosa-admin.ingsoftware.lat",
+                                "https://backend-llosa-dev.ingsoftware.lat/",
+                                "https://backend-llosa-dev.ingsoftware.lat",
+                                "https://backend-llosa.ingsoftware.lat"));
+                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+                config.setAllowedHeaders(List.of("*"));
+                config.setAllowCredentials(true);
+                return source -> {
+                        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
+                        src.registerCorsConfiguration("/**", config);
+                        return src.getCorsConfiguration(source);
+                };
+        }
 }

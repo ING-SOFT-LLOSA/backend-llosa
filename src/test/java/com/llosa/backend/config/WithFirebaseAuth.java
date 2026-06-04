@@ -1,6 +1,6 @@
 package com.llosa.backend.config;
 
-import com.llosa.backend.security.FirebaseAuthenticationToken;
+import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;

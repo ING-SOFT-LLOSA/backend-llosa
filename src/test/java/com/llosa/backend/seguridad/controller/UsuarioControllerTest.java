@@ -1,4 +1,4 @@
-package com.llosa.backend.module.seguridad.controller;
+package com.llosa.backend.seguridad.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llosa.backend.config.FirebaseConfig;
@@ -6,10 +6,10 @@ import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
 import com.llosa.backend.exception.EmailDuplicadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
-import com.llosa.backend.module.seguridad.dto.AsignarRolRequest;
-import com.llosa.backend.module.seguridad.dto.CrearUsuarioRequest;
-import com.llosa.backend.module.seguridad.dto.UsuarioResponse;
-import com.llosa.backend.module.seguridad.service.UsuarioService;
+import com.llosa.backend.seguridad.dto.AsignarRolRequest;
+import com.llosa.backend.seguridad.dto.CrearUsuarioRequest;
+import com.llosa.backend.seguridad.dto.UsuarioResponse;
+import com.llosa.backend.seguridad.service.UsuarioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UsuarioController.class)
-@Import(SecurityTestConfiguration.class)
+@Import({com.llosa.backend.config.SecurityConfig.class, SecurityTestConfiguration.class})
 class UsuarioControllerTest {
 
     @Autowired
@@ -42,6 +42,9 @@ class UsuarioControllerTest {
 
     @MockitoBean
     FirebaseConfig firebaseConfig;
+
+    @MockitoBean
+    com.llosa.backend.seguridad.repository.UsuarioRepository usuarioRepository;
 
     // ── POST /api/users/register ─────────────────────────────────────────────
 

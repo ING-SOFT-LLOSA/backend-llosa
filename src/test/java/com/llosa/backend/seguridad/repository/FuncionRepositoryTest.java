@@ -1,7 +1,7 @@
-package com.llosa.backend.module.seguridad.repository;
+package com.llosa.backend.seguridad.repository;
 
 import com.llosa.backend.config.PostgresTestContainerConfig;
-import com.llosa.backend.module.seguridad.entity.Funcion;
+import com.llosa.backend.seguridad.entity.Funcion;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
@@ -28,9 +28,9 @@ class FuncionRepositoryTest {
     FuncionRepository funcionRepository;
 
     @Test
-    void findAll_devuelve12FuncionesDelSeed() {
+    void findAll_devuelve13FuncionesDelSeed() {
         List<Funcion> funciones = funcionRepository.findAll();
-        assertThat(funciones).hasSize(12);
+        assertThat(funciones).hasSize(13);
     }
 
     @Test

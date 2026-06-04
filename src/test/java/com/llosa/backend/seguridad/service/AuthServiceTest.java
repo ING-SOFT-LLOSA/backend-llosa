@@ -1,12 +1,12 @@
-package com.llosa.backend.module.seguridad.service;
+package com.llosa.backend.seguridad.service;
 
 import com.llosa.backend.config.TestData;
 import com.llosa.backend.exception.AccesoDenegadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
-import com.llosa.backend.module.seguridad.dto.PerfilConPermisosResponse;
-import com.llosa.backend.module.seguridad.entity.Rol;
-import com.llosa.backend.module.seguridad.entity.Usuario;
-import com.llosa.backend.module.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.seguridad.dto.PerfilConPermisosResponse;
+import com.llosa.backend.seguridad.entity.Rol;
+import com.llosa.backend.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
