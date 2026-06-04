@@ -1,11 +1,9 @@
-package com.llosa.backend.seguridad.service;
+package com.llosa.backend.module.seguridad.service;
 
-import com.llosa.backend.seguridad.dto.PerfilConPermisosResponse;
-import com.llosa.backend.seguridad.entity.Funcion;
-import com.llosa.backend.seguridad.entity.Usuario;
-import com.llosa.backend.seguridad.repository.UsuarioRepository;
-import com.llosa.backend.exception.AccesoDenegadoException;
-import com.llosa.backend.exception.RecursoNoEncontradoException;
+import com.llosa.backend.module.seguridad.dto.PerfilConPermisosResponse;
+import com.llosa.backend.module.seguridad.entity.Funcion;
+import com.llosa.backend.module.seguridad.entity.Usuario;
+import com.llosa.backend.module.seguridad.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -24,23 +22,22 @@ public class AuthService {
     public PerfilConPermisosResponse verificarYCargarPerfil(String firebaseUid, String email) {
 
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no registrado en el sistema"));
+                .orElseThrow(() -> new RuntimeException("Usuario no registrado en el sistema"));
 
         if (!usuario.getActivo()) {
-            throw new AccesoDenegadoException("Cuenta suspendida. Contacte a la inmobiliaria.");
+            throw new RuntimeException("Cuenta suspendida. Contacte a la inmobiliaria.");
         }
-        /*
-         * Para testing se invalida esto
-         * if ("EMPLEADO".equals(usuario.getTipoUsuario())) {
-         * if (email == null || !email.endsWith("@" + dominioCorporativo)) {
-         * throw new AccesoDenegadoException("Acceso denegado: dominio no autorizado.");
-         * }
-         * }
-         */
+        /* Para testing se invalida esto
+        if ("EMPLEADO".equals(usuario.getTipoUsuario())) {
+            if (!email.endsWith("@" + dominioCorporativo)) {
+                throw new RuntimeException("Acceso denegado: dominio no autorizado.");
+            }
+        }
+        */
         List<String> funciones = usuario.getRol() != null
                 ? usuario.getRol().getFunciones().stream()
-                        .map(Funcion::getNombreCodigo)
-                        .toList()
+                .map(Funcion::getNombreCodigo)
+                .toList()
                 : List.of();
 
         PerfilConPermisosResponse response = new PerfilConPermisosResponse();

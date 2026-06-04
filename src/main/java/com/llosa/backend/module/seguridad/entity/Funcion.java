@@ -1,4 +1,4 @@
-package com.llosa.backend.seguridad.entity;
+package com.llosa.backend.module.seguridad.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

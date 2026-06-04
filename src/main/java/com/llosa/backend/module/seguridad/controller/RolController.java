@@ -1,8 +1,8 @@
-package com.llosa.backend.seguridad.controller;
+package com.llosa.backend.module.seguridad.controller;
 
-import com.llosa.backend.seguridad.dto.ModificarFuncionesRequest;
-import com.llosa.backend.seguridad.entity.Rol;
-import com.llosa.backend.seguridad.service.RolService;
+import com.llosa.backend.module.seguridad.dto.ModificarFuncionesRequest;
+import com.llosa.backend.module.seguridad.entity.Rol;
+import com.llosa.backend.module.seguridad.service.RolService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -18,7 +18,7 @@ public class HitoController {
 
     private final HitoService hitoService;
 
-    @PreAuthorize("hasAuthority('PROY_EDITAR')")
+    @PreAuthorize("hasAuthority('OBRA_EDITAR')")
     @PutMapping("/{id}")
     public ResponseEntity<HitoResponseDTO> actualizarHito(@PathVariable("id") UUID uuid, @RequestBody HitoCreateDTO dto) {
         Hito hitoActualizado = hitoService.findById(uuid);
@@ -29,7 +29,7 @@ public class HitoController {
         return ResponseEntity.ok(HitoResponseDTO.fromEntity(hitoService.save(hitoActualizado)));
     }
 
-    @PreAuthorize("hasAuthority('PROY_EDITAR')")
+    @PreAuthorize("hasAuthority('OBRA_EDITAR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteHito(@PathVariable("id") UUID uuid) {
         hitoService.deleteById(uuid);

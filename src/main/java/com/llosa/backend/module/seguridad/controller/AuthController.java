@@ -1,13 +1,14 @@
-package com.llosa.backend.seguridad.controller;
+package com.llosa.backend.module.seguridad.controller;
 
-import com.llosa.backend.seguridad.dto.PerfilConPermisosResponse;
-import com.llosa.backend.seguridad.service.AuthService;
-import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
+import com.llosa.backend.module.seguridad.dto.PerfilConPermisosResponse;
+import com.llosa.backend.module.seguridad.service.AuthService;
+import com.llosa.backend.security.FirebaseAuthenticationToken;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,3 +30,4 @@ public class AuthController {
         return ResponseEntity.ok(perfil);
     }
 }
+

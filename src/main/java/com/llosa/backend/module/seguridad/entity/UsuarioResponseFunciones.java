@@ -1,4 +1,4 @@
-package com.llosa.backend.seguridad.entity;
+package com.llosa.backend.module.seguridad.entity;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,7 +31,7 @@ public record UsuarioResponseFunciones(
                 u.getRol(),
                 u.getActivo(),
                 u.getCreatedAt(),
-                listaFunciones
+                u.getRol().getFunciones()
         );
     }
 }

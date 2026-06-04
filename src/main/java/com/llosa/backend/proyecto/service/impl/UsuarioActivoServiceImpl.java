@@ -1,10 +1,13 @@
 package com.llosa.backend.proyecto.service.impl;
 
-import com.llosa.backend.seguridad.entity.Usuario;
-import com.llosa.backend.seguridad.service.UsuarioService;
+import com.llosa.backend.module.seguridad.entity.Usuario;
+import com.llosa.backend.module.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.module.seguridad.service.UsuarioService;
 import com.llosa.backend.proyecto.dto.request.AsignarActivoDTO;
 import com.llosa.backend.proyecto.entity.Activo;
+import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
+import com.llosa.backend.proyecto.repository.ActivoRepository;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.UsuarioActivoService;
@@ -14,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -22,12 +24,14 @@ import java.util.UUID;
 public class UsuarioActivoServiceImpl implements UsuarioActivoService {
 
     private final UsuarioActivoRepository usuarioActivoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final ActivoRepository activoRepository;
     private final UsuarioService usuarioService;
     private final ActivoService activoService;
 
     @Override
     @Transactional(readOnly = true)
-    public UsuarioActivo findById(UUID id) {
+    public UsuarioActivo findById(Long id) {
         return usuarioActivoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Expediente de Usuario-Activo no encontrado: " + id));
     }
@@ -40,7 +44,7 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
 
     @Override
     @Transactional
-    public UsuarioActivo updateCustomerJourney(UUID id, String faseComercial, String estadoTramiteLegal) {
+    public UsuarioActivo updateCustomerJourney(Long id, String faseComercial, String estadoTramiteLegal) {
         UsuarioActivo existente = findById(id);
         if (faseComercial != null) existente.setFaseComercial(faseComercial);
         if (estadoTramiteLegal != null) existente.setEstadoTramiteLegal(estadoTramiteLegal);
@@ -75,16 +79,5 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
         usuarioActivoRepository.save(usuarioActivo);
     }
 
-    @Override
-    @Transactional(readOnly = true) // Usa readOnly para búsquedas
-    public Optional<UsuarioActivo> findByActivo(UUID activoId) {
-        return usuarioActivoRepository.findByActivoId(activoId);
-    }
 
-
-    @Override
-    @Transactional
-    public void deleteById(UUID id){
-        usuarioActivoRepository.deleteById(id);
-    }
 }

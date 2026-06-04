@@ -81,7 +81,8 @@ public class ProyectoController {
         return ResponseEntity.ok(response);
     }
     // Funcionando correctamente
-    @PreAuthorize("hasAuthority('PROY_EDITAR')")
+
+    @PreAuthorize("hasAuthority('PROY_CREAR')")
     @PostMapping("/{uuid}/etapas")
     public ResponseEntity<EtapaResponseDTO> crearEtapa(@PathVariable("uuid") UUID id_proyecto,
                                                        @Valid @RequestBody EtapaCreateDTO dto) {
@@ -96,7 +97,7 @@ public class ProyectoController {
                 .body(EtapaResponseDTO.fromEntity(etapaService.save(id_proyecto, etapa)));
     }
     // Super endopint para la creacion de torres , pisos y activos
-    @PreAuthorize("hasAuthority('PROY_EDITAR')")
+    @PreAuthorize("hasAuthority('PROY_CREAR')")
     @PostMapping("{id_proyecto}/estructura-fisica")
     public ResponseEntity<Void> crearEstructuraFisica(@PathVariable("id_proyecto") UUID id_proyecto,
                                                       @Valid @RequestBody ProyectoCargaDTO estructuraFisica) {

@@ -1,10 +1,9 @@
-package com.llosa.backend.seguridad.service;
+package com.llosa.backend.module.seguridad.service;
 
-import com.llosa.backend.seguridad.entity.Funcion;
-import com.llosa.backend.seguridad.entity.Rol;
-import com.llosa.backend.seguridad.repository.FuncionRepository;
-import com.llosa.backend.seguridad.repository.RolRepository;
-import com.llosa.backend.exception.RecursoNoEncontradoException;
+import com.llosa.backend.module.seguridad.entity.Funcion;
+import com.llosa.backend.module.seguridad.entity.Rol;
+import com.llosa.backend.module.seguridad.repository.FuncionRepository;
+import com.llosa.backend.module.seguridad.repository.RolRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +20,7 @@ public class RolService {
     @Transactional
     public Rol modificarFunciones(Integer idRol, List<Integer> idFunciones) {
         Rol rol = rolRepository.findById(idRol)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
 
         List<Funcion> funciones = funcionRepository.findAllById(idFunciones);
         rol.setFunciones(funciones);

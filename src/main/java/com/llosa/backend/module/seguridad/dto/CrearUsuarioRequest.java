@@ -1,4 +1,4 @@
-package com.llosa.backend.seguridad.dto;
+package com.llosa.backend.module.seguridad.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

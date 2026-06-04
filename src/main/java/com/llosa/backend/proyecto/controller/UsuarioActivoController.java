@@ -1,8 +1,7 @@
 package com.llosa.backend.proyecto.controller;
 
-import com.llosa.backend.proyecto.dto.response.UsuarioActivoResponseDTO;
-import com.llosa.backend.seguridad.entity.Usuario;
-import com.llosa.backend.seguridad.service.UsuarioService;
+import com.llosa.backend.module.seguridad.entity.Usuario;
+import com.llosa.backend.module.seguridad.service.UsuarioService;
 import com.llosa.backend.proyecto.dto.request.AsignarActivoDTO;
 import com.llosa.backend.proyecto.dto.response.ActivoResponseDTO;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
@@ -19,8 +18,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -57,20 +54,4 @@ public class UsuarioActivoController {
         return ResponseEntity.ok("Activo asignación registrada con éxito.");
     }
 
-    // ver el contrato con el usuario y activo
-    @GetMapping("/{uuidActivo}/contrato")
-    public ResponseEntity<UsuarioActivoResponseDTO> verContratoActivoUsuario(@PathVariable UUID uuidActivo) {
-        return usuarioActivoService.findByActivo(uuidActivo)
-                .map(UsuarioActivoResponseDTO::fromEntity) // Si existe, mapea a DTO
-                .map(ResponseEntity::ok)                   // Y mete el DTO en un 200 OK
-                .orElseGet(() -> ResponseEntity.notFound().build()); // Si no, 404
-    }
-
-    // Borrar el contrato con el usuario y activo
-    @DeleteMapping("/delete/{uuidUsuarioActivo}")
-    @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
-    public ResponseEntity<Void> desvicularActivoAUsuario(@PathVariable UUID uuidUsuarioActivo) {
-        usuarioActivoService.deleteById(uuidUsuarioActivo);
-        return ResponseEntity.noContent().build();
-    }
 }

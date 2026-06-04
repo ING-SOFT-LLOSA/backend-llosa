@@ -1,6 +1,6 @@
 package com.llosa.backend.proyecto.entity;
 
-import com.llosa.backend.seguridad.entity.Usuario;
+import com.llosa.backend.module.seguridad.entity.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

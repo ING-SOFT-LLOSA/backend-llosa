@@ -22,15 +22,16 @@ public class FirebaseConfig {
 
         if (FirebaseApp.getApps().isEmpty()) {
 
-            try (InputStream serviceAccount = new FileInputStream(serviceAccountPath)) {
-                FirebaseOptions options = FirebaseOptions.builder()
-                        .setCredentials(
-                                GoogleCredentials.fromStream(serviceAccount)
-                        )
-                        .build();
+            InputStream serviceAccount =
+                    new FileInputStream(serviceAccountPath);
 
-                FirebaseApp.initializeApp(options);
-            }
+            FirebaseOptions options = FirebaseOptions.builder()
+                    .setCredentials(
+                            GoogleCredentials.fromStream(serviceAccount)
+                    )
+                    .build();
+
+            FirebaseApp.initializeApp(options);
         }
     }
 }
