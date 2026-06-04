@@ -64,6 +64,15 @@ public class ActivoServiceImpl implements ActivoService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<Activo> findByPiso(Long pisoId, String search) {
+        if (search == null || search.isBlank()) {
+            return activoRepository.findByPisoId(pisoId);
+        }
+        return activoRepository.findByPisoIdAndNroContainingIgnoreCase(pisoId, search);
+    }
+
+    @Override
     @Transactional
     public Page<ActivoResponseDTO> listarPorProyectoYEstado(UUID idProyecto, EstadoComercialActivo estado, int page, int size){
         Pageable pageable = PageRequest.of(page, size);

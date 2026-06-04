@@ -29,7 +29,10 @@ public class ProyectoController {
     private final ProyectoService proyectoService;
     private final HitoService hitoService;
 
-    // Funcionando correctamente
+    /*
+    Endpoint para crear proyecto
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_CREAR')")
     @PostMapping
     public ResponseEntity<ProyectoResponseDTO> crearProyecto(@Valid @RequestBody ProyectoCreateDTO proyecto) {
@@ -46,7 +49,10 @@ public class ProyectoController {
                 .build();
         return ResponseEntity.status(HttpStatus.CREATED).body(ProyectoResponseDTO.fromEntity(proyectoService.save(nuevo_proyecto)));
     }
-
+    /*
+    Endpoint para editar con put proyecto
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PutMapping("/{uuid}")
     public ResponseEntity<ProyectoResponseDTO> actualizarProyecto(@PathVariable("uuid") UUID id, @Valid @RequestBody ProyectoCreateDTO proyecto) {
@@ -62,7 +68,10 @@ public class ProyectoController {
         proyectoActualizado.setFechaFin(proyecto.fechaFin());
         return ResponseEntity.ok(ProyectoResponseDTO.fromEntity(proyectoService.save(proyectoActualizado)));
     }
-
+    /*
+    Endpoint para eliminar proyecto
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @DeleteMapping("/{uuid}")
     public ResponseEntity<Void> deleteProyecto(@PathVariable("uuid") UUID id) {
@@ -70,18 +79,23 @@ public class ProyectoController {
         return ResponseEntity.noContent().build();
     }
 
-    // Funcionando correctamente
+    /*
+    Endpoint para traer todos los proyectos con metodo de search
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping
-    public ResponseEntity<List<ProyectoResponseDTO>> findAll() {
-        List<ProyectoResponseDTO> response = proyectoService.findAll()
+    public ResponseEntity<List<ProyectoResponseDTO>> findAll(@RequestParam(required = false) String search) {
+        List<ProyectoResponseDTO> response = proyectoService.findAll(search)
                 .stream()
                 .map(ProyectoResponseDTO::fromEntity)
                 .toList();
         return ResponseEntity.ok(response);
     }
-    // Funcionando correctamente
-    // Funcionando correctamente
+    /*
+    Endpoint para crear hito con el uuid del proyecto
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PostMapping("/{uuid}/hitos")
     public ResponseEntity<HitoResponseDTO> crearHito(@PathVariable("uuid") UUID id_proyecto,
@@ -96,7 +110,12 @@ public class ProyectoController {
                 .status(HttpStatus.CREATED)
                 .body(HitoResponseDTO.fromEntity(hitoService.save(id_proyecto, hito)));
     }
-    // Super endopint para la creacion de torres , pisos y activos
+
+
+    /*
+    Endpoint para crear proyecto con torre, piso, activo
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PostMapping("{id_proyecto}/estructura-fisica")
     public ResponseEntity<Void> crearEstructuraFisica(@PathVariable("id_proyecto") UUID id_proyecto,
@@ -105,8 +124,11 @@ public class ProyectoController {
         return ResponseEntity.ok().build();
     }
 
-    // Funciona correctamente
-    // Genera el porcentaje total de avance de un proyecto por sus hitos
+
+    /*
+    Endpoint Obtener el avance general en base a los hitos del proyecto (contando los completados por HitoPiso)
+    Estado: Funcional
+     */
     @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping("/{uuid}/avance-general")
     public ResponseEntity<DashboardProyectoDTO> getAvanceGeneral(@PathVariable("uuid") UUID id) {

@@ -8,8 +8,7 @@ import com.llosa.backend.proyecto.entity.Torre;
 import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.repository.HitoPisoRepository;
 import com.llosa.backend.proyecto.repository.ProyectoRepository;
-import com.llosa.backend.proyecto.service.PisoService;
-import com.llosa.backend.proyecto.service.ProyectoService;
+import com.llosa.backend.proyecto.service.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,10 +24,10 @@ public class ProyectoServiceImpl implements ProyectoService {
 
     private final ProyectoRepository proyectoRepository;
     private final HitoPisoRepository hitoPisoRepository;
-    private final TorreServiceImpl torreService;
-    private final ActivoServiceImpl activoService;
+    private final TorreService torreService;
+    private final ActivoService activoService;
     private final PisoService pisoService;
-    private final HidratationServiceImpl hidratacionService;
+    private final HidratationService hidratacionService;
 
     @Override
     public Proyecto save(Proyecto proyecto) {
@@ -44,8 +43,11 @@ public class ProyectoServiceImpl implements ProyectoService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Proyecto> findAll() {
-        return proyectoRepository.findAll();
+    public List<Proyecto> findAll(String search) {
+        if (search == null || search.isBlank()) {
+            return proyectoRepository.findAll();
+        }
+        return proyectoRepository.findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase(search, search);
     }
 
     @Override
