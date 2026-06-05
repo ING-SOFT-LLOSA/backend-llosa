@@ -1,10 +1,10 @@
 package com.llosa.backend.documentos.entity;
 
 import com.llosa.backend.documentos.enums.TipoDocumento;
+import com.llosa.backend.proyecto.entity.Proyecto;
 import jakarta.persistence.*;
-        import lombok.*;
-        import org.hibernate.annotations.CreationTimestamp;
-
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -42,6 +42,8 @@ public class Documento {
     @Column(name = "tipo_mime", length = 50)
     private String tipoMime;
 
+    // FIX: Added @Builder.Default here because you initialized it with "= true"
+    @Builder.Default
     @Column(name = "acceso_restringido", nullable = false)
     private boolean accesoRestringido = true;
 
@@ -51,4 +53,9 @@ public class Documento {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    // FIX: Removed @Builder.Default because there is no initialization expression here
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uuid_proyecto", nullable = true)
+    private Proyecto proyecto;
 }
