@@ -22,26 +22,22 @@ pipeline {
                     echo "Build & Test Stage"
                     echo "======================================"
 
-                    # PASO 1: Clean
-                    echo "PASO 1: Limpiando compilacion anterior..."
-                    mvn clean -q
-
-                    # PASO 2: Compile
-                    echo "PASO 2: Compilando codigo fuente..."
+                    # PASO 1: Compile
+                    echo "PASO 1: Compilando codigo fuente..."
                     mvn compile -DskipTests
 
-                    # PASO 3: Test + JaCoCo Report (SOLO UNITARIOS - sin Testcontainers)
-                    echo "PASO 3: Ejecutando TESTS UNITARIOS (sin Testcontainers)..."
+                    # PASO 2: Test + JaCoCo Report (SOLO UNITARIOS - sin Testcontainers)
+                    echo "PASO 2: Ejecutando TESTS UNITARIOS (sin Testcontainers)..."
                     mvn test jacoco:report \\
                         -Dtest="!*IntegrationTest,!*E2ETest" \\
                         -DexcludedGroups="integration"
 
-                    # PASO 4: Package (sin re-ejecutar tests)
-                    echo "PASO 4: Empaquetando JAR..."
+                    # PASO 3: Package (sin re-ejecutar tests)
+                    echo "PASO 3: Empaquetando JAR..."
                     mvn package -DskipTests -q
 
-                    # PASO 5: Validar JAR
-                    echo "PASO 5: Validando artefacto..."
+                    # PASO 4: Validar JAR
+                    echo "PASO 4: Validando artefacto..."
                     if [ -f "target/backend-0.0.1-SNAPSHOT.jar" ]; then
                         SIZE=$(ls -lh target/backend-0.0.1-SNAPSHOT.jar | awk '{print $5}')
                         echo "OK: JAR creado ($SIZE)"
@@ -50,8 +46,8 @@ pipeline {
                         exit 1
                     fi
 
-                    # PASO 6: Verificar reportes JaCoCo
-                    echo "PASO 6: Verificando reportes..."
+                    # PASO 5: Verificar reportes JaCoCo
+                    echo "PASO 5: Verificando reportes..."
                     if [ -f "target/site/jacoco/index.html" ]; then
                         echo "OK: Reporte JaCoCo generado"
                     else
