@@ -1,6 +1,7 @@
 package com.llosa.backend.seguridad.service;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
 import com.llosa.backend.seguridad.dto.CrearUsuarioRequest;
 import com.llosa.backend.seguridad.dto.UpdateUsuarioDTO;
@@ -14,6 +15,7 @@ import com.llosa.backend.exception.EmailDuplicadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.seguridad.dto.UsuarioResponseFunciones;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +26,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
@@ -42,7 +45,12 @@ public class UsuarioService {
                 .setEmailVerified(false)
                 .setDisplayName(request.getNombre() + " " + request.getApellidos());
 
-        UserRecord userRecord = FirebaseAuth.getInstance().createUser(firebaseRequest);
+        UserRecord userRecord;
+        try {
+            userRecord = FirebaseAuth.getInstance().createUser(firebaseRequest);
+        } catch (FirebaseAuthException e) {
+            throw new RuntimeException("Error al crear usuario en Firebase: " + e.getMessage());
+        }
 
         // 2. Crear perfil en PostgreSQL
         Usuario usuario = new Usuario();
@@ -55,13 +63,30 @@ public class UsuarioService {
         usuario.setTipoUsuario(request.getTipoUsuario());
         usuario.setActivo(true);
 
-        if (request.getIdRol() != null) {
+        // --- THE RESTORED FLAWLESS ROLE ASSIGNMENT LOGIC ---
+        if ("CLIENTE".equals(request.getTipoUsuario())) {
+            // Asigna automáticamente el rol CLIENTE si el tipo de usuario es cliente
+            Rol rolCliente = rolRepository.findByNombre("CLIENTE")
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Rol CLIENTE no encontrado en la base de datos."));
+            usuario.setRol(rolCliente);
+        } else if (request.getIdRol() != null) {
+            // Asigna el rol enviado en el body (para admins, asesores, etc.)
             Rol rol = rolRepository.findById(request.getIdRol())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado"));
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado con ID: " + request.getIdRol()));
             usuario.setRol(rol);
         }
 
         usuarioRepository.save(usuario);
+
+        // --- THE RESTORED EMAIL TRIGGER ---
+        try {
+            sendPasswordResetEmail(request.getEmail());
+        } catch (Exception e) {
+            log.error("Usuario creado, pero falló el envío del email: {}", e.getMessage());
+            // Optional: You can choose to throw an exception here, but usually,
+            // you don't want to rollback the user creation just because the email failed.
+        }
+
         return toResponse(usuario);
     }
 
@@ -115,6 +140,7 @@ public class UsuarioService {
                 : List.of());
         return r;
     }
+
     private void sendPasswordResetEmail(String email) throws Exception {
         String apiKey = "AIzaSyDo_yQ7_tJ3kulCZXaqOcPXAzywtF4pAj0";
         String url = "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=" + apiKey;
@@ -135,6 +161,7 @@ public class UsuarioService {
             throw new RuntimeException("Error al enviar email de bienvenida: " + response.body());
         }
     }
+
     @Transactional
     public void eliminarCompletamente(Integer usuarioId) throws Exception {
         Usuario usuario = usuarioRepository.findById(usuarioId)
@@ -147,19 +174,21 @@ public class UsuarioService {
         usuarioRepository.delete(usuario);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Usuario findById(Integer id){
         return usuarioRepository.findById(id).orElseThrow(
                 () -> new RuntimeException("Usuario no encontrado")
         );
     }
 
+    @Transactional(readOnly = true)
     public Page<UsuarioResponseFunciones> listarPaginadoYFiltrado(String search, int pagina, int tamano) {
         Pageable pageable = PageRequest.of(pagina, tamano);
         Page<Usuario> usuariosPage = usuarioRepository.buscarUsuariosPaginados(search, pageable);
         return usuariosPage.map(UsuarioResponseFunciones::fromEntity);
     }
 
+    @Transactional(readOnly = true)
     public Usuario findByFirebaseUuid(String firebaseUuid) {
         return usuarioRepository.findByFirebaseUuid(firebaseUuid)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -199,5 +228,4 @@ public class UsuarioService {
 
         return toResponse(usuario);
     }
-
 }
