@@ -92,6 +92,7 @@ public class ProyectoController {
                 .toList();
         return ResponseEntity.ok(response);
     }
+
     /*
     Endpoint para crear hito con el uuid del proyecto
     Estado: Funcional
@@ -131,7 +132,7 @@ public class ProyectoController {
     Estado: Funcional
      */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
-    @PostMapping("{id_proyecto}/estructura-fisica")
+    @PostMapping("/{id_proyecto}/estructura-fisica")
     public ResponseEntity<Void> crearEstructuraFisica(@PathVariable("id_proyecto") UUID id_proyecto,
                                                       @Valid @RequestBody ProyectoCargaDTO estructuraFisica) {
         proyectoService.cargarProyecto(id_proyecto,estructuraFisica);

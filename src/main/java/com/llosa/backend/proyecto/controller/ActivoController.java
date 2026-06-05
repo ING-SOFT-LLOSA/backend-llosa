@@ -104,7 +104,7 @@ public class ActivoController {
     }
 
     /*
-    Endpoint Obtiene los hitos de un activo pero con porcentaje
+    Endpoint Obtiene los hitos de un activo pero con porcentaje obtiene el orden
     Estado: Funcional
      */
     @PreAuthorize("hasAuthority('OBRA_VER')")
@@ -142,7 +142,4 @@ public class ActivoController {
         SeguimientoResponseDTO response = seguimientoService.obtenerSeguimiento(uuidActivo);
         return ResponseEntity.ok(response);
     }
-
-
-
 }

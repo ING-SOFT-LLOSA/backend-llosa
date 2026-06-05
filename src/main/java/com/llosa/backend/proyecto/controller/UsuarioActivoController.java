@@ -26,7 +26,6 @@ import java.util.UUID;
 public class UsuarioActivoController {
 
     private final UsuarioActivoService usuarioActivoService;
-    private final ActivoService activoService;
     private final UsuarioService usuarioService;
 
     /**
