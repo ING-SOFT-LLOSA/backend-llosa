@@ -42,4 +42,5 @@ public class HitoController {
         hitoService.deleteById(uuid);
         return ResponseEntity.noContent().build();
     }
+
 }

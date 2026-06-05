@@ -111,6 +111,20 @@ public class ProyectoController {
                 .body(HitoResponseDTO.fromEntity(hitoService.save(id_proyecto, hito)));
     }
 
+    /*
+    Endpoint para obtener todos los hitos de un proyecto con lógica de auto-completado
+    Estado: Funcional
+     */
+    @PreAuthorize("hasAuthority('PROY_VER')")
+    @GetMapping("/{uuid}/hitos")
+    public ResponseEntity<List<HitoResponseDTO>> getHitosByProyecto(@PathVariable("uuid") UUID id) {
+        List<HitoResponseDTO> response = proyectoService.findHitosByProyecto(id)
+                .stream()
+                .map(HitoResponseDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(response);
+    }
+
 
     /*
     Endpoint para crear proyecto con torre, piso, activo

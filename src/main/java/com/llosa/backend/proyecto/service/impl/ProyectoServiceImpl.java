@@ -1,10 +1,7 @@
 package com.llosa.backend.proyecto.service.impl;
 
 import com.llosa.backend.proyecto.dto.request.*;
-import com.llosa.backend.proyecto.entity.Activo;
-import com.llosa.backend.proyecto.entity.Piso;
-import com.llosa.backend.proyecto.entity.Proyecto;
-import com.llosa.backend.proyecto.entity.Torre;
+import com.llosa.backend.proyecto.entity.*;
 import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.repository.HitoPisoRepository;
 import com.llosa.backend.proyecto.repository.ProyectoRepository;
@@ -14,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -99,5 +97,27 @@ public class ProyectoServiceImpl implements ProyectoService {
             }
         }
         proyectoRepository.save(proyecto);
+    }
+
+    @Override
+    @Transactional
+    public List<Hito> findHitosByProyecto(UUID idProyecto) {
+        Proyecto proyecto = findById(idProyecto);
+        List<Hito> hitos = proyecto.getHitos();
+
+        for (Hito hito : hitos) {
+            // Solo procesamos si no está COMPLETADO para evitar redundancia
+            if (hito.getEstado() != EstadoHito.COMPLETADO) {
+                List<HitoPiso> hitosPiso = hito.getHitosPiso();
+                // Verificamos si todos los hitos de pisos están completados
+                if (!hitosPiso.isEmpty() && hitosPiso.stream().allMatch(hp -> hp.getEstado() == EstadoHito.COMPLETADO)) {
+                    hito.setEstado(EstadoHito.COMPLETADO);
+                    hito.setFechaCompletado(LocalDate.now());
+                }
+            }
+        }
+        // No es necesario llamar explícitamente a save si los objetos están gestionados por JPA, 
+        // pero se retornan los hitos actualizados.
+        return hitos;
     }
 }

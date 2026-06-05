@@ -1,6 +1,7 @@
 package com.llosa.backend.proyecto.service;
 
 import com.llosa.backend.proyecto.dto.request.ProyectoCargaDTO;
+import com.llosa.backend.proyecto.entity.Hito;
 import com.llosa.backend.proyecto.entity.Proyecto;
 
 import java.util.List;
@@ -19,5 +20,7 @@ public interface ProyectoService {
     void cargarProyecto(UUID idProyecto,ProyectoCargaDTO dto);
 
     void deleteById(UUID id);
+
+    List<Hito> findHitosByProyecto(UUID idProyecto);
 
 }

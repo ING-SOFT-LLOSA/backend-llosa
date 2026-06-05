@@ -115,6 +115,7 @@ public class ActivoController {
                 hitoPisoService.obtenerAvancesPorActivo(id)
         );
     }
+
     /*
     Endpoint Obtiene los activos por proyecto_id, page, y size, además de por estado
     Estado: Funcional
