@@ -37,18 +37,12 @@ pipeline {
                 scannerHome = tool 'SonarScanner'
             }
             steps {
-                script {
-                    // PASO 1: Compilar el código Y los tests (esto genera target/test-classes)
-                    sh 'mvn clean compile test-compile'
-                    
-                    // PASO 2: Ejecutar SonarScanner
-                    withSonarQubeEnv('SonarQube') {
-                        sh '''
-                            export SONAR_USER_HOME=/var/jenkins_home/workspace/LLOSA-Backend_test/.sonar
-                            mkdir -p /var/jenkins_home/workspace/LLOSA-Backend_test/.sonar
-                            /var/jenkins_home/tools/hudson.plugins.sonar.SonarRunnerInstallation/SonarScanner/bin/sonar-scanner
-                        '''
-                    }
+                withSonarQubeEnv('SonarQube-Server') {
+                    sh '''
+                        export SONAR_USER_HOME="${WORKSPACE}/.sonar"
+                        mkdir -p "${SONAR_USER_HOME}"
+                        ${scannerHome}/bin/sonar-scanner
+                    '''
                 }
             }
         }
