@@ -30,7 +30,7 @@ pipeline {
             agent {
                 docker {
                     image 'maven:3.9.8-eclipse-temurin-21-alpine'
-                    reuseNode false
+                    reuseNode true
                 }
             }
             environment {
@@ -42,13 +42,21 @@ pipeline {
                     sh 'mvn clean compile test-compile -Dmaven.repo.local=.m2/repository'
                     
                     // PASO 2: Ejecutar SonarScanner
-                    withSonarQubeEnv('SonarQube') {
+                    withSonarQubeEnv() {
                         sh '''
                             export SONAR_USER_HOME="${WORKSPACE}/.sonar"
                             mkdir -p "${SONAR_USER_HOME}"
                             ${scannerHome}/bin/sonar-scanner
                         '''
                     }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: false
                 }
             }
         }
