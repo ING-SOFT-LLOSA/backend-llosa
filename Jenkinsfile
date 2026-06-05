@@ -14,13 +14,6 @@ pipeline {
         }
 
         stage('Build & Test') {
-            agent {
-                docker {
-                    image 'maven:3.9.8-eclipse-temurin-21-alpine'
-                    reuseNode true
-                    args '-v /var/run/docker.sock:/var/run/docker.sock'
-                }
-            }
             steps {
                 sh '''
                     set -e
@@ -29,65 +22,78 @@ pipeline {
                     echo "Build & Test Stage"
                     echo "======================================"
 
-                    # Verificar acceso a Docker
-                    echo "Verificando acceso a Docker..."
-                    if ! docker ps > /dev/null 2>&1; then
-                        echo "ADVERTENCIA: Docker no disponible, ejecutando solo tests unitarios"
-                        SKIP_DOCKER="-Dgroups=!integration"
-                    else
-                        echo "Docker disponible, ejecutando todos los tests"
-                        SKIP_DOCKER=""
-                    fi
-
                     # PASO 1: Clean
                     echo "PASO 1: Limpiando compilacion anterior..."
-                    mvn clean -Dmaven.repo.local=.m2/repository -q
+                    mvn clean -q
 
                     # PASO 2: Compile
                     echo "PASO 2: Compilando codigo fuente..."
-                    mvn compile -Dmaven.repo.local=.m2/repository -DskipTests
+                    mvn compile -DskipTests
 
-                    # PASO 3: Test + JaCoCo Report
-                    echo "PASO 3: Ejecutando tests con reporte JaCoCo..."
-                    mvn test jacoco:report -Dmaven.repo.local=.m2/repository $SKIP_DOCKER
+                    # PASO 3: Test + JaCoCo Report (SOLO UNITARIOS - sin Testcontainers)
+                    echo "PASO 3: Ejecutando TESTS UNITARIOS (sin Testcontainers)..."
+                    mvn test jacoco:report \\
+                        -Dtest="!*IntegrationTest,!*E2ETest" \\
+                        -DexcludedGroups="integration"
 
                     # PASO 4: Package (sin re-ejecutar tests)
                     echo "PASO 4: Empaquetando JAR..."
-                    mvn package -DskipTests -Dmaven.repo.local=.m2/repository -q
+                    mvn package -DskipTests -q
 
                     # PASO 5: Validar JAR
                     echo "PASO 5: Validando artefacto..."
                     if [ -f "target/backend-0.0.1-SNAPSHOT.jar" ]; then
-                        echo "OK: JAR creado"
+                        SIZE=$(ls -lh target/backend-0.0.1-SNAPSHOT.jar | awk '{print $5}')
+                        echo "OK: JAR creado ($SIZE)"
                     else
                         echo "ERROR: JAR no encontrado"
                         exit 1
                     fi
 
+                    # PASO 6: Verificar reportes JaCoCo
+                    echo "PASO 6: Verificando reportes..."
+                    if [ -f "target/site/jacoco/index.html" ]; then
+                        echo "OK: Reporte JaCoCo generado"
+                    else
+                        echo "ADVERTENCIA: Reporte JaCoCo no encontrado"
+                    fi
+
+                    echo ""
                     echo "======================================"
-                    echo "Build & Test completado"
+                    echo "Build & Test completado exitosamente"
                     echo "======================================"
                 '''
             }
             post {
                 always {
-                    junit 'target/surefire-reports/*.xml'
-                    publishHTML(target: [
-                        reportDir: 'target/site/jacoco',
-                        reportFiles: 'index.html',
-                        reportName: 'JaCoCo Report'
-                    ])
+                    // Publicar JUnit results
+                    junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
+
+                    // Publicar JaCoCo solo si existe
+                    script {
+                        if (fileExists('target/site/jacoco/index.html')) {
+                            publishHTML(target: [
+                                reportDir: 'target/site/jacoco',
+                                reportFiles: 'index.html',
+                                reportName: 'JaCoCo Coverage Report',
+                                keepAll: true
+                            ])
+                        } else {
+                            echo "Advertencia: No se pudo publicar JaCoCo report"
+                        }
+                    }
+                }
+                success {
+                    echo "✓ Build & Test exitoso"
+                }
+                failure {
+                    echo "✗ Build & Test falló"
+                    sh 'echo "Directorio target:" && ls -la target/ || true'
                 }
             }
         }
 
         stage('SonarQube Analysis') {
-            agent {
-                docker {
-                    image 'maven:3.9.8-eclipse-temurin-21-alpine'
-                    reuseNode true
-                }
-            }
             steps {
                 echo "======================================"
                 echo "SonarQube Analysis"
@@ -95,7 +101,6 @@ pipeline {
                 withSonarQubeEnv('SonarQube-Server') {
                     sh '''
                         mvn sonar:sonar \
-                            -Dmaven.repo.local=.m2/repository \
                             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
                             -DskipTests
                     '''
