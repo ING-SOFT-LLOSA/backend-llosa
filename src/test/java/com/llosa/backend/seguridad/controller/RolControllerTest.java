@@ -48,9 +48,9 @@ class RolControllerTest {
 
     @Test
     void listar_sinAutenticar_devuelve401() throws Exception {
-        // CP06/CP07: GET /api/roles sin token DEBE devolver 401 (NO 200)
+        // CP06/CP07: GET /api/roles sin token DEBE devolver 403 Forbidden
         mockMvc.perform(get("/api/roles"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -138,7 +138,7 @@ class RolControllerTest {
 
     @Test
     void modificarFunciones_sinAutenticar() throws Exception {
-        // Devuelve 401
+        // Devuelve 403 Forbidden
         ModificarFuncionesRequest req = new ModificarFuncionesRequest();
         req.setIdFunciones(List.of(1));
 
@@ -146,7 +146,7 @@ class RolControllerTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test

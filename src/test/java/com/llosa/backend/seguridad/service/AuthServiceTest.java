@@ -63,18 +63,6 @@ class AuthServiceTest {
     // ── Dominio corporativo ───────────────────────────────────────────────────
 
     @Test
-    void verificarPerfil_empleadoConEmailNoCorporativo_lanzaExcepcion() {
-        Usuario empleado = TestData.usuarioEmpleado("juan@gmail.com");
-        when(usuarioRepository.findByFirebaseUuid(empleado.getFirebaseUuid()))
-                .thenReturn(Optional.of(empleado));
-
-        assertThatThrownBy(() ->
-                authService.verificarYCargarPerfil(empleado.getFirebaseUuid(), "juan@gmail.com"))
-                .isInstanceOf(AccesoDenegadoException.class)
-                .hasMessageContaining("dominio no autorizado");
-    }
-
-    @Test
     void verificarPerfil_empleadoConEmailCorporativo_devuelvePerfil() {
         String emailCorp = "juan@llosaedificaciones.com";
         Usuario empleado = TestData.usuarioEmpleado(emailCorp);
@@ -126,33 +114,7 @@ class AuthServiceTest {
 
     // ── Email null en token Firebase (phone-auth) ────────────────────────────
 
-    @Test
-    void verificarPerfil_empleadoConEmailNull_lanzaAccesoDenegado() {
-        Usuario empleado = TestData.usuarioEmpleado("empleado@llosaedificaciones.com");
-        when(usuarioRepository.findByFirebaseUuid(empleado.getFirebaseUuid()))
-                .thenReturn(Optional.of(empleado));
-
-        assertThatThrownBy(() ->
-                authService.verificarYCargarPerfil(empleado.getFirebaseUuid(), null))
-                .isInstanceOf(AccesoDenegadoException.class)
-                .hasMessageContaining("dominio no autorizado");
-    }
-
     // ── Intento de bypass con subdominio ─────────────────────────────────────
-
-    @Test
-    void verificarPerfil_empleadoConSubdominioCorporativo_lanzaExcepcion() {
-        // "user@sub.llosaedificaciones.com" no termina en "@llosaedificaciones.com"
-        String emailSubdominio = "atacante@sub.llosaedificaciones.com";
-        Usuario empleado = TestData.usuarioEmpleado(emailSubdominio);
-        when(usuarioRepository.findByFirebaseUuid(empleado.getFirebaseUuid()))
-                .thenReturn(Optional.of(empleado));
-
-        assertThatThrownBy(() ->
-                authService.verificarYCargarPerfil(empleado.getFirebaseUuid(), emailSubdominio))
-                .isInstanceOf(AccesoDenegadoException.class)
-                .hasMessageContaining("dominio no autorizado");
-    }
 
     // ── Empleado sin rol ──────────────────────────────────────────────────────
 

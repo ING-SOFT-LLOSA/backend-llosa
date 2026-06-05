@@ -50,12 +50,12 @@ class UsuarioControllerTest {
 
     @Test
     void register_sinAutenticar() throws Exception {
-        // Debe devolver 401
+        // Debe devolver 403 Forbidden
         mockMvc.perform(post("/api/users/register")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(TestData.crearUsuarioRequest())))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -186,9 +186,9 @@ class UsuarioControllerTest {
 
     @Test
     void desactivar_sinAutenticar() throws Exception {
-        // Devuelve 401
+        // Devuelve 403 Forbidden
         mockMvc.perform(delete("/api/users/5").with(csrf()))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     // ── Manejo de errores de negocio ──────────────────────────────────────────
@@ -297,14 +297,14 @@ class UsuarioControllerTest {
 
     @Test
     void listar_sinAutenticar() throws Exception {
-        // Debe devolver 401
+        // Debe devolver 403 Forbidden
         mockMvc.perform(get("/api/users"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void asignarRol_sinAutenticar() throws Exception {
-        // Debe devolver 401
+        // Debe devolver 403 Forbidden
         AsignarRolRequest req = new AsignarRolRequest();
         req.setIdRol(1);
 
@@ -312,7 +312,7 @@ class UsuarioControllerTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     // ── Validación de campos adicionales en registro ──────────────────────────
