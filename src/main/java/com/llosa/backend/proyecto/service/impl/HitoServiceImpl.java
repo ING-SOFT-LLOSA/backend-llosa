@@ -1,7 +1,9 @@
 package com.llosa.backend.proyecto.service.impl;
 
 
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.proyecto.entity.*;
+import com.llosa.backend.proyecto.repository.HitoPisoRepository;
 import com.llosa.backend.proyecto.repository.HitoRepository;
 import com.llosa.backend.proyecto.service.HidratationService;
 import com.llosa.backend.proyecto.service.ProyectoService;
@@ -20,6 +22,7 @@ public class HitoServiceImpl implements HitoService {
     private final HitoRepository hitoRepository;
     private final ProyectoService proyectoService;
     private final HidratationService hidratacionService;
+    private final HitoPisoRepository hitoPisoRepository;
 
     @Override
     @Transactional
@@ -48,9 +51,12 @@ public class HitoServiceImpl implements HitoService {
 
     @Override
     @Transactional
-    public void deleteById(UUID id){
+    public void deleteById(UUID id) {
+        // CP14: hitos propagados a unidades son inmutables (estructura de seguimiento activa)
+        if (hitoPisoRepository.countByHitoId(id) > 0) {
+            throw new BusinessException("No se puede eliminar un hito que ya ha sido propagado a unidades del proyecto");
+        }
         hitoRepository.deleteById(id);
-        return;
     }
 }
 

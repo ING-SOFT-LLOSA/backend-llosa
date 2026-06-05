@@ -144,27 +144,61 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
-                    set +e
-                    CONTAINER=llosa_backend
+                        set +e
+                        CONTAINER=llosa_backend
 
-                    echo "Esperando que contenedor este healthy..."
-                    for i in $(seq 1 15); do
-                        HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}' "$CONTAINER" 2>/dev/null)
+                        echo "Esperando hasta 120s a que el healthcheck reporte healthy..."
+                        for i in $(seq 1 15); do
+                            HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}' "$CONTAINER" 2>/dev/null)
+                            RUNNING=$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)
+                            RESTARTS=$(docker inspect -f '{{.RestartCount}}' "$CONTAINER" 2>/dev/null)
+                            echo "  intento $i/15 -> Running=$RUNNING Health=$HEALTH Restarts=$RESTARTS"
+                            if [ "$RUNNING" != "true" ]; then break; fi
+                            if [ "$HEALTH" = "healthy" ] || [ "$HEALTH" = "n/a" ]; then break; fi
+                            sleep 5
+                        done
+
+                        echo ""
+                        echo "=================================================="
+                        echo "  docker compose ps"
+                        echo "=================================================="
+                        docker compose ps
+
+                        echo ""
+                        echo "=================================================="
+                        echo "  Estado del contenedor ($CONTAINER)"
+                        echo "=================================================="
+                        docker inspect "$CONTAINER" \
+                            --format 'Status: {{.State.Status}} | Running: {{.State.Running}} | ExitCode: {{.State.ExitCode}} | Restarts: {{.RestartCount}} | Health: {{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}'
+
+                        echo ""
+                        echo "=================================================="
+                        echo "  Últimas 150 líneas de logs"
+                        echo "=================================================="
+                        docker compose logs --tail=150 --no-color
+
+                        echo ""
+                        echo "=================================================="
+                        echo "  Verificación final"
+                        echo "=================================================="
                         RUNNING=$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)
+                        HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}' "$CONTAINER" 2>/dev/null)
+                        RESTARTS=$(docker inspect -f '{{.RestartCount}}' "$CONTAINER" 2>/dev/null)
 
-                        if [ "$RUNNING" = "true" ] && ([ "$HEALTH" = "healthy" ] || [ "$HEALTH" = "n/a" ]); then
-                            echo "OK: Contenedor healthy"
-                            exit 0
+                        if [ "$RUNNING" != "true" ]; then
+                            echo "ERROR: el contenedor $CONTAINER no está corriendo."
+                            exit 1
                         fi
-
-                        echo "Intento $i/15 - Running: $RUNNING, Health: $HEALTH"
-                        sleep 5
-                    done
-
-                    echo "ERROR: Contenedor no llego a healthy"
-                    docker compose logs
-                    exit 1
-                '''
+                        if [ "$RESTARTS" -gt 0 ] 2>/dev/null; then
+                            echo "ERROR: el contenedor $CONTAINER se reinició $RESTARTS veces (crash loop)."
+                            exit 1
+                        fi
+                        if [ "$HEALTH" != "healthy" ] && [ "$HEALTH" != "n/a" ]; then
+                            echo "ERROR: el contenedor $CONTAINER no llegó a healthy (Health=$HEALTH)."
+                            exit 1
+                        fi
+                        echo "OK: $CONTAINER está corriendo (Health=$HEALTH, Restarts=$RESTARTS)."
+                    '''
             }
         }
     }

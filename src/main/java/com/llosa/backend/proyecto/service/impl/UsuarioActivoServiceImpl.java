@@ -92,6 +92,22 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
     @Override
     @Transactional
     public void deleteById(UUID id) {
+        UsuarioActivo ua = findById(id);
+        List<Integer> clienteIds = ua.getClientes().stream()
+                .map(c -> c.getId())
+                .toList();
+
         usuarioActivoRepository.deleteById(id);
+
+        // CP19: si el cliente pierde su última unidad, marcar perfil como inactivo
+        for (Integer clienteId : clienteIds) {
+            if (usuarioActivoRepository.findByClienteId(clienteId).isEmpty()) {
+                try {
+                    usuarioService.cambiarEstado(clienteId, false);
+                } catch (Exception e) {
+                    throw new RuntimeException("Error al desactivar usuario " + clienteId + " tras desvinculación", e);
+                }
+            }
+        }
     }
 }

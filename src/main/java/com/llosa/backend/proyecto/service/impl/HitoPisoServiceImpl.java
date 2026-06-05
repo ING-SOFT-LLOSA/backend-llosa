@@ -13,9 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -63,6 +63,42 @@ public class HitoPisoServiceImpl implements HitoPisoService {
     @Transactional(readOnly = true)
     public List<HitoPiso> findByActivo(UUID activoId) {
         return hitoPisoRepository.findByActivoIdOrderByHitoOrdenAsc(activoId);
+    }
+
+    @Override
+    @Transactional
+    public void marcarHitosAnterioresCompletados(UUID activoId, int ordenActual) {
+        // CP18: compra tardía — batch sin validar precedencia ni disparar notificaciones
+        List<HitoPiso> anteriores = hitoPisoRepository
+                .findByActivoIdOrderByHitoOrdenAsc(activoId)
+                .stream()
+                .filter(hp -> hp.getHito().getOrden() < ordenActual
+                        && hp.getEstado() != EstadoHito.COMPLETADO)
+                .collect(Collectors.toList());
+
+        anteriores.forEach(hp -> {
+            hp.setEstado(EstadoHito.COMPLETADO);
+            hp.setFechaCompletado(LocalDate.now());
+        });
+
+        if (!anteriores.isEmpty()) {
+            hitoPisoRepository.saveAll(anteriores);
+        }
+    }
+
+    @Override
+    @Transactional
+    public List<HitoPiso> cambiarEstadoPorTorre(Long torreId, UUID hitoId, EstadoHito estado) {
+        // CP23: actualización masiva — aplica a todas las unidades de la torre para el mismo hito
+        List<HitoPiso> hitos = hitoPisoRepository.findByTorreIdAndHitoId(torreId, hitoId);
+        if (hitos.isEmpty()) {
+            return List.of();
+        }
+        hitos.forEach(hp -> {
+            hp.setEstado(estado);
+            hp.setFechaCompletado(estado == EstadoHito.COMPLETADO ? LocalDate.now() : null);
+        });
+        return hitoPisoRepository.saveAll(hitos);
     }
 
     @Override

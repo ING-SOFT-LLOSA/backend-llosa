@@ -80,4 +80,23 @@ public final class TestData {
                         new SimpleGrantedAuthority("ROL_GESTIONAR")
                 ));
     }
+
+    public static FirebaseAuthenticationToken proyectoAuthToken() {
+        return new FirebaseAuthenticationToken(
+                "test-uid",
+                "test@test.com",
+                List.of(
+                        new SimpleGrantedAuthority("ROLE_USER"),
+                        new SimpleGrantedAuthority("PROY_VER"),
+                        new SimpleGrantedAuthority("PROY_CREAR"),
+                        new SimpleGrantedAuthority("PROY_EDITAR"),
+                        new SimpleGrantedAuthority("OBRA_VER"),
+                        new SimpleGrantedAuthority("OBRA_EDITAR"),
+                        new SimpleGrantedAuthority("CONTRATO_VER"),
+                        new SimpleGrantedAuthority("CONTRATO_EDITAR"),
+                        new SimpleGrantedAuthority("USER_GESTIONAR"),
+                        new SimpleGrantedAuthority("USER_VER"),
+                        new SimpleGrantedAuthority("ROL_GESTIONAR")
+                ));
+    }
 }

@@ -1,5 +1,6 @@
 package com.llosa.backend.proyecto.service.impl;
 
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.proyecto.dto.request.*;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.Piso;
@@ -31,6 +32,10 @@ public class ProyectoServiceImpl implements ProyectoService {
 
     @Override
     public Proyecto save(Proyecto proyecto) {
+        // CP13: nombre debe ser único (case-insensitive)
+        if (proyectoRepository.existsByNombreIgnoreCase(proyecto.getNombre())) {
+            throw new BusinessException("Ya existe un proyecto con el nombre: " + proyecto.getNombre());
+        }
         return proyectoRepository.save(proyecto);
     }
 

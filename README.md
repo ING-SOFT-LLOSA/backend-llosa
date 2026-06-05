@@ -379,50 +379,54 @@ export DOCKER_HOST=unix:///var/run/docker.sock
 
 ## ✅ ESTADO ACTUAL DE TESTS - TODO PASANDO
 
-### 📊 Resultados de Ejecución (2026-06-05 02:24:00)
+### 📊 Resultados de Ejecución (2026-06-05)
 ```
-Tests totales: 157
-✅ Pasados: 157 (100%)
+Tests unitarios: 266
+✅ Pasados: 266 (100%)
 ❌ Fallidos: 0
 ❌ Errores: 0
+
+Cobertura instrucciones: 93.9%
+Cobertura ramas:          81.2%
 
 Estado: BUILD SUCCESS ✅
 ```
 
-### 📋 Desglose por Tipo de Test
+### 📋 Desglose por Módulo (tests unitarios)
 
-**Tests Unitarios (91 tests):** 0 fallos ✅
-- AuthServiceTest: 7 ✅
-- ClienteAccessUnitTest: 17 ✅  
-- RbacServiceUnitTest: 9 ✅
-- RolServiceTest: 6 ✅
-- TokenInvalidationUnitTest: 12 ✅
-- UsuarioServiceTest: 17 ✅
-- FirebaseAuthenticationTokenTest: 5 ✅
-- FirebaseTokenFilterTest: 7 ✅
+**Seguridad (48 tests):**
+- AuthServiceTest, RolServiceTest, UsuarioResponseFuncionesTest
+- AuthControllerTest, UsuarioControllerTest, UsuarioControllerExtendedTest, RolControllerTest
+- FirebaseAuthenticationTokenTest, FirebaseTokenFilterTest
 
-**Tests de Integración (57 tests):** 0 fallos ✅
-- CP07IntegrationTest: 6 ✅
-- CP07E2ETest: 2 ✅
-- CP08E2ETest: 2 ✅
-- CP09CP10CP11E2ETest: 5 ✅
-- CP09CP11IntegrationTest: 6 ✅
-- SeguridadIntegrationTest: 15 ✅
+**Proyecto — Servicios (53 tests):**
+- ProyectoServiceTest, ActivoServiceTest, HitoServiceTest, HitoPisoServiceTest
+- TorreServiceTest, PisoServiceTest, SeguimientoServiceTest
+- HidratationServiceTest, UsuarioActivoServiceTest
 
-### 🔧 Correcciones Aplicadas
+**Proyecto — Controladores (38 tests):**
+- ProyectoControllerTest, ActivoControllerTest, HitoControllerTest
+- TorreControllerTest, PisoControllerTest, AvanceControllerTest
+- UsuarioActivoControllerTest, UsuarioActivoDtoTest
 
-1. **PostgresTestContainerConfig.java**
-   - ✅ Agregadas variables de entorno
-   - ✅ Configurado withReuse(false)
+**Comercial (18 tests):**
+- HitoComercialServiceTest, HitoComercialControllerTest
 
-2. **CP09CP11IntegrationTest.java**
-   - ✅ Agregado @Transactional
-   - ✅ BEFORE_EACH_TEST_METHOD para aislamiento
-   - ✅ setUp() crea roles automáticamente
+**Excepciones / Shared (9 tests):**
+- GlobalExceptionHandlerTest
 
-3. **CP07IntegrationTest, CP08E2ETest, CP09CP10CP11E2ETest**
-   - ✅ Agregado @Transactional
-   - ✅ BEFORE_EACH_TEST_METHOD
+### 🔧 Comandos de Test
+
+**Solo tests unitarios (excluir Testcontainers):**
+```bash
+./mvnw test jacoco:report -Dtest="!*IntegrationTest,!*E2ETest" -DexcludedGroups="integration"
+```
+
+**Ver reporte de cobertura:**
+```bash
+# Abrir en navegador
+xdg-open target/site/jacoco/index.html
+```
 
 ---
-**Última actualización:** 2026-06-05 02:24 | **Estado:** 🟢 157/157 TODOS PASANDO - BUILD SUCCESS
+**Última actualización:** 2026-06-05 | **Estado:** 🟢 266/266 TODOS PASANDO | **Cobertura:** 93.9% instrucciones

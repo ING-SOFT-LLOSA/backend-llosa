@@ -1,0 +1,224 @@
+package com.llosa.backend.proyecto.service;
+
+import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.proyecto.dto.request.*;
+import com.llosa.backend.proyecto.entity.*;
+import com.llosa.backend.proyecto.enums.*;
+import com.llosa.backend.proyecto.repository.HitoPisoRepository;
+import com.llosa.backend.proyecto.repository.ProyectoRepository;
+import com.llosa.backend.proyecto.service.impl.ProyectoServiceImpl;
+import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class ProyectoServiceTest {
+
+    @Mock ProyectoRepository proyectoRepository;
+    @Mock HitoPisoRepository hitoPisoRepository;
+    @Mock TorreService torreService;
+    @Mock ActivoService activoService;
+    @Mock PisoService pisoService;
+    @Mock HidratationService hidratacionService;
+
+    @InjectMocks ProyectoServiceImpl service;
+
+    private Proyecto buildProyecto() {
+        return Proyecto.builder()
+                .id(UUID.randomUUID())
+                .nombre("Torre Sol")
+                .descripcion("Proyecto test")
+                .precertificacionEdgeLeed(false)
+                .linkRecorridoVirtual("")
+                .departamento("Lima")
+                .distrito("Miraflores")
+                .direccion("Av. Test 123")
+                .build();
+    }
+
+    @Test
+    void save_delegaEnRepository() {
+        Proyecto p = buildProyecto();
+        when(proyectoRepository.existsByNombreIgnoreCase(p.getNombre())).thenReturn(false);
+        when(proyectoRepository.save(p)).thenReturn(p);
+
+        Proyecto result = service.save(p);
+
+        assertThat(result).isEqualTo(p);
+        verify(proyectoRepository).save(p);
+    }
+
+    // CP13: nombre duplicado debe ser rechazado
+    @Test
+    void save_nombreDuplicado_lanzaBusinessException() {
+        Proyecto p = buildProyecto();
+        when(proyectoRepository.existsByNombreIgnoreCase("Torre Sol")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.save(p))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Torre Sol");
+
+        verify(proyectoRepository, never()).save(any());
+    }
+
+    // CP13: mismo nombre en distinto case también es rechazado
+    @Test
+    void save_nombreDuplicadoCaseInsensitive_lanzaBusinessException() {
+        Proyecto p = Proyecto.builder().nombre("torre sol").descripcion("otra").build();
+        when(proyectoRepository.existsByNombreIgnoreCase("torre sol")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.save(p))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void findById_encontrado_devuelveProyecto() {
+        Proyecto p = buildProyecto();
+        when(proyectoRepository.findById(p.getId())).thenReturn(Optional.of(p));
+
+        Proyecto result = service.findById(p.getId());
+
+        assertThat(result).isEqualTo(p);
+    }
+
+    @Test
+    void findById_noEncontrado_lanzaEntityNotFoundException() {
+        UUID id = UUID.randomUUID();
+        when(proyectoRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.findById(id))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("Proyecto no encontrado");
+    }
+
+    @Test
+    void findAll_sinSearch_devuelveTodos() {
+        Proyecto p = buildProyecto();
+        when(proyectoRepository.findAll()).thenReturn(List.of(p));
+
+        List<Proyecto> result = service.findAll(null);
+
+        assertThat(result).hasSize(1);
+        verify(proyectoRepository).findAll();
+        verify(proyectoRepository, never())
+                .findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase(any(), any());
+    }
+
+    @Test
+    void findAll_searchBlanco_devuelveTodos() {
+        when(proyectoRepository.findAll()).thenReturn(List.of());
+
+        service.findAll("   ");
+
+        verify(proyectoRepository).findAll();
+    }
+
+    @Test
+    void findAll_conSearch_devuelveFiltrado() {
+        Proyecto p = buildProyecto();
+        when(proyectoRepository.findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase("sol", "sol"))
+                .thenReturn(List.of(p));
+
+        List<Proyecto> result = service.findAll("sol");
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void getPorcentajeAvance_sinHitos_devuelveCero() {
+        UUID id = UUID.randomUUID();
+        when(hitoPisoRepository.countByProyectoId(id)).thenReturn(0L);
+
+        double avance = service.getPorcentajeAvance(id);
+
+        assertThat(avance).isEqualTo(0.0);
+    }
+
+    @Test
+    void getPorcentajeAvance_conHitos_calculaPorcentaje() {
+        UUID id = UUID.randomUUID();
+        when(hitoPisoRepository.countByProyectoId(id)).thenReturn(10L);
+        when(hitoPisoRepository.countByProyectoIdAndEstado(id, EstadoHito.COMPLETADO)).thenReturn(5L);
+
+        double avance = service.getPorcentajeAvance(id);
+
+        assertThat(avance).isEqualTo(50.0);
+    }
+
+    @Test
+    void getPorcentajeAvance_todosCompletados_devuelveCien() {
+        UUID id = UUID.randomUUID();
+        when(hitoPisoRepository.countByProyectoId(id)).thenReturn(4L);
+        when(hitoPisoRepository.countByProyectoIdAndEstado(id, EstadoHito.COMPLETADO)).thenReturn(4L);
+
+        double avance = service.getPorcentajeAvance(id);
+
+        assertThat(avance).isEqualTo(100.0);
+    }
+
+    @Test
+    void deleteById_llamaRepository() {
+        UUID id = UUID.randomUUID();
+        service.deleteById(id);
+        verify(proyectoRepository).deleteById(id);
+    }
+
+    @Test
+    void cargarProyecto_estructuraCompleta_guardaTodo() {
+        UUID idProyecto = UUID.randomUUID();
+        Proyecto proyecto = buildProyecto();
+        proyecto.setId(idProyecto);
+
+        Torre torreGuardada = Torre.builder().id(1L).nombre("Torre A").proyecto(proyecto).build();
+        Piso pisoGuardado = Piso.builder().id(1L).nroPiso(1).torre(torreGuardada).build();
+        Activo activoGuardado = Activo.builder()
+                .id(UUID.randomUUID()).nro("101").tipo(TipoActivo.DEPARTAMENTO)
+                .areaM2(BigDecimal.valueOf(80)).estadoComercial(EstadoComercialActivo.DISPONIBLE)
+                .precio(BigDecimal.valueOf(200000)).descripcion("Dpto 101").piso(pisoGuardado)
+                .build();
+
+        when(proyectoRepository.findById(idProyecto)).thenReturn(Optional.of(proyecto));
+        when(torreService.save(eq(idProyecto), any(Torre.class))).thenReturn(torreGuardada);
+        when(pisoService.save(eq(1L), any(Piso.class))).thenReturn(pisoGuardado);
+        when(activoService.saveFisico(eq(1L), any(Activo.class))).thenReturn(activoGuardado);
+        when(proyectoRepository.save(proyecto)).thenReturn(proyecto);
+
+        ActivoRequestDTO activoDTO = new ActivoRequestDTO("101", TipoActivo.DEPARTAMENTO,
+                BigDecimal.valueOf(80), EstadoComercialActivo.DISPONIBLE,
+                BigDecimal.valueOf(200000), "Dpto 101");
+        PisoRequestDTO pisoDTO = new PisoRequestDTO(1, List.of(activoDTO));
+        TorreRequestDTO torreDTO = new TorreRequestDTO("Torre A", List.of(pisoDTO));
+        ProyectoCargaDTO cargaDTO = new ProyectoCargaDTO(List.of(torreDTO));
+
+        service.cargarProyecto(idProyecto, cargaDTO);
+
+        verify(torreService).save(eq(idProyecto), any(Torre.class));
+        verify(pisoService).save(eq(1L), any(Piso.class));
+        verify(activoService).saveFisico(eq(1L), any(Activo.class));
+        verify(proyectoRepository).save(proyecto);
+    }
+
+    @Test
+    void cargarProyecto_proyectoNoEncontrado_lanzaException() {
+        UUID idProyecto = UUID.randomUUID();
+        when(proyectoRepository.findById(idProyecto)).thenReturn(Optional.empty());
+
+        ProyectoCargaDTO cargaDTO = new ProyectoCargaDTO(List.of());
+
+        assertThatThrownBy(() -> service.cargarProyecto(idProyecto, cargaDTO))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Proyecto no encontrado");
+    }
+}
