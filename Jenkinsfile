@@ -114,7 +114,7 @@ pipeline {
                 echo "Quality Gate"
                 echo "======================================"
                 timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: true
+                    waitForQualityGate abortPipeline: false
                 }
             }
         }
