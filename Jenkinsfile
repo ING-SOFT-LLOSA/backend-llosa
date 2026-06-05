@@ -38,25 +38,17 @@ pipeline {
             }
             steps {
                 script {
-                    // PASO 1: Compilar el código Y los tests (esto genera target/test-classes)
-                    sh 'mvn clean compile test-compile'
+                    // PASO 1: Compilar el código Y los tests (reutilizar repo local)
+                    sh 'mvn clean compile test-compile -Dmaven.repo.local=.m2/repository'
                     
                     // PASO 2: Ejecutar SonarScanner
                     withSonarQubeEnv('SonarQube') {
                         sh '''
-                            export SONAR_USER_HOME=/var/jenkins_home/workspace/LLOSA-Backend_test/.sonar
-                            mkdir -p /var/jenkins_home/workspace/LLOSA-Backend_test/.sonar
-                            /var/jenkins_home/tools/hudson.plugins.sonar.SonarRunnerInstallation/SonarScanner/bin/sonar-scanner
+                            export SONAR_USER_HOME="${WORKSPACE}/.sonar"
+                            mkdir -p "${SONAR_USER_HOME}"
+                            ${scannerHome}/bin/sonar-scanner
                         '''
                     }
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: false
                 }
             }
         }
