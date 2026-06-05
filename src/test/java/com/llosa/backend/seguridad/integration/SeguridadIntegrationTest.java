@@ -3,6 +3,7 @@ package com.llosa.backend.seguridad.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
+import com.llosa.backend.annotation.CP;
 import com.llosa.backend.config.FirebaseConfig;
 import com.llosa.backend.config.PostgresTestContainerConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
@@ -74,7 +75,12 @@ class SeguridadIntegrationTest {
     // ── CP09: Cliente con unidad "Vendido" pueda acceder ──────────────────────
 
     @Test
-    void clienteConUnidadVendido_puedeAcceder() throws Exception {
+    @CP(value = "CP09",
+        scenario = "Cliente con unidad Vendido accede al portal",
+        input = "usuario=cliente@gmail.com, rol=CLIENTE, estado=Activo",
+        expected = "Status 200, Dashboard cargado, funciones retornadas",
+        type = CP.TestType.INTEGRATION)
+    void cp09_clienteConUnidadVendido_puedeAcceder() throws Exception {
         // CP09: Validar que cliente con unidad Vendido puede acceder al portal
         // Requisitos:
         // - Firebase emite token de acceso ✅
@@ -99,48 +105,97 @@ class SeguridadIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(crearReq)))
                     .andExpect(status().isOk());
+
+            // 2. Verificar usuario en BD con estado activo
+            Usuario clienteDB = usuarioRepository.findByEmail(crearReq.getEmail()).orElseThrow();
+            assertThat(clienteDB.getActivo()).isTrue(); // Estado = Activo ✅
+            assertThat(clienteDB.getFirebaseUuid()).isEqualTo(firebaseUidGenerado);
+
+            // 3. Asignar rol CLIENTE (simula unidad en estado Vendido)
+            Rol rolCliente = rolRepository.findByNombre("CLIENTE").orElseThrow();
+            AsignarRolRequest rolReq = new AsignarRolRequest();
+            rolReq.setIdRol(rolCliente.getIdRol());
+
+            mockMvc.perform(put("/api/users/{id}/role", clienteDB.getId())
+                            .with(securityContext(contextWithAuth(adminAuth())))
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(rolReq)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.rol").value("CLIENTE"));
+
+            // 4. Verificar que cliente puede acceder con token Firebase válido
+            // Firebase emite token ✅, confirma estado activo ✅, renderiza dashboard ✅
+            FirebaseAuthenticationToken tokenCliente = new FirebaseAuthenticationToken(
+                    firebaseUidGenerado,
+                    crearReq.getEmail(),
+                    List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+            // GET /api/auth/me devuelve perfil completo (Dashboard) ✅
+            mockMvc.perform(get("/api/auth/me")
+                            .with(securityContext(contextWithAuth(tokenCliente))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.email").value(crearReq.getEmail()))
+                    .andExpect(jsonPath("$.rol").value("CLIENTE"))
+                    .andExpect(jsonPath("$.activo").value(true))  // Estado: Activo ✅
+                    .andExpect(jsonPath("$.tipoUsuario").value("CLIENTE"))
+                    .andExpect(jsonPath("$.funciones").isArray());
         }
+    }
 
-        // 2. Verificar usuario en BD con estado activo
-        Usuario clienteDB = usuarioRepository.findByEmail(crearReq.getEmail()).orElseThrow();
-        assertThat(clienteDB.getActivo()).isTrue(); // Estado = Activo ✅
-        assertThat(clienteDB.getFirebaseUuid()).isEqualTo(firebaseUidGenerado);
+    @Test
+    void cp09_clienteVendido_puedeConsultarDatos() throws Exception {
+        // CP09.2: Cliente con unidad en estado Vendido puede consultar datos personales
+        CrearUsuarioRequest crearReq = TestData.crearUsuarioRequest();
+        String firebaseUid = "cp09-vendido-uid-2";
 
-        // 3. Asignar rol CLIENTE (simula unidad en estado Vendido)
-        Rol rolCliente = rolRepository.findByNombre("CLIENTE").orElseThrow();
-        AsignarRolRequest rolReq = new AsignarRolRequest();
-        rolReq.setIdRol(rolCliente.getIdRol());
+        UserRecord mockRecord = mock(UserRecord.class);
+        when(mockRecord.getUid()).thenReturn(firebaseUid);
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.createUser(any(UserRecord.CreateRequest.class))).thenReturn(mockRecord);
 
-        mockMvc.perform(put("/api/users/{id}/role", clienteDB.getId())
-                        .with(securityContext(contextWithAuth(adminAuth())))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(rolReq)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.rol").value("CLIENTE"));
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+            mockMvc.perform(post("/api/users/register")
+                    .with(securityContext(contextWithAuth(adminAuth())))
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(crearReq)))
+                    .andExpect(status().isOk());
 
-        // 4. Verificar que cliente puede acceder con token Firebase válido
-        // Firebase emite token ✅, confirma estado activo ✅, renderiza dashboard ✅
-        FirebaseAuthenticationToken tokenCliente = new FirebaseAuthenticationToken(
-                firebaseUidGenerado,
-                crearReq.getEmail(),
-                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+            Usuario usuario = usuarioRepository.findByEmail(crearReq.getEmail()).orElseThrow();
+            Rol rolCliente = rolRepository.findByNombre("CLIENTE").orElseThrow();
+            AsignarRolRequest rolReq = new AsignarRolRequest();
+            rolReq.setIdRol(rolCliente.getIdRol());
 
-        // GET /api/auth/me devuelve perfil completo (Dashboard) ✅
-        mockMvc.perform(get("/api/auth/me")
-                        .with(securityContext(contextWithAuth(tokenCliente))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value(crearReq.getEmail()))
-                .andExpect(jsonPath("$.rol").value("CLIENTE"))
-                .andExpect(jsonPath("$.activo").value(true))  // Estado: Activo ✅
-                .andExpect(jsonPath("$.tipoUsuario").value("CLIENTE"))
-                .andExpect(jsonPath("$.funciones").isArray());
+            mockMvc.perform(put("/api/users/{id}/role", usuario.getId())
+                    .with(securityContext(contextWithAuth(adminAuth())))
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(rolReq)))
+                    .andExpect(status().isOk());
+
+            FirebaseAuthenticationToken token = new FirebaseAuthenticationToken(
+                    firebaseUid, crearReq.getEmail(),
+                    List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+            mockMvc.perform(get("/api/auth/me")
+                    .with(securityContext(contextWithAuth(token))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.nombre").value(crearReq.getNombre()))
+                    .andExpect(jsonPath("$.apellidos").value(crearReq.getApellidos()));
+        }
     }
 
     // ── Flujo completo: crear → asignar rol → consultar /me ──────────────────
 
     @Test
-    void flujoCompleto() throws Exception {
+    @CP(value = "CP07",
+        scenario = "Flujo completo: crear usuario, asignar rol, verificar funciones",
+        input = "nombre=Test, email=test@llosaedificaciones.com, rol=CLIENTE",
+        expected = "Usuario creado, rol asignado, /me devuelve perfil con funciones",
+        type = CP.TestType.INTEGRATION)
+    void cp07_flujoCompleto_crearUsuario_asignarRol_consultarMe() throws Exception {
         // 1. Crear usuario vía HTTP (mock Firebase.createUser)
         CrearUsuarioRequest crearReq = TestData.crearUsuarioRequest();
         String firebaseUidGenerado = "integration-uid-001";
@@ -197,7 +252,12 @@ class SeguridadIntegrationTest {
     // ── Desactivar usuario → /me rechazado con 403 ───────────────────────────
 
     @Test
-    void usuarioDesactivado() throws Exception {
+    @CP(value = "CP08",
+        scenario = "Desactivar usuario invalida tokens JWT",
+        input = "usuarioId, DELETE /api/users/{id}",
+        expected = "Status 200 DELETE, Status 403 GET /me (Forbidden), error message",
+        type = CP.TestType.INTEGRATION)
+    void cp08_usuarioDesactivado_deniega_acceso() throws Exception {
         Usuario u = TestData.usuarioConEmail("suspendido@test.com");
         u.setFirebaseUuid("uid-suspendido");
         usuarioRepository.save(u);
@@ -224,7 +284,7 @@ class SeguridadIntegrationTest {
     // ── Registro con email duplicado → 409 ───────────────────────────────────
 
     @Test
-    void registrarEmailDuplicado() throws Exception {
+    void cp07_registroEmailDuplicado_retorna_409() throws Exception {
         Usuario existente = TestData.usuarioConEmail("duplicado@test.com");
         usuarioRepository.save(existente);
 
@@ -247,7 +307,7 @@ class SeguridadIntegrationTest {
     // ── CP08: Usuario suspendido NO debe acceder a endpoints protegidos ──────
 
     @Test
-    void usuarioSuspendido_noDebeAccederAEndpoints() throws Exception {
+    void cp08_usuarioSuspendido_noDebeAccederAEndpoints() throws Exception {
         // CP08: "Verificar que al desactivar un usuario se invaliden sus tokens JWT
         // y se cierren sus sesiones"
         // Un usuario con activo=false debe recibir 403 Forbidden en todos los endpoints protegidos.
@@ -268,7 +328,7 @@ class SeguridadIntegrationTest {
     // ── Listar usuarios ───────────────────────────────────────────────────────
 
     @Test
-    void listarUsuarios_devuelveTodosLosRegistrados() throws Exception {
+    void cp07_listarUsuarios_devuelveTodosLosRegistrados() throws Exception {
         usuarioRepository.save(TestData.usuarioConEmail("a@test.com"));
         usuarioRepository.save(TestData.usuarioConEmail("b@test.com"));
 
@@ -280,7 +340,7 @@ class SeguridadIntegrationTest {
     // ── Listar roles con funciones ────────────────────────────────────────────
 
     @Test
-    void listarRoles_devuelveSeedsConFunciones() throws Exception {
+    void cp10_listarRoles_devuelveSeedsConFunciones() throws Exception {
         mockMvc.perform(get("/api/roles").with(securityContext(contextWithAuth(adminAuth()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(6));
@@ -289,7 +349,7 @@ class SeguridadIntegrationTest {
     // ── Usuario sin rol → /me devuelve perfil con funciones vacías ────────────
 
     @Test
-    void usuarioSinRol_me_devuelvePerfilConFuncionesVacias() throws Exception {
+    void cp10_usuarioSinRol_me_devuelvePerfilConFuncionesVacias() throws Exception {
         Usuario u = TestData.usuarioConEmail("sinrol@test.com");
         u.setFirebaseUuid("uid-sinrol");
         usuarioRepository.save(u);
@@ -308,7 +368,7 @@ class SeguridadIntegrationTest {
     // ── UID de Firebase no registrado en BD → 404 ────────────────────────────
 
     @Test
-    void usuarioNoRegistrado_me() throws Exception {
+    void cp06_usuarioNoRegistrado_me_retorna_404() throws Exception {
         // CP06: Usuario autenticado en Firebase pero sin registro en BD → 404 Not Found
         FirebaseAuthenticationToken token = new FirebaseAuthenticationToken(
                 "uid-fantasma", "fantasma@test.com",
@@ -322,7 +382,7 @@ class SeguridadIntegrationTest {
     // ── DELETE usuario inexistente → 404 ─────────────────────────────────────
 
     @Test
-    void usuarioInexistente_delete() throws Exception {
+    void cp07_usuarioInexistente_delete_retorna_404() throws Exception {
         FirebaseAuth mockAuth = mock(FirebaseAuth.class);
         try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
             ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
@@ -338,7 +398,7 @@ class SeguridadIntegrationTest {
     // ── PUT role usuario inexistente → 404 ───────────────────────────────────
 
     @Test
-    void usuarioInexistente_asignarRol() throws Exception {
+    void cp10_usuarioInexistente_asignarRol_retorna_404() throws Exception {
         Rol rolCliente = rolRepository.findByNombre("CLIENTE").orElseThrow();
         AsignarRolRequest req = new AsignarRolRequest();
         req.setIdRol(rolCliente.getIdRol());
@@ -355,7 +415,7 @@ class SeguridadIntegrationTest {
     // ── Reactivar usuario suspendido → /me vuelve a funcionar ────────────────
 
     @Test
-    void usuarioReactivado_me() throws Exception {
+    void cp08_usuarioReactivado_me_vuelveAFuncionar() throws Exception {
         // CP08: Reactivar un usuario suspendido → /me vuelve a funcionar con su perfil completo
         // Devuelve 200
         Usuario u = TestData.usuarioConEmail("reactivar@test.com");
@@ -395,10 +455,10 @@ class SeguridadIntegrationTest {
                 .andExpect(jsonPath("$.email").value("reactivar@test.com"));
     }
 
-    // ── ASESOR: asignar rol → /me devuelve exactamente 6 funciones ───────────
+    // ── ASESOR: asignar rol → /me devuelve exactamente 7 funciones ───────────
 
     @Test
-    void asignarRolAsesor_meDevuelveSieteFunciones() throws Exception {
+    void cp10_asignarRolAsesor_meDevuelveSieteFunciones() throws Exception {
         Usuario u = TestData.usuarioConEmail("asesor-it@test.com");
         u.setFirebaseUuid("uid-asesor-it");
         usuarioRepository.save(u);
@@ -429,7 +489,7 @@ class SeguridadIntegrationTest {
     // ── Asignar rol inexistente → 404 ────────────────────────────────────────
  
     @Test
-    void asignarRolInexistente() throws Exception {
+    void cp10_asignarRolInexistente_retorna_404() throws Exception {
         Usuario u = TestData.usuarioConEmail("roltest@test.com");
         usuarioRepository.save(u);
  

@@ -21,7 +21,14 @@ pipeline {
             }
             steps {
                 sh '''
-                    mvn clean package -Dmaven.test.skip=true -Dmaven.repo.local=.m2/repository
+                    # PASO 1: Limpiar y compilar
+                    mvn clean compile -Dmaven.repo.local=.m2/repository
+
+                    # PASO 2: Ejecutar tests
+                    mvn test -Dmaven.repo.local=.m2/repository
+
+                    # PASO 3: Empaquetar JAR
+                    mvn package -DskipTests -Dmaven.repo.local=.m2/repository
                 '''
             }
         }
@@ -38,11 +45,11 @@ pipeline {
             }
             steps {
                 script {
-                    // PASO 1: Compilar el código Y los tests (reutilizar repo local)
-                    sh 'mvn clean compile test-compile -Dmaven.repo.local=.m2/repository'
-                    
-                    // PASO 2: Ejecutar SonarScanner
-                    withSonarQubeEnv() {
+                    // PASO 1: Ejecutar tests y generar reportes de cobertura (JaCoCo)
+                    sh 'mvn clean test jacoco:report -Dmaven.repo.local=.m2/repository'
+
+                    // PASO 2: Ejecutar SonarScanner con reportes de cobertura
+                    withSonarQubeEnv('SonarQube-Server') {
                         sh '''
                             export SONAR_USER_HOME="${WORKSPACE}/.sonar"
                             mkdir -p "${SONAR_USER_HOME}"

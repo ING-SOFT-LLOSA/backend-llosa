@@ -1,0 +1,210 @@
+package com.llosa.backend.seguridad.combination;
+
+import com.llosa.backend.config.TestData;
+import com.llosa.backend.seguridad.dto.AsignarRolRequest;
+import com.llosa.backend.seguridad.dto.CrearUsuarioRequest;
+import com.llosa.backend.seguridad.entity.Rol;
+import com.llosa.backend.seguridad.entity.Usuario;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.securityContext;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * CP09: Validar el inicio de sesión de un cliente con unidad en estado "Vendido"
+ * (Modo regular - acceso completo)
+ *
+ * STRATEGY COMBINADO:
+ * LAYER 1: Unit logic - verificar estado del cliente sin BD
+ * LAYER 2: Integration - verificar persistencia y estado en BD
+ * LAYER 3: E2E - validar flujo HTTP: registro → asignación rol → acceso dashboard
+ */
+class CP09CombinationTest extends CombinationTestBase {
+
+	@BeforeEach
+	void setUp() {
+		limpiarDatos();
+		SecurityContextHolder.clearContext();
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────
+	// LAYER 1: Unit Logic - Verificar lógica de cliente sin BD
+	// ─────────────────────────────────────────────────────────────────────────────
+
+	@Test
+	void cp09_layer1_unitLogic_clienteVendidoConEstadoActivo() {
+		// Escenario unitario: verificar que un cliente con unidad Vendido
+		// tenga estado Activo y pueda acceder
+
+		// ARRANGE
+		Usuario cliente = TestData.usuario();
+		cliente.setTipoUsuario("CLIENTE");
+		cliente.setActivo(true);
+
+		// ACT & ASSERT
+		assertThat(cliente.getTipoUsuario()).isEqualTo("CLIENTE");
+		assertThat(cliente.getActivo()).isTrue();
+
+		// Cliente VENDIDO debe poder acceder → activo = true
+		assertThat(cliente.getActivo()).isTrue();
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────
+	// LAYER 2: Integration - Verificar persistencia en BD
+	// ─────────────────────────────────────────────────────────────────────────────
+
+	@Test
+	void cp09_layer2_integration_clienteVendidoPersistenEnBD() {
+		// Escenario de integración: cliente con unidad Vendido persiste
+		// correctamente en PostgreSQL con estado Activo
+
+		// ARRANGE: Crear cliente en BD
+		final String email = "cliente.vendido@gmail.com";
+		Usuario cliente = crearUsuarioConRolEnBD(email, "Cliente Vendido", "CLIENTE", true);
+		Integer clienteId = cliente.getId();
+
+		// VERIFY
+		Usuario reloaded = usuarioRepository.findById(clienteId).orElseThrow();
+		assertThat(reloaded.getTipoUsuario()).isEqualTo("CLIENTE");
+		assertThat(reloaded.getActivo()).isTrue();
+		assertThat(reloaded.getRol().getNombre()).isEqualTo("CLIENTE");
+
+		// Verificar que el cliente se puede recuperar por email
+		Usuario byEmail = usuarioRepository.findByEmail(email).orElseThrow();
+		assertThat(byEmail.getActivo()).isTrue();
+		assertThat(byEmail.getTipoUsuario()).isEqualTo("CLIENTE");
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────
+	// LAYER 3: E2E - Validar flujo completo: registro → rol → acceso dashboard
+	// ─────────────────────────────────────────────────────────────────────────────
+
+	@Test
+	void cp09_layer3_e2e_clienteVendidoFlujoCompletoAcceso() throws Exception {
+		// Escenario E2E: Cliente se registra → se asigna rol CLIENTE →
+		// accede al dashboard con éxito
+		// Simula: unidad en estado "Vendido"
+
+		final String firebaseUid = "cp09-cliente-vendido-uid";
+		final String email = "cliente.vendido@test.com";
+
+		CrearUsuarioRequest crearReq = TestData.crearUsuarioRequest();
+		crearReq.setEmail(email);
+		crearReq.setTipoUsuario("CLIENTE");
+
+		// STEP 1: Registrar cliente vía POST /api/users/register
+		executeWithFirebaseMock(firebaseUid, () -> {
+			mockMvc.perform(post("/api/users/register")
+					.with(securityContext(contextWithAuth(createAdminToken())))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(objectMapper.writeValueAsString(crearReq)))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.email").value(email));
+			return null;
+		});
+
+		// Verificar en BD
+		Usuario clienteEnBD = usuarioRepository.findByEmail(email).orElseThrow();
+		assertThat(clienteEnBD.getFirebaseUuid()).isEqualTo(firebaseUid);
+		assertThat(clienteEnBD.getActivo()).isTrue();
+
+		// STEP 2: Asignar rol CLIENTE
+		Rol rolCliente = rolRepository.findByNombre("CLIENTE").orElseThrow();
+		AsignarRolRequest asignarRolReq = new AsignarRolRequest();
+		asignarRolReq.setIdRol(rolCliente.getIdRol());
+
+		mockMvc.perform(put("/api/users/{id}/role", clienteEnBD.getId())
+				.with(securityContext(contextWithAuth(createAdminToken())))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(asignarRolReq)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.rol").value("CLIENTE"));
+
+		// STEP 3: Acceder al dashboard vía GET /api/auth/me
+		// Debe devolver perfil completo con estado Activo
+		mockMvc.perform(get("/api/auth/me")
+				.with(securityContext(contextWithAuth(createFirebaseToken(firebaseUid, email)))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.email").value(email))
+				.andExpect(jsonPath("$.rol").value("CLIENTE"))
+				.andExpect(jsonPath("$.activo").value(true)) // VENDIDO → Activo = true
+				.andExpect(jsonPath("$.tipoUsuario").value("CLIENTE"))
+				.andExpect(jsonPath("$.funciones").isArray());
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────
+	// LAYER 3 VARIANT: E2E - Cliente VENDIDO accede a módulos permitidos
+	// ─────────────────────────────────────────────────────────────────────────────
+
+	@Test
+	void cp09_layer3_e2e_clienteVendidoAccedeFuncionesBasicas() throws Exception {
+		// Escenario E2E: Cliente con unidad VENDIDO accede a funciones básicas
+
+		final String firebaseUid = "cp09-cliente-modulos-uid";
+		final String email = "cliente.modulos@test.com";
+
+		// SETUP: Crear cliente VENDIDO en BD
+		Usuario cliente = crearUsuarioConRolEnBD(email, "Cliente Módulos", "CLIENTE", true);
+		cliente.setFirebaseUuid(firebaseUid);
+		usuarioRepository.save(cliente);
+
+		// ACT: Cliente VENDIDO accede a /api/auth/me
+		mockMvc.perform(get("/api/auth/me")
+				.with(securityContext(contextWithAuth(createFirebaseToken(firebaseUid, email)))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.activo").value(true))
+				.andExpect(jsonPath("$.funciones").isArray())
+				.andExpect(jsonPath("$.funciones.length()").value(2)); // CLIENTE tiene 2 funciones
+
+		// Cliente VENDIDO (activo) puede acceder a endpoints protegidos
+		mockMvc.perform(get("/api/roles")
+				.with(securityContext(contextWithAuth(createFirebaseToken(firebaseUid, email)))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(6)); // 6 roles predefinidos
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────
+	// LAYER 2 VARIANT: Integration - Persistencia de cliente con múltiples campos
+	// ─────────────────────────────────────────────────────────────────────────────
+
+	@Test
+	void cp09_layer2_integration_clienteVendidoConDatosCompletos() {
+		// Escenario de integración: Cliente VENDIDO con datos completos
+		// persiste correctamente
+
+		final String email = "completo@gmail.com";
+		Usuario cliente = new Usuario();
+		cliente.setFirebaseUuid("cp09-completo-uid");
+		cliente.setEmail(email);
+		cliente.setNombre("Juan");
+		cliente.setApellidos("García López");
+		cliente.setTipoUsuario("CLIENTE");
+		cliente.setDocumentoIdentidad("12345678");
+		cliente.setTelefono("999888777");
+		cliente.setActivo(true);
+
+		Rol rolCliente = rolRepository.findByNombre("CLIENTE").orElseThrow();
+		cliente.setRol(rolCliente);
+
+		// PERSIST
+		Usuario guardado = usuarioRepository.save(cliente);
+		Integer clienteId = guardado.getId();
+
+		// RELOAD Y VERIFY
+		Usuario reloaded = usuarioRepository.findById(clienteId).orElseThrow();
+		assertThat(reloaded.getNombre()).isEqualTo("Juan");
+		assertThat(reloaded.getApellidos()).isEqualTo("García López");
+		assertThat(reloaded.getDocumentoIdentidad()).isEqualTo("12345678");
+		assertThat(reloaded.getTelefono()).isEqualTo("999888777");
+		assertThat(reloaded.getActivo()).isTrue();
+		assertThat(reloaded.getRol().getNombre()).isEqualTo("CLIENTE");
+	}
+}

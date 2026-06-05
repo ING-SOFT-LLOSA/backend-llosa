@@ -1,5 +1,6 @@
 package com.llosa.backend.seguridad.service;
 
+import com.llosa.backend.annotation.CP;
 import com.llosa.backend.config.TestData;
 import com.llosa.backend.seguridad.entity.Funcion;
 import com.llosa.backend.seguridad.entity.Rol;
@@ -32,6 +33,11 @@ class RolServiceTest {
     // ── modificarFunciones ────────────────────────────────────────────────────
 
     @Test
+    @CP(value = "CP07",
+        scenario = "Asignar permisos granulares a rol",
+        input = "rolId=1, funcionIds=[PROY_CREAR, OBRA_EDITAR]",
+        expected = "Lista de funciones reemplazada completamente",
+        type = CP.TestType.UNIT)
     void modificarFunciones_reemplazaCompletamenteLaLista() {
         Rol rol = TestData.rol();
         List<Funcion> nuevasFunciones = List.of(
@@ -52,6 +58,11 @@ class RolServiceTest {
     }
 
     @Test
+    @CP(value = "CP07",
+        scenario = "Remover todos los permisos de un rol",
+        input = "rolId=1, funcionIds=[]",
+        expected = "Lista de funciones vacía",
+        type = CP.TestType.UNIT)
     void modificarFunciones_conListaVacia_eliminaTodasLasFunciones() {
         Rol rol = TestData.rol();
         when(rolRepository.findById(1)).thenReturn(Optional.of(rol));
@@ -64,6 +75,11 @@ class RolServiceTest {
     }
 
     @Test
+    @CP(value = "CP07",
+        scenario = "Validar error al asignar permisos a rol inexistente",
+        input = "rolId=999 (no existe), funcionIds=[1,2]",
+        expected = "RuntimeException con mensaje 'Rol no encontrado'",
+        type = CP.TestType.UNIT)
     void modificarFunciones_rolInexistente_lanzaExcepcion() {
         when(rolRepository.findById(999)).thenReturn(Optional.empty());
 
@@ -76,6 +92,11 @@ class RolServiceTest {
     }
 
     @Test
+    @CP(value = "CP07",
+        scenario = "Asignar permisos parciales (algunos no existen)",
+        input = "rolId=1, funcionIds=[1,99] (99 no existe)",
+        expected = "Solo función existente (ID=1) se asigna, 99 ignorado",
+        type = CP.TestType.UNIT)
     void modificarFunciones_algunasIdsInexistentes_guardaSoloLasEncontradas() {
         Rol rol = TestData.rol();
         List<Funcion> soloUna = List.of(TestData.funcion("PROY_VER"));
@@ -93,6 +114,11 @@ class RolServiceTest {
     // ── listarTodos ───────────────────────────────────────────────────────────
 
     @Test
+    @CP(value = "CP11",
+        scenario = "Listar roles disponibles para asignación",
+        input = "Query a repositorio de roles",
+        expected = "Lista completa de roles con funciones",
+        type = CP.TestType.UNIT)
     void listarTodos_delegaEnRepositorio() {
         List<Rol> roles = List.of(TestData.rol(), TestData.rol());
         when(rolRepository.findAll()).thenReturn(roles);

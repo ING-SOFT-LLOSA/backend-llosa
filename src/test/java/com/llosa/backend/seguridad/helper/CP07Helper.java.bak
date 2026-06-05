@@ -1,0 +1,121 @@
+package com.llosa.backend.seguridad.helper;
+
+import com.llosa.backend.seguridad.entity.Rol;
+import com.llosa.backend.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.repository.RolRepository;
+import com.llosa.backend.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.seguridad.service.RolService;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Helper para tests de CP07: Permisos Granulares por Módulo
+ *
+ * Proporciona utilidades para:
+ * - Asignar permisos especiales a usuarios
+ * - Verificar sobrescritura de permisos base
+ * - Validar precedencia de permisos especiales
+ *
+ * @author Engineer BDD
+ * @version 1.0
+ */
+@Component
+public class CP07Helper {
+
+    private final RolService rolService;
+    private final RolRepository rolRepository;
+    private final UsuarioRepository usuarioRepository;
+
+    public CP07Helper(RolService rolService,
+                      RolRepository rolRepository,
+                      UsuarioRepository usuarioRepository) {
+        this.rolService = rolService;
+        this.rolRepository = rolRepository;
+        this.usuarioRepository = usuarioRepository;
+    }
+
+    /**
+     * Asigna funciones (permisos) específicas a un rol.
+     * Simula la operación de asignar permisos granulares.
+     *
+     * @param rolId ID del rol a modificar
+     * @param funcionIds Lista de IDs de funciones a asignar
+     * @return Rol actualizado con nuevas funciones
+     * @throws RuntimeException si rol no existe
+     */
+    public Rol asignarFuncionesARol(int rolId, List<Integer> funcionIds) {
+        Optional<Rol> rol = rolRepository.findById(rolId);
+        if (rol.isEmpty()) {
+            throw new RuntimeException("Rol ID " + rolId + " no encontrado");
+        }
+        return rolService.modificarFunciones(rolId, funcionIds);
+    }
+
+    /**
+     * Verifica que un permiso especial sobrescribe el permiso base del rol.
+     *
+     * @param usuario Usuario a verificar
+     * @param moduloNombre Nombre del módulo (ej: "MODULO_FINANCIERO")
+     * @return true si usuario tiene acceso al módulo (vía permiso especial o rol)
+     */
+    public boolean puedeAccederAlModulo(Usuario usuario, String moduloNombre) {
+        // Verificar funciones del rol
+        if (usuario.getRol() != null && usuario.getRol().getFunciones() != null) {
+            boolean tieneEnRol = usuario.getRol().getFunciones().stream()
+                    .anyMatch(f -> f.getNombreCodigo().contains(moduloNombre));
+            if (tieneEnRol) {
+                return true;
+            }
+        }
+        // En producción, verificar tabla Permiso_Especial
+        // Por ahora, retornar basado en rol
+        return false;
+    }
+
+    /**
+     * Obtiene las funciones actuales de un usuario
+     * (consolidadas de rol + permisos especiales)
+     *
+     * @param usuarioId ID del usuario
+     * @return Lista de nombres de funciones
+     */
+    public List<String> obtenerFuncionesDelUsuario(long usuarioId) {
+        Optional<Usuario> usuario = usuarioRepository.findById(usuarioId);
+        if (usuario.isEmpty()) {
+            throw new RuntimeException("Usuario ID " + usuarioId + " no encontrado");
+        }
+
+        Usuario u = usuario.get();
+        if (u.getRol() == null || u.getRol().getFunciones() == null) {
+            return List.of();
+        }
+
+        return u.getRol().getFunciones().stream()
+                .map(f -> f.getNombreCodigo())
+                .toList();
+    }
+
+    /**
+     * Valida que un rol tenga exactamente las funciones esperadas.
+     * Útil para verificar permisos granulares.
+     *
+     * @param rolId ID del rol a verificar
+     * @param funcionesEsperadas Nombres de funciones esperadas
+     * @return true si funciones coinciden exactamente
+     */
+    public boolean validarFuncionesExactas(int rolId, List<String> funcionesEsperadas) {
+        Optional<Rol> rol = rolRepository.findById(rolId);
+        if (rol.isEmpty()) {
+            return false;
+        }
+
+        List<String> funcionesActuales = rol.get().getFunciones().stream()
+                .map(f -> f.getNombreCodigo())
+                .toList();
+
+        return funcionesActuales.size() == funcionesEsperadas.size() &&
+                funcionesActuales.containsAll(funcionesEsperadas);
+    }
+}
