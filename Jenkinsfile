@@ -22,26 +22,22 @@ pipeline {
                     echo "Build & Test Stage"
                     echo "======================================"
 
-                    # PASO 1: Clean
-                    echo "PASO 1: Limpiando compilacion anterior..."
-                    ./mvnw clean -q
-
-                    # PASO 2: Compile
-                    echo "PASO 2: Compilando codigo fuente..."
+                    # PASO 1: Compile
+                    echo "PASO 1: Compilando codigo fuente..."
                     ./mvnw compile -DskipTests
 
-                    # PASO 3: Test + JaCoCo Report (SOLO UNITARIOS - sin Testcontainers)
-                    echo "PASO 3: Ejecutando TESTS UNITARIOS (sin Testcontainers)..."
+                    # PASO 2: Test + JaCoCo Report (SOLO UNITARIOS - sin Testcontainers)
+                    echo "PASO 2: Ejecutando TESTS UNITARIOS (sin Testcontainers)..."
                     ./mvnw test jacoco:report \\
                         -Dtest="!*IntegrationTest,!*E2ETest" \\
                         -DexcludedGroups="integration"
 
-                    # PASO 4: Package (sin re-ejecutar tests)
-                    echo "PASO 4: Empaquetando JAR..."
+                    # PASO 3: Package (sin re-ejecutar tests)
+                    echo "PASO 3: Empaquetando JAR..."
                     ./mvnw package -DskipTests -q
 
-                    # PASO 5: Validar JAR
-                    echo "PASO 5: Validando artefacto..."
+                    # PASO 4: Validar JAR
+                    echo "PASO 4: Validando artefacto..."
                     if [ -f "target/backend-0.0.1-SNAPSHOT.jar" ]; then
                         SIZE=$(ls -lh target/backend-0.0.1-SNAPSHOT.jar | awk '{print $5}')
                         echo "OK: JAR creado ($SIZE)"
@@ -50,8 +46,8 @@ pipeline {
                         exit 1
                     fi
 
-                    # PASO 6: Verificar reportes JaCoCo
-                    echo "PASO 6: Verificando reportes..."
+                    # PASO 5: Verificar reportes JaCoCo
+                    echo "PASO 5: Verificando reportes..."
                     if [ -f "target/site/jacoco/index.html" ]; then
                         echo "OK: Reporte JaCoCo generado"
                     else
@@ -84,10 +80,10 @@ pipeline {
                     }
                 }
                 success {
-                    echo "✓ Build & Test exitoso"
+                    echo "Build & Test exitoso"
                 }
                 failure {
-                    echo "✗ Build & Test falló"
+                    echo "Build & Test falló"
                     sh 'echo "Directorio target:" && ls -la target/ || true'
                 }
             }
@@ -134,8 +130,13 @@ pipeline {
                     sh '''
                         mkdir -p ./secrets
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
-                        docker compose down --remove-orphans 2>/dev/null || true
-                        docker compose up --build -d backend
+                        chmod 644 ./secrets/firebase-service-account.json
+
+                        docker compose down --remove-orphans
+                        docker rm -f llosa_backend llosa_db 2>/dev/null || true
+                        docker compose up --build --no-start backend
+                        docker cp ./secrets/firebase-service-account.json llosa_backend:/app/secrets/firebase-service-account.json
+                        docker compose start backend
                     '''
                 }
             }
