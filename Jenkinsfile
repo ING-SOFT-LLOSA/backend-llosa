@@ -18,6 +18,7 @@ pipeline {
                 docker {
                     image 'maven:3.9.8-eclipse-temurin-21-alpine'
                     reuseNode true
+                    args '-v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
             steps {
@@ -27,6 +28,16 @@ pipeline {
                     echo "======================================"
                     echo "Build & Test Stage"
                     echo "======================================"
+
+                    # Verificar acceso a Docker
+                    echo "Verificando acceso a Docker..."
+                    if ! docker ps > /dev/null 2>&1; then
+                        echo "ADVERTENCIA: Docker no disponible, ejecutando solo tests unitarios"
+                        SKIP_DOCKER="-Dgroups=!integration"
+                    else
+                        echo "Docker disponible, ejecutando todos los tests"
+                        SKIP_DOCKER=""
+                    fi
 
                     # PASO 1: Clean
                     echo "PASO 1: Limpiando compilacion anterior..."
@@ -38,7 +49,7 @@ pipeline {
 
                     # PASO 3: Test + JaCoCo Report
                     echo "PASO 3: Ejecutando tests con reporte JaCoCo..."
-                    mvn test jacoco:report -Dmaven.repo.local=.m2/repository
+                    mvn test jacoco:report -Dmaven.repo.local=.m2/repository $SKIP_DOCKER
 
                     # PASO 4: Package (sin re-ejecutar tests)
                     echo "PASO 4: Empaquetando JAR..."
