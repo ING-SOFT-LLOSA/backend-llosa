@@ -1,12 +1,12 @@
 package com.llosa.backend.documentos.controller;
 
+import com.llosa.backend.documentos.dto.StageDocumentResponse;
 import com.llosa.backend.documentos.dto.SubirDocumentoRequest;
 import com.llosa.backend.documentos.dto.DocumentoResponse;
 import com.llosa.backend.documentos.dto.SignedUrlResponse;
 import com.llosa.backend.documentos.service.DocumentoService;
-
-import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.seguridad.entity.Usuario;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,9 +27,9 @@ public class DocumentoController {
     private final UsuarioRepository usuarioRepository;
 
     @PreAuthorize("hasAuthority('DOCS_SUBIR')")
-    @PostMapping(value = "/hito-unidad/{hitoUnidadId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/usuario-activo/{usuarioActivoId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DocumentoResponse> subirDocumento(
-            @PathVariable UUID hitoUnidadId,
+            @PathVariable UUID usuarioActivoId,
             @RequestPart("file") MultipartFile file,
             @RequestPart("data") SubirDocumentoRequest request,
             Authentication authentication
@@ -39,17 +39,28 @@ public class DocumentoController {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         return ResponseEntity.ok(
-                documentoService.subirDocumento(hitoUnidadId, file, request, usuario.getId())
+                documentoService.subirDocumento(usuarioActivoId, file, request, usuario.getId())
         );
     }
 
     @PreAuthorize("hasAuthority('DOCS_VER')")
-    @GetMapping("/hito-unidad/{hitoUnidadId}")
-    public ResponseEntity<List<DocumentoResponse>> listarPorHitoUnidad(
-            @PathVariable UUID hitoUnidadId
+    @GetMapping("/usuario-activo/{usuarioActivoId}")
+    public ResponseEntity<List<DocumentoResponse>> listarPorUsuarioActivo(
+            @PathVariable UUID usuarioActivoId
     ) {
         return ResponseEntity.ok(
-                documentoService.listarPorHitoUnidad(hitoUnidadId)
+                documentoService.listarPorUsuarioActivo(usuarioActivoId)
+        );
+    }
+
+    @PreAuthorize("hasAuthority('DOCS_VER')")
+    @GetMapping("/mis-documentos")
+    public ResponseEntity<StageDocumentResponse> listarMisDocumentos(
+            Authentication authentication
+    ) {
+        String uid = (String) authentication.getPrincipal();
+        return ResponseEntity.ok(
+                documentoService.listarDocumentosCliente(uid)
         );
     }
 
