@@ -17,16 +17,17 @@ import java.util.UUID;
 public class AvanceController {
 
     private final HitoPisoService hitoPisoService;
+
     /*
     Endpoint para actualizar un hitoPiso como completado
     Estado: Funcional
      */
     @PreAuthorize("hasAuthority('OBRA_EDITAR')")
-    @PutMapping("/{id}")
-    public ResponseEntity<AvanceUnidadResponseDTO> actualizarAvance(@PathVariable UUID id,
+    @PutMapping("/{id_hito_piso}")
+    public ResponseEntity<AvanceUnidadResponseDTO> actualizarAvance(@PathVariable UUID id_hito_piso,
                                                                     @Valid @RequestBody HitoPisoUpdateDTO dto) {
         return ResponseEntity.ok(
-            AvanceUnidadResponseDTO.fromEntity(hitoPisoService.cambiarEstado(id, dto.estado()))
+            AvanceUnidadResponseDTO.fromEntity(hitoPisoService.cambiarEstado(id_hito_piso, dto.estado()))
         );
     }
 }

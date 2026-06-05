@@ -16,6 +16,7 @@ import java.util.UUID;
 public class TorreController {
 
     private final TorreService torreService;
+
     /*
     Endpoint Obtener las torres por proyecto
     Estado: Funcional

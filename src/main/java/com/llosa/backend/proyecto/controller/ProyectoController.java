@@ -92,6 +92,7 @@ public class ProyectoController {
                 .toList();
         return ResponseEntity.ok(response);
     }
+
     /*
     Endpoint para crear hito con el uuid del proyecto
     Estado: Funcional
