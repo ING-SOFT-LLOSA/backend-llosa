@@ -21,15 +21,69 @@ pipeline {
             }
             steps {
                 sh '''
-                    # PASO 1: Limpiar y compilar
-                    mvn clean compile -Dmaven.repo.local=.m2/repository
+                    set -e
 
-                    # PASO 2: Ejecutar tests
-                    mvn test -Dmaven.repo.local=.m2/repository
+                    # Mostrar información del entorno
+                    echo "======================================"
+                    echo "Build & Test Stage"
+                    echo "======================================"
 
-                    # PASO 3: Empaquetar JAR
-                    mvn package -DskipTests -Dmaven.repo.local=.m2/repository
+                    # PASO 1: Limpiar compilación anterior (no caché de Maven)
+                    echo "PASO 1: Limpiando compilación anterior..."
+                    mvn clean -Dmaven.repo.local=.m2/repository -q
+
+                    # PASO 2: Compilar código fuente
+                    echo "PASO 2: Compilando código fuente..."
+                    mvn compile -Dmaven.repo.local=.m2/repository -DskipTests
+
+                    # PASO 3: Ejecutar tests e generar reportes JaCoCo para cobertura
+                    echo "PASO 3: Ejecutando tests con reporte de cobertura JaCoCo..."
+                    mvn test jacoco:report -Dmaven.repo.local=.m2/repository
+
+                    # PASO 4: Empaquetar JAR (sin re-ejecutar tests)
+                    echo "PASO 4: Empaquetando JAR (sin re-ejecutar tests)..."
+                    mvn package -DskipTests -Dmaven.repo.local=.m2/repository -q
+
+                    # PASO 5: Verificar que JAR fue creado
+                    echo "PASO 5: Verificando artefacto..."
+                    if [ -f "target/backend-0.0.1-SNAPSHOT.jar" ]; then
+                        echo "✓ JAR creado exitosamente: $(ls -lh target/backend-0.0.1-SNAPSHOT.jar)"
+                    else
+                        echo "✗ Error: JAR no encontrado"
+                        exit 1
+                    fi
+
+                    echo ""
+                    echo "======================================"
+                    echo "Build & Test completado exitosamente"
+                    echo "======================================"
                 '''
+            }
+            post {
+                always {
+                    junit testResults: 'target/surefire-reports/*.xml',
+                          allowEmptyResults: false,
+                          skipPublishingChecks: false,
+                          stdioRetentionCount: 100
+
+                    publishHTML([
+                        reportDir: 'target/site/jacoco',
+                        reportFiles: 'index.html',
+                        reportName: 'JaCoCo Coverage Report',
+                        keepAll: true,
+                        allowMissing: false
+                    ])
+                }
+                success {
+                    echo "✓ Build & Test exitoso"
+                }
+                failure {
+                    echo "✗ Build & Test falló"
+                    sh '''
+                        echo "Últimas 50 líneas de output:"
+                        tail -50 ${WORKSPACE}/build.log || true
+                    '''
+                }
             }
         }
 
@@ -45,25 +99,65 @@ pipeline {
             }
             steps {
                 script {
-                    // PASO 1: Ejecutar tests y generar reportes de cobertura (JaCoCo)
-                    sh 'mvn clean test jacoco:report -Dmaven.repo.local=.m2/repository'
+                    echo "======================================"
+                    echo "SonarQube Analysis Stage"
+                    echo "======================================"
 
-                    // PASO 2: Ejecutar SonarScanner con reportes de cobertura
+                    // NOTA: Los reportes JaCoCo ya fueron generados en Build & Test stage
+                    // No re-ejecutamos tests aquí para optimizar tiempo de build
+
+                    // PASO 1: Sonar análisis con Maven (alternativa a sonar-scanner CLI)
+                    echo "PASO 1: Ejecutando análisis SonarQube con Maven..."
                     withSonarQubeEnv('SonarQube-Server') {
                         sh '''
-                            export SONAR_USER_HOME="${WORKSPACE}/.sonar"
-                            mkdir -p "${SONAR_USER_HOME}"
-                            ${scannerHome}/bin/sonar-scanner
+                            mvn sonar:sonar \
+                                -Dmaven.repo.local=.m2/repository \
+                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+                                -DskipTests
                         '''
                     }
+
+                    // PASO 2: Esperar resultado del Quality Gate
+                    echo "PASO 2: Esperando Quality Gate..."
+                }
+            }
+            post {
+                success {
+                    echo "✓ SonarQube Analysis completado"
+                }
+                failure {
+                    echo "✗ SonarQube Analysis falló"
                 }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: false
+                script {
+                    echo "======================================"
+                    echo "Quality Gate Validation"
+                    echo "======================================"
+                    echo "Esperando resultado del Quality Gate (máximo 1 hora)..."
+
+                    timeout(time: 1, unit: 'HOURS') {
+                        def qualityGate = waitForQualityGate abortPipeline: true
+
+                        if (qualityGate.status == 'OK') {
+                            echo "✓ Quality Gate PASSED"
+                            echo "  Coverage: ≥ 80%"
+                            echo "  Duplicated Lines: ≤ 2%"
+                        } else {
+                            echo "✗ Quality Gate FAILED"
+                            echo "  Status: ${qualityGate.status}"
+                            currentBuild.result = 'UNSTABLE'
+                            error("Quality Gate falló. Revisa SonarQube en: http://sonarqube:9000")
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    echo "Quality Gate completado"
                 }
             }
         }
