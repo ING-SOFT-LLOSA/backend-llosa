@@ -16,8 +16,6 @@ services:
       - DB_URL=${DB_URL}
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
-    volumes:
-      - ./secrets/firebase-service-account.json:/app/secrets/firebase-service-account.json:ro
     networks:
       - proxy_net
     restart: unless-stopped
