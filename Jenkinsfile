@@ -74,7 +74,7 @@ pipeline {
                     file(credentialsId: 'FIREBASE_SERVICE_ACCOUNT_LLOSA', variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
-                        STAGE=dev
+                        export STAGE=dev
                         mkdir -p ./secrets
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
@@ -104,7 +104,7 @@ pipeline {
                     file(credentialsId: 'FIREBASE_SERVICE_ACCOUNT_LLOSA', variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
-                        STAGE=test
+                        export STAGE=test
                         mkdir -p ./secrets
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
