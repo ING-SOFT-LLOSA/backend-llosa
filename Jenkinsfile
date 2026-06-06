@@ -134,18 +134,15 @@ pipeline {
             steps {
                 withCredentials([
                     string(credentialsId: 'FIREBASE_API_KEY_LLOSA', variable: 'FIREBASE_API_KEY'),
-                    string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA', variable: 'DOMINIO_CORPORATIVO'),
-                    string(credentialsId: 'SHOW_SQL_LLOSA', variable: 'SHOW_SQL'),
-                    string(credentialsId: 'SPRING_FLYWAY_SCHEMAS_LLOSA', variable: 'SPRING_FLYWAY_SCHEMAS'),
-                    string(credentialsId: 'DB_URL_LLOSA', variable: 'DB_URL'),
-                    string(credentialsId: 'DB_USERNAME_LLOSA', variable: 'DB_USERNAME'),
-                    string(credentialsId: 'DB_PASSWORD_LLOSA', variable: 'DB_PASSWORD'),
+                    file(credentialsId: 'LLOSA_SECRETS_BACKEND_TEST', variable: 'SECRETS_FILE'),
                     file(credentialsId: 'FIREBASE_SERVICE_ACCOUNT_LLOSA', variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
-                        export FIREBASE_API_KEY DOMINIO_CORPORATIVO SHOW_SQL DB_URL DB_USERNAME DB_PASSWORD SPRING_FLYWAY_SCHEMAS
+                        export FIREBASE_API_KEY
 
                         mkdir -p ./secrets
+                        cp "$SECRETS_FILE" ./secrets/backend.env
+                        chmod 600 ./secrets/backend.env
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
 
@@ -161,82 +158,67 @@ pipeline {
 
         stage('Verify Deployment') {
             steps {
-                // Las credenciales son necesarias para que `docker compose` resuelva
-                // las variables del compose; sin ellas salen en blanco y los logs/ps
-                // se evalúan contra un compose vacío.
-                withCredentials([
-                    string(credentialsId: 'FIREBASE_API_KEY_LLOSA', variable: 'FIREBASE_API_KEY'),
-                    string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA', variable: 'DOMINIO_CORPORATIVO'),
-                    string(credentialsId: 'SHOW_SQL_LLOSA', variable: 'SHOW_SQL'),
-                    string(credentialsId: 'SPRING_FLYWAY_SCHEMAS_LLOSA', variable: 'SPRING_FLYWAY_SCHEMAS'),
-                    string(credentialsId: 'DB_URL_LLOSA', variable: 'DB_URL'),
-                    string(credentialsId: 'DB_USERNAME_LLOSA', variable: 'DB_USERNAME'),
-                    string(credentialsId: 'DB_PASSWORD_LLOSA', variable: 'DB_PASSWORD')
-                ]) {
-                    sh '''
-                        set +e
-                        CONTAINER=llosa_backend
+                sh '''
+                    set +e
+                    CONTAINER=llosa_backend
 
-                        echo "Esperando hasta 120s a que el healthcheck reporte healthy..."
-                        for i in $(seq 1 15); do
-                            HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}' "$CONTAINER" 2>/dev/null)
-                            RUNNING=$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)
-                            RESTARTS=$(docker inspect -f '{{.RestartCount}}' "$CONTAINER" 2>/dev/null)
-                            echo "  intento $i/15 -> Running=$RUNNING Health=$HEALTH Restarts=$RESTARTS"
-                            if [ "$RUNNING" != "true" ]; then break; fi
-                            # Fallar rápido ante un crash loop en vez de esperar los 120s completos.
-                            if [ "$RESTARTS" -gt 0 ] 2>/dev/null; then
-                                echo "DETECTADO: el contenedor se está reiniciando (Restarts=$RESTARTS). Abortando espera."
-                                break
-                            fi
-                            if [ "$HEALTH" = "healthy" ] || [ "$HEALTH" = "n/a" ]; then break; fi
-                            sleep 5
-                        done
-
-                        echo ""
-                        echo "=================================================="
-                        echo "  docker compose ps"
-                        echo "=================================================="
-                        docker compose ps
-
-                        echo ""
-                        echo "=================================================="
-                        echo "  Estado del contenedor ($CONTAINER)"
-                        echo "=================================================="
-                        docker inspect "$CONTAINER" \
-                            --format 'Status: {{.State.Status}} | Running: {{.State.Running}} | ExitCode: {{.State.ExitCode}} | Restarts: {{.RestartCount}} | Health: {{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}'
-
-                        echo ""
-                        echo "=================================================="
-                        echo "  Últimas 150 líneas de logs"
-                        echo "=================================================="
-                        docker compose logs --tail=150 --no-color
-
-                        echo ""
-                        echo "=================================================="
-                        echo "  Verificación final"
-                        echo "=================================================="
-                        RUNNING=$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)
+                    echo "Esperando hasta 120s a que el healthcheck reporte healthy..."
+                    for i in $(seq 1 15); do
                         HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}' "$CONTAINER" 2>/dev/null)
+                        RUNNING=$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)
                         RESTARTS=$(docker inspect -f '{{.RestartCount}}' "$CONTAINER" 2>/dev/null)
-
-                        if [ "$RUNNING" != "true" ]; then
-                            echo "ERROR: el contenedor $CONTAINER no está corriendo."
-                            exit 1
-                        fi
+                        echo "  intento $i/15 -> Running=$RUNNING Health=$HEALTH Restarts=$RESTARTS"
+                        if [ "$RUNNING" != "true" ]; then break; fi
                         if [ "$RESTARTS" -gt 0 ] 2>/dev/null; then
-                            echo "ERROR: el contenedor $CONTAINER se reinició $RESTARTS veces (crash loop)."
-                            echo "CAUSA PROBABLE: revisa los logs de arriba. Si ves 'Connection to localhost:5432 refused',"
-                            echo "la credencial DB_URL_LLOSA apunta a localhost; dentro del contenedor debe apuntar al host/servicio real de Postgres."
-                            exit 1
+                            echo "DETECTADO: el contenedor se está reiniciando (Restarts=$RESTARTS). Abortando espera."
+                            break
                         fi
-                        if [ "$HEALTH" != "healthy" ] && [ "$HEALTH" != "n/a" ]; then
-                            echo "ERROR: el contenedor $CONTAINER no llegó a healthy (Health=$HEALTH)."
-                            exit 1
-                        fi
-                        echo "OK: $CONTAINER está corriendo (Health=$HEALTH, Restarts=$RESTARTS)."
-                    '''
-                }
+                        if [ "$HEALTH" = "healthy" ] || [ "$HEALTH" = "n/a" ]; then break; fi
+                        sleep 5
+                    done
+
+                    echo ""
+                    echo "=================================================="
+                    echo "  docker compose ps"
+                    echo "=================================================="
+                    docker compose ps
+
+                    echo ""
+                    echo "=================================================="
+                    echo "  Estado del contenedor ($CONTAINER)"
+                    echo "=================================================="
+                    docker inspect "$CONTAINER" \
+                        --format 'Status: {{.State.Status}} | Running: {{.State.Running}} | ExitCode: {{.State.ExitCode}} | Restarts: {{.RestartCount}} | Health: {{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}'
+
+                    echo ""
+                    echo "=================================================="
+                    echo "  Últimas 150 líneas de logs"
+                    echo "=================================================="
+                    docker compose logs --tail=150 --no-color
+
+                    echo ""
+                    echo "=================================================="
+                    echo "  Verificación final"
+                    echo "=================================================="
+                    RUNNING=$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)
+                    HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}' "$CONTAINER" 2>/dev/null)
+                    RESTARTS=$(docker inspect -f '{{.RestartCount}}' "$CONTAINER" 2>/dev/null)
+
+                    if [ "$RUNNING" != "true" ]; then
+                        echo "ERROR: el contenedor $CONTAINER no está corriendo."
+                        exit 1
+                    fi
+                    if [ "$RESTARTS" -gt 0 ] 2>/dev/null; then
+                        echo "ERROR: el contenedor $CONTAINER se reinició $RESTARTS veces (crash loop)."
+                        echo "Revisa los logs de arriba para identificar la causa."
+                        exit 1
+                    fi
+                    if [ "$HEALTH" != "healthy" ] && [ "$HEALTH" != "n/a" ]; then
+                        echo "ERROR: el contenedor $CONTAINER no llegó a healthy (Health=$HEALTH)."
+                        exit 1
+                    fi
+                    echo "OK: $CONTAINER está corriendo (Health=$HEALTH, Restarts=$RESTARTS)."
+                '''
             }
         }
     }
