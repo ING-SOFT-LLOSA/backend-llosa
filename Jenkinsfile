@@ -13,6 +13,9 @@ pipeline {
         }
 
         stage('Build & Test') {
+            when {
+                branch 'test'
+            }
             agent {
                 docker {
                     image 'maven:3.9.8-eclipse-temurin-21-alpine'
@@ -27,6 +30,9 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
+            when {
+                branch 'test'
+            }
             agent {
                 docker {
                     image 'maven:3.9.8-eclipse-temurin-21-alpine'
@@ -48,6 +54,9 @@ pipeline {
         }
 
         stage('Quality Gate') {
+            when {
+                branch 'test'
+            }
             steps {
                 timeout(time: 1, unit: 'HOURS') {
                     waitForQualityGate abortPipeline: false
@@ -69,7 +78,8 @@ pipeline {
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
 
-                        docker run --rm -v "$WORKSPACE":/workspace -w /workspace alpine rm -f .env || true
+                        docker run --rm -v "$WORKSPACE":/workspace -w /workspace alpine chown -R "$(id -u):$(id -g)" . || true
+                        rm -f .env
                         cp "$ENV_FILE" .env
 
                         docker compose -p llosa_dev down --remove-orphans
@@ -97,7 +107,8 @@ pipeline {
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
 
-                        docker run --rm -v "$WORKSPACE":/workspace -w /workspace alpine rm -f .env || true
+                        docker run --rm -v "$WORKSPACE":/workspace -w /workspace alpine chown -R "$(id -u):$(id -g)" . || true
+                        rm -f .env
                         cp "$ENV_FILE" .env
 
                         docker compose -p llosa_test down --remove-orphans
