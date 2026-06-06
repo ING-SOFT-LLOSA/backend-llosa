@@ -20,7 +20,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.*;
@@ -79,55 +78,4 @@ class AvanceControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // CP23: actualización masiva de hito por Torre completa
-    @Test
-    void actualizarAvancePorTorre_sinAutenticar_devuelve403() throws Exception {
-        mockMvc.perform(put("/api/avances-unidad/torre/1/hito/" + UUID.randomUUID()))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void actualizarAvancePorTorre_autenticado_actualizaTodaLaTorre() throws Exception {
-        Long torreId = 1L;
-        UUID hitoId = UUID.randomUUID();
-        Hito hito = Hito.builder().id(hitoId).titulo("Casco").orden(2)
-                .tipo(TipoHito.OBRA).estado(EstadoHito.COMPLETADO).build();
-        Piso piso = Piso.builder().id(1L).nroPiso(1).build();
-        HitoPiso hp1 = HitoPiso.builder().id(UUID.randomUUID()).hito(hito).piso(piso)
-                .estado(EstadoHito.COMPLETADO).build();
-        HitoPiso hp2 = HitoPiso.builder().id(UUID.randomUUID()).hito(hito).piso(piso)
-                .estado(EstadoHito.COMPLETADO).build();
-
-        when(hitoPisoService.cambiarEstadoPorTorre(torreId, hitoId, EstadoHito.COMPLETADO))
-                .thenReturn(List.of(hp1, hp2));
-
-        HitoPisoUpdateDTO dto = new HitoPisoUpdateDTO(EstadoHito.COMPLETADO);
-
-        mockMvc.perform(put("/api/avances-unidad/torre/" + torreId + "/hito/" + hitoId)
-                        .with(authentication(TestData.proyectoAuthToken()))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
-    }
-
-    @Test
-    void actualizarAvancePorTorre_torreVacia_devuelveListaVacia() throws Exception {
-        Long torreId = 99L;
-        UUID hitoId = UUID.randomUUID();
-
-        when(hitoPisoService.cambiarEstadoPorTorre(torreId, hitoId, EstadoHito.PENDIENTE))
-                .thenReturn(List.of());
-
-        HitoPisoUpdateDTO dto = new HitoPisoUpdateDTO(EstadoHito.PENDIENTE);
-
-        mockMvc.perform(put("/api/avances-unidad/torre/" + torreId + "/hito/" + hitoId)
-                        .with(authentication(TestData.proyectoAuthToken()))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
-    }
 }

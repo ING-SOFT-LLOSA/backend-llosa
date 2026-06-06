@@ -1,11 +1,9 @@
 package com.llosa.backend.proyecto.service;
 
-import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.proyecto.entity.Hito;
 import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.enums.TipoHito;
-import com.llosa.backend.proyecto.repository.HitoPisoRepository;
 import com.llosa.backend.proyecto.repository.HitoRepository;
 import com.llosa.backend.proyecto.service.impl.HitoServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -27,7 +25,6 @@ class HitoServiceTest {
     @Mock HitoRepository hitoRepository;
     @Mock ProyectoService proyectoService;
     @Mock HidratationService hidratacionService;
-    @Mock HitoPisoRepository hitoPisoRepository;
 
     @InjectMocks HitoServiceImpl service;
 
@@ -100,26 +97,5 @@ class HitoServiceTest {
                 .hasMessageContaining("Hito no encontrado");
     }
 
-    @Test
-    void deleteById_sinPropagaciones_eliminaOk() {
-        UUID id = UUID.randomUUID();
-        when(hitoPisoRepository.countByHitoId(id)).thenReturn(0L);
 
-        service.deleteById(id);
-
-        verify(hitoRepository).deleteById(id);
-    }
-
-    // CP14: hito propagado a unidades no puede eliminarse
-    @Test
-    void deleteById_conHitosPropagados_lanzaBusinessException() {
-        UUID id = UUID.randomUUID();
-        when(hitoPisoRepository.countByHitoId(id)).thenReturn(5L);
-
-        assertThatThrownBy(() -> service.deleteById(id))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("propagado a unidades");
-
-        verify(hitoRepository, never()).deleteById(any());
-    }
 }

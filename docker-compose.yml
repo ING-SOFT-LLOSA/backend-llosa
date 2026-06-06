@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: llosa_backend_${STAGE:-dev}
+    ports:
+      - "8080:8080"
     environment:
       - DOMINIO_CORPORATIVO=${DOMINIO_CORPORATIVO}
       - SHOW_SQL=${SHOW_SQL}

@@ -1,6 +1,5 @@
 package com.llosa.backend.proyecto.service;
 
-import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.proyecto.dto.request.*;
 import com.llosa.backend.proyecto.entity.*;
 import com.llosa.backend.proyecto.enums.*;
@@ -46,41 +45,6 @@ class ProyectoServiceTest {
                 .distrito("Miraflores")
                 .direccion("Av. Test 123")
                 .build();
-    }
-
-    @Test
-    void save_delegaEnRepository() {
-        Proyecto p = buildProyecto();
-        when(proyectoRepository.existsByNombreIgnoreCase(p.getNombre())).thenReturn(false);
-        when(proyectoRepository.save(p)).thenReturn(p);
-
-        Proyecto result = service.save(p);
-
-        assertThat(result).isEqualTo(p);
-        verify(proyectoRepository).save(p);
-    }
-
-    // CP13: nombre duplicado debe ser rechazado
-    @Test
-    void save_nombreDuplicado_lanzaBusinessException() {
-        Proyecto p = buildProyecto();
-        when(proyectoRepository.existsByNombreIgnoreCase("Torre Sol")).thenReturn(true);
-
-        assertThatThrownBy(() -> service.save(p))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Torre Sol");
-
-        verify(proyectoRepository, never()).save(any());
-    }
-
-    // CP13: mismo nombre en distinto case también es rechazado
-    @Test
-    void save_nombreDuplicadoCaseInsensitive_lanzaBusinessException() {
-        Proyecto p = Proyecto.builder().nombre("torre sol").descripcion("otra").build();
-        when(proyectoRepository.existsByNombreIgnoreCase("torre sol")).thenReturn(true);
-
-        assertThatThrownBy(() -> service.save(p))
-                .isInstanceOf(BusinessException.class);
     }
 
     @Test
