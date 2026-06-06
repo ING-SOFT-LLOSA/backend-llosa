@@ -147,7 +147,19 @@ pipeline {
 
         stage('Verify Deployment') {
             steps {
-                sh '''
+                // Las credenciales son necesarias para que `docker compose` resuelva
+                // las variables del compose; sin ellas salen en blanco y los logs/ps
+                // se evalúan contra un compose vacío.
+                withCredentials([
+                    string(credentialsId: 'FIREBASE_API_KEY_LLOSA', variable: 'FIREBASE_API_KEY'),
+                    string(credentialsId: 'DOMINIO_CORPORATIVO_LLOSA', variable: 'DOMINIO_CORPORATIVO'),
+                    string(credentialsId: 'SHOW_SQL_LLOSA', variable: 'SHOW_SQL'),
+                    string(credentialsId: 'SPRING_FLYWAY_SCHEMAS_LLOSA', variable: 'SPRING_FLYWAY_SCHEMAS'),
+                    string(credentialsId: 'DB_URL_LLOSA', variable: 'DB_URL'),
+                    string(credentialsId: 'DB_USERNAME_LLOSA', variable: 'DB_USERNAME'),
+                    string(credentialsId: 'DB_PASSWORD_LLOSA', variable: 'DB_PASSWORD')
+                ]) {
+                    sh '''
                         set +e
                         CONTAINER=llosa_backend
 
@@ -158,6 +170,11 @@ pipeline {
                             RESTARTS=$(docker inspect -f '{{.RestartCount}}' "$CONTAINER" 2>/dev/null)
                             echo "  intento $i/15 -> Running=$RUNNING Health=$HEALTH Restarts=$RESTARTS"
                             if [ "$RUNNING" != "true" ]; then break; fi
+                            # Fallar rápido ante un crash loop en vez de esperar los 120s completos.
+                            if [ "$RESTARTS" -gt 0 ] 2>/dev/null; then
+                                echo "DETECTADO: el contenedor se está reiniciando (Restarts=$RESTARTS). Abortando espera."
+                                break
+                            fi
                             if [ "$HEALTH" = "healthy" ] || [ "$HEALTH" = "n/a" ]; then break; fi
                             sleep 5
                         done
@@ -195,6 +212,8 @@ pipeline {
                         fi
                         if [ "$RESTARTS" -gt 0 ] 2>/dev/null; then
                             echo "ERROR: el contenedor $CONTAINER se reinició $RESTARTS veces (crash loop)."
+                            echo "CAUSA PROBABLE: revisa los logs de arriba. Si ves 'Connection to localhost:5432 refused',"
+                            echo "la credencial DB_URL_LLOSA apunta a localhost; dentro del contenedor debe apuntar al host/servicio real de Postgres."
                             exit 1
                         fi
                         if [ "$HEALTH" != "healthy" ] && [ "$HEALTH" != "n/a" ]; then
@@ -203,6 +222,7 @@ pipeline {
                         fi
                         echo "OK: $CONTAINER está corriendo (Health=$HEALTH, Restarts=$RESTARTS)."
                     '''
+                }
             }
         }
     }
