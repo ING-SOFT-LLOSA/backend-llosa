@@ -1,5 +1,6 @@
 package com.llosa.backend.proyecto.entity;
 
+import com.llosa.backend.documentos.entity.Documento;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -9,7 +10,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
 @Entity
 @Table(name = "proyecto")
 @Getter
@@ -18,9 +18,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = {"torres", "hitos"})
+@ToString(exclude = {"torres", "hitos", "documentos"})
 public class Proyecto {
-    // Atributos de la relación en la tabla
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "uuid_proyecto", updatable = false, nullable = false)
@@ -31,8 +31,12 @@ public class Proyecto {
 
     private String descripcion;
 
+    // FIX: Added @Builder.Default
+    @Builder.Default
     private Boolean precertificacionEdgeLeed = false;
 
+    // FIX: Added @Builder.Default
+    @Builder.Default
     private String linkRecorridoVirtual = ""; // cambiar esto a activo
 
     private String departamento;
@@ -47,7 +51,6 @@ public class Proyecto {
     @Column(name = "fecha_fin")
     private LocalDate fechaFin;
 
-    // RELACIONES A LAS DIFERENTES TABLAS
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -65,5 +68,8 @@ public class Proyecto {
             orphanRemoval = true)
     @Builder.Default
     private List<Hito> hitos = new ArrayList<>();
-    // RELACION DE DOCUMENTOS AUN NO REALIZADA
+
+    @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Documento> documentos = new ArrayList<>();
 }

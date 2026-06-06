@@ -68,6 +68,7 @@ public class SecurityConfig {
                 "https://llosa-admin.ingsoftware.lat",
                 "https://backend-llosa-dev.ingsoftware.lat/",
                 "https://llosa-client-dev.ingsoftware.lat/",
+                "https://llosa-admin-dev.ingsoftware.lat/",
                 "https://backend-llosa-dev.ingsoftware.lat",
                 "https://backend-llosa.ingsoftware.lat"
         ));

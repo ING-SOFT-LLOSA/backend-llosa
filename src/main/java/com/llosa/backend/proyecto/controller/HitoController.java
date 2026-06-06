@@ -32,6 +32,7 @@ public class HitoController {
         hitoActualizado.setFechaCompletado(dto.fechaCompletado());
         return ResponseEntity.ok(HitoResponseDTO.fromEntity(hitoService.save(hitoActualizado)));
     }
+
     /*
     Endpoint para eliminar un hito
     Estado: Funcional
@@ -42,4 +43,5 @@ public class HitoController {
         hitoService.deleteById(uuid);
         return ResponseEntity.noContent().build();
     }
+
 }

@@ -27,9 +27,4 @@ public interface HitoPisoRepository extends JpaRepository<HitoPiso, UUID> {
     boolean existsByPisoId(Long pisoId);
 
     boolean existsByPisoIdAndHitoId(Long pisoId, UUID hitoId);
-
-    long countByHitoId(UUID hitoId);
-
-    @Query("SELECT hp FROM HitoPiso hp WHERE hp.piso.torre.id = :torreId AND hp.hito.id = :hitoId")
-    List<HitoPiso> findByTorreIdAndHitoId(@Param("torreId") Long torreId, @Param("hitoId") UUID hitoId);
 }

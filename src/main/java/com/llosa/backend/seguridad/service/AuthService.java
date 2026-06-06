@@ -45,9 +45,7 @@ public class AuthService {
         PerfilConPermisosResponse response = new PerfilConPermisosResponse();
         response.setId(usuario.getId());
         response.setNombre(usuario.getNombre());
-        response.setApellidos(usuario.getApellidos());
         response.setEmail(usuario.getEmail());
-        response.setTelefono(usuario.getTelefono());
         response.setTipoUsuario(usuario.getTipoUsuario());
         response.setRol(usuario.getRol() != null ? usuario.getRol().getNombre() : null);
         response.setActivo(usuario.getActivo());

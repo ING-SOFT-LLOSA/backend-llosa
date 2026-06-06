@@ -19,7 +19,8 @@ public record UsuarioActivoResponseDTO(
     LocalDateTime fechaAdquisicion,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
-    List<ClienteSimpleDTO> clientes
+    List<ClienteSimpleDTO> clientes,
+    ActivoResponseDTO activo
 ) {
 
     /**
@@ -62,7 +63,8 @@ public record UsuarioActivoResponseDTO(
                 a.getFechaAdquisicion(),
                 a.getCreatedAt(),
                 a.getUpdatedAt(),
-                clientesDTO
+                clientesDTO,
+                ActivoResponseDTO.fromEntity(a.getActivo())
         );
     }
 }

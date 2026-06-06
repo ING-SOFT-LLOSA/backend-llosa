@@ -25,6 +25,7 @@ public class ActivoController {
     private final HitoPisoService hitoPisoService;
     private final ActivoService activoService;
     private final SeguimientoService seguimientoService;
+
     /*
     Endpoint Obtener los activos por piso_id
     Estado: Funcional
@@ -104,7 +105,7 @@ public class ActivoController {
     }
 
     /*
-    Endpoint Obtiene los hitos de un activo pero con porcentaje
+    Endpoint Obtiene los hitos de un activo pero con porcentaje obtiene el orden
     Estado: Funcional
      */
     @PreAuthorize("hasAuthority('OBRA_VER')")
@@ -115,6 +116,7 @@ public class ActivoController {
                 hitoPisoService.obtenerAvancesPorActivo(id)
         );
     }
+
     /*
     Endpoint Obtiene los activos por proyecto_id, page, y size, además de por estado
     Estado: Funcional
@@ -141,7 +143,4 @@ public class ActivoController {
         SeguimientoResponseDTO response = seguimientoService.obtenerSeguimiento(uuidActivo);
         return ResponseEntity.ok(response);
     }
-
-
-
 }

@@ -9,5 +9,4 @@ import java.util.UUID;
 
 public interface ProyectoRepository extends JpaRepository<Proyecto, UUID> {
     List<Proyecto> findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase(String nombre, String descripcion);
-    boolean existsByNombreIgnoreCase(String nombre);
 }

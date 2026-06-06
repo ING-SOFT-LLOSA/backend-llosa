@@ -24,7 +24,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    mvn clean package -DskipTests -Dmaven.repo.local=.m2/repository
+                    mvn clean package -Dmaven.test.skip=true -Dmaven.repo.local=.m2/repository
                 '''
             }
         }
@@ -74,20 +74,21 @@ pipeline {
                     file(credentialsId: 'FIREBASE_SERVICE_ACCOUNT_LLOSA', variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
+                        STAGE=dev
                         mkdir -p ./secrets
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
 
-                        docker run --rm -v "$WORKSPACE":/workspace -w /workspace alpine chown -R "$(id -u):$(id -g)" . || true
                         rm -f .env
                         cp "$ENV_FILE" .env
+                        echo "=== .env inyectado ==="
+                        cat .env
+                        echo "======================="
 
                         docker compose -p llosa_dev down --remove-orphans
-                        docker rm -f llosa_backend_dev llosa_db_dev 2>/dev/null || true
-                        docker compose -p llosa_dev up --build --no-start backend
-
-                        docker cp ./secrets/firebase-service-account.json llosa_backend_dev:/app/secrets/firebase-service-account.json
-                        docker compose -p llosa_dev start backend
+                        docker compose -p llosa_dev up --build --no-start
+                        docker cp ./secrets/firebase-service-account.json llosa_backend_${STAGE}:/app/secrets/firebase-service-account.json
+                        docker compose -p llosa_dev start
                     '''
                 }
             }
@@ -103,20 +104,21 @@ pipeline {
                     file(credentialsId: 'FIREBASE_SERVICE_ACCOUNT_LLOSA', variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
+                        STAGE=test
                         mkdir -p ./secrets
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
 
-                        docker run --rm -v "$WORKSPACE":/workspace -w /workspace alpine chown -R "$(id -u):$(id -g)" . || true
                         rm -f .env
                         cp "$ENV_FILE" .env
+                        echo "=== .env inyectado ==="
+                        cat .env
+                        echo "======================="
 
                         docker compose -p llosa_test down --remove-orphans
-                        docker rm -f llosa_backend_test llosa_db_test 2>/dev/null || true
-                        docker compose -p llosa_test up --build --no-start backend
-
-                        docker cp ./secrets/firebase-service-account.json llosa_backend_test:/app/secrets/firebase-service-account.json
-                        docker compose -p llosa_test start backend
+                        docker compose -p llosa_test up --build --no-start
+                        docker cp ./secrets/firebase-service-account.json llosa_backend_${STAGE}:/app/secrets/firebase-service-account.json
+                        docker compose -p llosa_test start
                     '''
                 }
             }

@@ -13,8 +13,4 @@ public interface HitoPisoService {
     HitoPiso cambiarEstado(UUID id, EstadoHito nuevoEstado);
     List<HitoPiso> findByActivo(UUID activoId);
     List<AvanceUnidadResponsePorcentajeDTO> obtenerAvancesPorActivo(UUID activoId);
-    // CP18: compra tardía — marca en batch los hitos con orden < ordenActual sin disparar notificaciones
-    void marcarHitosAnterioresCompletados(UUID activoId, int ordenActual);
-    // CP23: actualización masiva por Torre completa
-    List<HitoPiso> cambiarEstadoPorTorre(Long torreId, UUID hitoId, EstadoHito estado);
 }

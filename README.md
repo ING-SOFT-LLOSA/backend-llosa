@@ -1,6 +1,6 @@
 # Backend Llosa Edificaciones
 
-REST API Spring Boot 4 / Java 21 para la inmobiliaria Llosa Edificaciones. Implementa autenticación via Firebase, gestión de usuarios, roles y funciones, con un sistema completo de pruebas unitarias, de integración y estrés, y análisis de calidad con SonarQube.
+REST API Spring Boot 3.3 / Java 21 para la inmobiliaria Llosa Edificaciones. Implementa autenticación via Firebase, gestión de usuarios, roles y funciones, con un sistema completo de pruebas unitarias, de integración y estrés.
 
 ---
 
@@ -19,120 +19,17 @@ cp firebase-service-account.json src/main/resources/
 # 2. Iniciar PostgreSQL (requerido para tests e integración)
 docker compose up -d
 
-# 3. Compilar por fases (ver ⚙️ sección de compilación abajo)
-./mvnw clean compile
-./mvnw test
-./mvnw package -DskipTests
+# 3. Compilar
+./mvnw clean package -DskipTests
 
-# 4. Ejecutar aplicación localmente
+# 4. Ejecutar tests
+./mvnw test
+
+# 5. Ejecutar aplicación
 ./mvnw spring-boot:run
 ```
 
 API disponible en `http://localhost:8080`.
-
----
-
-## 🔨 Compilación y Ejecución de Tests
-
-### ⚙️ Compilación Correcta por Fases (RECOMENDADO)
-
-```bash
-# FASE 1: Limpiar y compilar código fuente
-./mvnw clean compile
-
-# FASE 2: Ejecutar tests (con classpath completo)
-./mvnw test
-
-# FASE 3: Empaquetar JAR (sin re-ejecutar tests)
-./mvnw package -DskipTests
-```
-
-**O en un solo comando:**
-```bash
-./mvnw clean compile && ./mvnw test && ./mvnw package -DskipTests
-```
-
-### 📋 Comandos Rápidos de Desarrollo
-
-**Compilación sin tests:**
-```bash
-./mvnw clean package -DskipTests
-```
-
-**Ejecutar solo tests:**
-```bash
-./mvnw test
-```
-
-**Ejecutar aplicación localmente:**
-```bash
-./mvnw spring-boot:run
-```
-
-### 🧪 Ejecución Selectiva de Tests
-
-**Solo tests unitarios (sin Testcontainers, ~5s):**
-```bash
-./mvnw test -Dtest="AuthServiceTest,UsuarioServiceTest,RolServiceTest,FirebaseTokenFilterTest,AuthControllerTest,UsuarioControllerTest"
-```
-
-**Solo tests de integración (con Testcontainers, ~30s primera ejecución):**
-```bash
-./mvnw test -Dtest="*RepositoryTest,SeguridadIntegrationTest"
-```
-
-**Tests de estrés/concurrencia (excluidos por defecto):**
-```bash
-./mvnw test -Dtest="*ConcurrencyTest"
-```
-
-**Una clase específica:**
-```bash
-./mvnw test -Dtest=UsuarioRepositoryTest
-```
-
-**Un test específico:**
-```bash
-./mvnw test -Dtest=UsuarioRepositoryTest#findByFirebaseUuid_devuelveUsuarioExistente
-```
-
-**Con salida detallada (debug):**
-```bash
-./mvnw test -Dtest=NombreTest -X  # Debug mode
-./mvnw test -Dtest=NombreTest -e  # Full stack trace
-```
-
-### 🐳 Asegúrate de que Docker está corriendo
-
-```bash
-docker ps  # Debe listar contenedores sin errores
-```
----
-
-## 📊 Análisis de Calidad con SonarQube
-
-### Quality Gates Requeridos
-- **Coverage:** ≥ 80%
-- **Duplicated Lines:** ≤ 2%
-
-### Ejecutar análisis localmente (requiere SonarQube disponible)
-```bash
-# PASO 1: Compilar y ejecutar tests (genera reportes JaCoCo)
-./mvnw clean compile && ./mvnw test && ./mvnw package -DskipTests
-
-# PASO 2: Ejecutar SonarQube análisis
-./mvnw sonar:sonar \
-  -Dsonar.host.url=http://localhost:9000 \
-  -Dsonar.login=YOUR_SONARQUBE_TOKEN
-```
-
-### Verificar resultados
-1. Accede a `http://localhost:9000`
-2. Busca el proyecto `llosa-backend`
-3. Verifica el estado del Quality Gate
-
-### En Jenkins (automático)
-El pipeline ejecuta el análisis automáticamente en el stage **"SonarQube Analysis"** y valida el Quality Gate. El pipeline **fallará si no cumple** los criterios de calidad (coverage ≥80%, duplicated lines ≤2%).
 
 ---
 
@@ -334,7 +231,7 @@ src/test/
 
 | Componente | Versión | Notas |
 |-----------|---------|-------|
-| Spring Boot | 4.0.6 | Con `@ServiceConnection` para Testcontainers |
+| Spring Boot | 3.3.5 | Con `@ServiceConnection` para Testcontainers |
 | Java | 21 | LTS, Sealed classes, Virtual threads ready |
 | PostgreSQL | 16 | Testcontainers, Flyway migrations |
 | JUnit | 5 (jupiter) | `@Test`, `@RepeatedTest`, `@Tag` |
@@ -376,57 +273,4 @@ export DOCKER_HOST=unix:///var/run/docker.sock
 - Garantiza cleanup después de cada test
 
 ---
-
-## ✅ ESTADO ACTUAL DE TESTS - TODO PASANDO
-
-### 📊 Resultados de Ejecución (2026-06-05)
-```
-Tests unitarios: 266
-✅ Pasados: 266 (100%)
-❌ Fallidos: 0
-❌ Errores: 0
-
-Cobertura instrucciones: 93.9%
-Cobertura ramas:          81.2%
-
-Estado: BUILD SUCCESS ✅
-```
-
-### 📋 Desglose por Módulo (tests unitarios)
-
-**Seguridad (48 tests):**
-- AuthServiceTest, RolServiceTest, UsuarioResponseFuncionesTest
-- AuthControllerTest, UsuarioControllerTest, UsuarioControllerExtendedTest, RolControllerTest
-- FirebaseAuthenticationTokenTest, FirebaseTokenFilterTest
-
-**Proyecto — Servicios (53 tests):**
-- ProyectoServiceTest, ActivoServiceTest, HitoServiceTest, HitoPisoServiceTest
-- TorreServiceTest, PisoServiceTest, SeguimientoServiceTest
-- HidratationServiceTest, UsuarioActivoServiceTest
-
-**Proyecto — Controladores (38 tests):**
-- ProyectoControllerTest, ActivoControllerTest, HitoControllerTest
-- TorreControllerTest, PisoControllerTest, AvanceControllerTest
-- UsuarioActivoControllerTest, UsuarioActivoDtoTest
-
-**Comercial (18 tests):**
-- HitoComercialServiceTest, HitoComercialControllerTest
-
-**Excepciones / Shared (9 tests):**
-- GlobalExceptionHandlerTest
-
-### 🔧 Comandos de Test
-
-**Solo tests unitarios (excluir Testcontainers):**
-```bash
-./mvnw test jacoco:report -Dtest="!*IntegrationTest,!*E2ETest" -DexcludedGroups="integration"
-```
-
-**Ver reporte de cobertura:**
-```bash
-# Abrir en navegador
-xdg-open target/site/jacoco/index.html
-```
-
----
-**Última actualización:** 2026-06-05 | **Estado:** 🟢 266/266 TODOS PASANDO | **Cobertura:** 93.9% instrucciones
+**Última actualización:** 2026-05-21 | **Estado:** ✅ 71/71 tests pasados
