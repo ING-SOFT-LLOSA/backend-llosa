@@ -110,8 +110,22 @@ pipeline {
                 echo "======================================"
                 echo "Quality Gate"
                 echo "======================================"
-                timeout(time: 1, unit: 'HOURS') {
-                    waitForQualityGate abortPipeline: false
+                // El analisis Sonar ya se sube en el stage anterior. El plugin
+                // waitForQualityGate puede lanzar HttpException 404 ("Analysis with
+                // id ... is not found") por incompatibilidad de version entre el
+                // plugin de Jenkins y el servidor SonarQube. Esa excepcion NO la
+                // atrapa abortPipeline:false, asi que la envolvemos para no romper
+                // el pipeline: registramos la advertencia y dejamos continuar.
+                script {
+                    try {
+                        timeout(time: 1, unit: 'HOURS') {
+                            def qg = waitForQualityGate abortPipeline: false
+                            echo "Quality Gate status: ${qg.status}"
+                        }
+                    } catch (err) {
+                        echo "ADVERTENCIA: no se pudo verificar el Quality Gate (${err.getMessage()})."
+                        echo "El analisis Sonar se subio correctamente; se continua el pipeline."
+                    }
                 }
             }
         }
