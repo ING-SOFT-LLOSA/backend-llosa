@@ -15,6 +15,7 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - GCS_BUCKET_NAME=${GCS_BUCKET_NAME}
+      - SPRING_PROFILES_ACTIVE=demo
     volumes:
       - ./secrets/firebase-service-account.json:/app/secrets/firebase-service-account.json
     networks:
