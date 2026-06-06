@@ -66,7 +66,6 @@ pipeline {
                     string(credentialsId: 'DB_URL_LLOSA',                    variable: 'DB_URL'),
                     string(credentialsId: 'DB_USERNAME_LLOSA',               variable: 'DB_USERNAME'),
                     string(credentialsId: 'DB_PASSWORD_LLOSA',               variable: 'DB_PASSWORD'),
-                    string(credentialsId: 'GCS_BUCKET_NAME_LLOSA',           variable: 'GCS_BUCKET_NAME'), // <-- Variable agregada aquí
                     file(credentialsId:   'FIREBASE_SERVICE_ACCOUNT_LLOSA',  variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
@@ -97,7 +96,6 @@ pipeline {
                     string(credentialsId: 'DB_URL_LLOSA',                    variable: 'DB_URL'),
                     string(credentialsId: 'DB_USERNAME_LLOSA',               variable: 'DB_USERNAME'),
                     string(credentialsId: 'DB_PASSWORD_LLOSA',               variable: 'DB_PASSWORD'),
-                    string(credentialsId: 'GCS_BUCKET_NAME_LLOSA',           variable: 'GCS_BUCKET_NAME'), // <-- Variable agregada aquí
                     file(credentialsId:   'FIREBASE_SERVICE_ACCOUNT_LLOSA',  variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
