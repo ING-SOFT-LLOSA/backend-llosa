@@ -6,7 +6,6 @@ HELP.md
 *.md
 !README.md
 *.txt
-target/
 
 ## Claude files ##
 CLAUDE.md
