@@ -143,6 +143,9 @@ pipeline {
                         mkdir -p ./secrets
                         cp "$SECRETS_FILE" ./secrets/backend.env
                         chmod 600 ./secrets/backend.env
+                        echo "=== Contenido de backend.env ==="
+                        cat ./secrets/backend.env
+                        echo "=== Fin backend.env ==="
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
 
