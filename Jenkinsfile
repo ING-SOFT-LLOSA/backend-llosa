@@ -129,6 +129,8 @@ pipeline {
                     file(credentialsId: 'FIREBASE_SERVICE_ACCOUNT_LLOSA', variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
+                        export FIREBASE_API_KEY DOMINIO_CORPORATIVO SHOW_SQL DB_URL DB_USERNAME DB_PASSWORD SPRING_FLYWAY_SCHEMAS
+
                         mkdir -p ./secrets
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
