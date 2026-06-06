@@ -75,6 +75,7 @@ pipeline {
                 ]) {
                     sh '''
                         export STAGE=dev
+                        export HOST_PORT=
                         mkdir -p ./secrets
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
@@ -105,6 +106,7 @@ pipeline {
                 ]) {
                     sh '''
                         export STAGE=test
+                        export HOST_PORT=
                         mkdir -p ./secrets
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
