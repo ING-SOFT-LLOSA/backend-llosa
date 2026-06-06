@@ -74,7 +74,6 @@ pipeline {
                     file(credentialsId: 'FIREBASE_SERVICE_ACCOUNT_LLOSA', variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
-                        STAGE=dev
                         mkdir -p ./secrets
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
@@ -85,10 +84,10 @@ pipeline {
                         cat .env
                         echo "======================="
 
-                        docker compose -p llosa_dev down --remove-orphans
-                        docker compose -p llosa_dev up --build --no-start
-                        docker cp ./secrets/firebase-service-account.json llosa_backend_${STAGE}:/app/secrets/firebase-service-account.json
-                        docker compose -p llosa_dev start
+                        docker compose -f docker-compose.dev.yml -p llosa_dev down --remove-orphans
+                        docker compose -f docker-compose.dev.yml -p llosa_dev up --build --no-start
+                        docker cp ./secrets/firebase-service-account.json llosa_backend_dev:/app/secrets/firebase-service-account.json
+                        docker compose -f docker-compose.dev.yml -p llosa_dev start
                     '''
                 }
             }
@@ -104,7 +103,6 @@ pipeline {
                     file(credentialsId: 'FIREBASE_SERVICE_ACCOUNT_LLOSA', variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
-                        STAGE=test
                         mkdir -p ./secrets
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
@@ -115,10 +113,10 @@ pipeline {
                         cat .env
                         echo "======================="
 
-                        docker compose -p llosa_test down --remove-orphans
-                        docker compose -p llosa_test up --build --no-start
-                        docker cp ./secrets/firebase-service-account.json llosa_backend_${STAGE}:/app/secrets/firebase-service-account.json
-                        docker compose -p llosa_test start
+                        docker compose -f docker-compose.test.yml -p llosa_test down --remove-orphans
+                        docker compose -f docker-compose.test.yml -p llosa_test up --build --no-start
+                        docker cp ./secrets/firebase-service-account.json llosa_backend_test:/app/secrets/firebase-service-account.json
+                        docker compose -f docker-compose.test.yml -p llosa_test start
                     '''
                 }
             }
