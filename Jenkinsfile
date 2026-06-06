@@ -3,7 +3,6 @@ pipeline {
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '5'))
-        timestamps()
     }
 
     stages {
@@ -14,156 +13,123 @@ pipeline {
         }
 
         stage('Build & Test') {
+            when {
+                branch 'test'
+            }
+            agent {
+                docker {
+                    image 'maven:3.9.8-eclipse-temurin-21-alpine'
+                    reuseNode true
+                }
+            }
             steps {
                 sh '''
-                    set -e
-
-                    echo "======================================"
-                    echo "Build & Test Stage"
-                    echo "======================================"
-
-                    # PASO 1: Compile
-                    echo "PASO 1: Compilando codigo fuente..."
-                    ./mvnw compile -DskipTests
-
-                    # PASO 2: Test + JaCoCo Report (SOLO UNITARIOS - sin Testcontainers)
-                    echo "PASO 2: Ejecutando TESTS UNITARIOS (sin Testcontainers)..."
-                    ./mvnw test jacoco:report \\
-                        -Dtest="!*IntegrationTest,!*E2ETest" \\
-                        -DexcludedGroups="integration"
-
-                    # PASO 3: Package (sin re-ejecutar tests)
-                    echo "PASO 3: Empaquetando JAR..."
-                    ./mvnw package -DskipTests -q
-
-                    # PASO 4: Validar JAR
-                    echo "PASO 4: Validando artefacto..."
-                    if [ -f "target/backend-0.0.1-SNAPSHOT.jar" ]; then
-                        SIZE=$(ls -lh target/backend-0.0.1-SNAPSHOT.jar | awk '{print $5}')
-                        echo "OK: JAR creado ($SIZE)"
-                    else
-                        echo "ERROR: JAR no encontrado"
-                        exit 1
-                    fi
-
-                    # PASO 5: Verificar reportes JaCoCo
-                    echo "PASO 5: Verificando reportes..."
-                    if [ -f "target/site/jacoco/index.html" ]; then
-                        echo "OK: Reporte JaCoCo generado"
-                    else
-                        echo "ADVERTENCIA: Reporte JaCoCo no encontrado"
-                    fi
-
-                    echo ""
-                    echo "======================================"
-                    echo "Build & Test completado exitosamente"
-                    echo "======================================"
+                    mvn clean package -Dmaven.test.skip=true -Dmaven.repo.local=.m2/repository
                 '''
-            }
-            post {
-                always {
-                    // Publicar JUnit results
-                    junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
-
-                    // Publicar JaCoCo solo si existe
-                    script {
-                        if (fileExists('target/site/jacoco/index.html')) {
-                            publishHTML(target: [
-                                reportDir: 'target/site/jacoco',
-                                reportFiles: 'index.html',
-                                reportName: 'JaCoCo Coverage Report',
-                                keepAll: true
-                            ])
-                        } else {
-                            echo "Advertencia: No se pudo publicar JaCoCo report"
-                        }
-                    }
-                }
-                success {
-                    echo "Build & Test exitoso"
-                }
-                failure {
-                    echo "Build & Test falló"
-                    sh 'echo "Directorio target:" && ls -la target/ || true'
-                }
             }
         }
 
         stage('SonarQube Analysis') {
+            when {
+                branch 'test'
+            }
+            agent {
+                docker {
+                    image 'maven:3.9.8-eclipse-temurin-21-alpine'
+                    reuseNode true
+                }
+            }
+            environment {
+                scannerHome = tool 'SonarScanner'
+            }
             steps {
-                echo "======================================"
-                echo "SonarQube Analysis"
-                echo "======================================"
                 withSonarQubeEnv('SonarQube-Server') {
                     sh '''
-                        ./mvnw sonar:sonar \
-                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-                        -DskipTests \
-                        -Djacoco.skip=true
+                        export SONAR_USER_HOME="${WORKSPACE}/.sonar"
+                        mkdir -p "${SONAR_USER_HOME}"
+                        ${scannerHome}/bin/sonar-scanner
                     '''
                 }
             }
         }
 
         stage('Quality Gate') {
+            when {
+                branch 'test'
+            }
             steps {
-                echo "======================================"
-                echo "Quality Gate"
-                echo "======================================"
-                // El analisis Sonar ya se sube en el stage anterior. El plugin
-                // waitForQualityGate puede lanzar HttpException 404 ("Analysis with
-                // id ... is not found") por incompatibilidad de version entre el
-                // plugin de Jenkins y el servidor SonarQube. Esa excepcion NO la
-                // atrapa abortPipeline:false, asi que la envolvemos para no romper
-                // el pipeline: registramos la advertencia y dejamos continuar.
-                script {
-                    try {
-                        timeout(time: 1, unit: 'HOURS') {
-                            def qg = waitForQualityGate abortPipeline: false
-                            echo "Quality Gate status: ${qg.status}"
-                        }
-                    } catch (err) {
-                        echo "ADVERTENCIA: no se pudo verificar el Quality Gate (${err.getMessage()})."
-                        echo "El analisis Sonar se subio correctamente; se continua el pipeline."
-                    }
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: false
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy Dev') {
+            when {
+                branch 'dev'
+            }
             steps {
                 withCredentials([
-                    string(credentialsId: 'FIREBASE_API_KEY_LLOSA', variable: 'FIREBASE_API_KEY'),
-                    file(credentialsId: 'LLOSA_SECRETS_BACKEND_TEST', variable: 'SECRETS_FILE'),
+                    file(credentialsId: 'LLOSA_SECRETS_BACKEND_DEV', variable: 'ENV_FILE'),
                     file(credentialsId: 'FIREBASE_SERVICE_ACCOUNT_LLOSA', variable: 'FIREBASE_SA_FILE')
                 ]) {
                     sh '''
-                        export FIREBASE_API_KEY
-
                         mkdir -p ./secrets
-                        cp "$SECRETS_FILE" ./secrets/backend.env
-                        chmod 600 ./secrets/backend.env
-                        echo "=== Contenido de backend.env ==="
-                        cat ./secrets/backend.env
-                        echo "=== Fin backend.env ==="
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
 
-                        docker compose down --remove-orphans
-                        docker rm -f llosa_backend llosa_db 2>/dev/null || true
-                        docker compose up --build --force-recreate --no-start backend
-                        docker cp ./secrets/firebase-service-account.json llosa_backend:/app/secrets/firebase-service-account.json
-                        docker compose start backend
+                        docker run --rm -v "$WORKSPACE":/workspace -w /workspace alpine chown -R "$(id -u):$(id -g)" . || true
+                        rm -f .env
+                        cp "$ENV_FILE" .env
+
+                        docker compose -p llosa_dev down --remove-orphans
+                        docker rm -f llosa_backend_dev llosa_db_dev 2>/dev/null || true
+                        docker compose -p llosa_dev up --build --no-start backend
+
+                        docker cp ./secrets/firebase-service-account.json llosa_backend_dev:/app/secrets/firebase-service-account.json
+                        docker compose -p llosa_dev start backend
                     '''
                 }
             }
         }
 
-        stage('Verify Deployment') {
+        stage('Deploy Test') {
+            when {
+                branch 'test'
+            }
+            steps {
+                withCredentials([
+                    file(credentialsId: 'LLOSA_SECRETS_BACKEND_TEST', variable: 'ENV_FILE'),
+                    file(credentialsId: 'FIREBASE_SERVICE_ACCOUNT_LLOSA', variable: 'FIREBASE_SA_FILE')
+                ]) {
+                    sh '''
+                        mkdir -p ./secrets
+                        cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
+                        chmod 644 ./secrets/firebase-service-account.json
+
+                        docker run --rm -v "$WORKSPACE":/workspace -w /workspace alpine chown -R "$(id -u):$(id -g)" . || true
+                        rm -f .env
+                        cp "$ENV_FILE" .env
+
+                        docker compose -p llosa_test down --remove-orphans
+                        docker rm -f llosa_backend_test llosa_db_test 2>/dev/null || true
+                        docker compose -p llosa_test up --build --no-start backend
+
+                        docker cp ./secrets/firebase-service-account.json llosa_backend_test:/app/secrets/firebase-service-account.json
+                        docker compose -p llosa_test start backend
+                    '''
+                }
+            }
+        }
+
+        stage('Verify Deployment Dev') {
+            when {
+                branch 'dev'
+            }
             steps {
                 sh '''
                     set +e
-                    CONTAINER=llosa_backend
+                    CONTAINER=llosa_backend_dev
 
                     echo "Esperando hasta 120s a que el healthcheck reporte healthy..."
                     for i in $(seq 1 15); do
@@ -172,10 +138,6 @@ pipeline {
                         RESTARTS=$(docker inspect -f '{{.RestartCount}}' "$CONTAINER" 2>/dev/null)
                         echo "  intento $i/15 -> Running=$RUNNING Health=$HEALTH Restarts=$RESTARTS"
                         if [ "$RUNNING" != "true" ]; then break; fi
-                        if [ "$RESTARTS" -gt 0 ] 2>/dev/null; then
-                            echo "DETECTADO: el contenedor se está reiniciando (Restarts=$RESTARTS). Abortando espera."
-                            break
-                        fi
                         if [ "$HEALTH" = "healthy" ] || [ "$HEALTH" = "n/a" ]; then break; fi
                         sleep 5
                     done
@@ -184,7 +146,7 @@ pipeline {
                     echo "=================================================="
                     echo "  docker compose ps"
                     echo "=================================================="
-                    docker compose ps
+                    docker compose -p llosa_dev ps
 
                     echo ""
                     echo "=================================================="
@@ -197,7 +159,7 @@ pipeline {
                     echo "=================================================="
                     echo "  Últimas 150 líneas de logs"
                     echo "=================================================="
-                    docker compose logs --tail=150 --no-color
+                    docker compose -p llosa_dev logs --tail=150 --no-color
 
                     echo ""
                     echo "=================================================="
@@ -213,7 +175,70 @@ pipeline {
                     fi
                     if [ "$RESTARTS" -gt 0 ] 2>/dev/null; then
                         echo "ERROR: el contenedor $CONTAINER se reinició $RESTARTS veces (crash loop)."
-                        echo "Revisa los logs de arriba para identificar la causa."
+                        exit 1
+                    fi
+                    if [ "$HEALTH" != "healthy" ] && [ "$HEALTH" != "n/a" ]; then
+                        echo "ERROR: el contenedor $CONTAINER no llegó a healthy (Health=$HEALTH)."
+                        exit 1
+                    fi
+                    echo "OK: $CONTAINER está corriendo (Health=$HEALTH, Restarts=$RESTARTS)."
+                '''
+            }
+        }
+
+        stage('Verify Deployment Test') {
+            when {
+                branch 'test'
+            }
+            steps {
+                sh '''
+                    set +e
+                    CONTAINER=llosa_backend_test
+
+                    echo "Esperando hasta 120s a que el healthcheck reporte healthy..."
+                    for i in $(seq 1 15); do
+                        HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}' "$CONTAINER" 2>/dev/null)
+                        RUNNING=$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)
+                        RESTARTS=$(docker inspect -f '{{.RestartCount}}' "$CONTAINER" 2>/dev/null)
+                        echo "  intento $i/15 -> Running=$RUNNING Health=$HEALTH Restarts=$RESTARTS"
+                        if [ "$RUNNING" != "true" ]; then break; fi
+                        if [ "$HEALTH" = "healthy" ] || [ "$HEALTH" = "n/a" ]; then break; fi
+                        sleep 5
+                    done
+
+                    echo ""
+                    echo "=================================================="
+                    echo "  docker compose ps"
+                    echo "=================================================="
+                    docker compose -p llosa_test ps
+
+                    echo ""
+                    echo "=================================================="
+                    echo "  Estado del contenedor ($CONTAINER)"
+                    echo "=================================================="
+                    docker inspect "$CONTAINER" \
+                        --format 'Status: {{.State.Status}} | Running: {{.State.Running}} | ExitCode: {{.State.ExitCode}} | Restarts: {{.RestartCount}} | Health: {{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}'
+
+                    echo ""
+                    echo "=================================================="
+                    echo "  Últimas 150 líneas de logs"
+                    echo "=================================================="
+                    docker compose -p llosa_test logs --tail=150 --no-color
+
+                    echo ""
+                    echo "=================================================="
+                    echo "  Verificación final"
+                    echo "=================================================="
+                    RUNNING=$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)
+                    HEALTH=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}' "$CONTAINER" 2>/dev/null)
+                    RESTARTS=$(docker inspect -f '{{.RestartCount}}' "$CONTAINER" 2>/dev/null)
+
+                    if [ "$RUNNING" != "true" ]; then
+                        echo "ERROR: el contenedor $CONTAINER no está corriendo."
+                        exit 1
+                    fi
+                    if [ "$RESTARTS" -gt 0 ] 2>/dev/null; then
+                        echo "ERROR: el contenedor $CONTAINER se reinició $RESTARTS veces (crash loop)."
                         exit 1
                     fi
                     if [ "$HEALTH" != "healthy" ] && [ "$HEALTH" != "n/a" ]; then
