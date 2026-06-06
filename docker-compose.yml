@@ -4,13 +4,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        FIREBASE_API_KEY: ${FIREBASE_API_KEY_LLOSA}
     container_name: llosa_backend
     environment:
       # LADO IZQUIERDO: Lo que lee Spring Boot (_LLOSA)
       # LADO DERECHO: Lo que inyecta Jenkins (sin sufijo)
-      - FIREBASE_API_KEY_LLOSA=${FIREBASE_API_KEY}
       - DOMINIO_CORPORATIVO_LLOSA=${DOMINIO_CORPORATIVO}
       - SHOW_SQL_LLOSA=${SHOW_SQL}
       - SPRING_FLYWAY_SCHEMAS_LLOSA=public,proyectos,seguridad,activos,etapas
