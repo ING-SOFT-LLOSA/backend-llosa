@@ -1,24 +1,18 @@
-name: llosa_backend_dev
 services:
   backend:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        FIREBASE_API_KEY: ${FIREBASE_API_KEY_LLOSA}
-    container_name: llosa_backend_dev
+    container_name: llosa_backend_${STAGE:-dev}
     environment:
-      # LADO IZQUIERDO: Lo que lee Spring Boot (_LLOSA)
-      # LADO DERECHO: Lo que inyecta Jenkins (sin sufijo)
-      - FIREBASE_API_KEY_LLOSA=${FIREBASE_API_KEY}
-      - DOMINIO_CORPORATIVO_LLOSA=${DOMINIO_CORPORATIVO}
-      - SHOW_SQL_LLOSA=${SHOW_SQL}
-      - SPRING_FLYWAY_SCHEMAS_LLOSA=public,proyectos,seguridad,activos,etapas
-      - FIREBASE_CREDENTIALS_PATH_LLOSA=/app/secrets/firebase-service-account.json
-      - DB_URL_LLOSA=${DB_URL}
-      - DB_USERNAME_LLOSA=${DB_USERNAME}
-      - DB_PASSWORD_LLOSA=${DB_PASSWORD}
-      - GCS_BUCKET_NAME_LLOSA=${GCS_BUCKET_NAME}
+      - DOMINIO_CORPORATIVO=${DOMINIO_CORPORATIVO}
+      - SHOW_SQL=${SHOW_SQL}
+      - SPRING_FLYWAY_SCHEMAS=public,proyectos,seguridad,activos,etapas
+      - FIREBASE_CREDENTIALS_PATH=${FIREBASE_CREDENTIALS_PATH}
+      - DB_URL=${DB_URL}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - GCS_BUCKET_NAME=${GCS_BUCKET_NAME}
     networks:
       - proxy_net
     restart: unless-stopped
