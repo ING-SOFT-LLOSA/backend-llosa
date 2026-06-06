@@ -68,6 +68,8 @@ pipeline {
                         mkdir -p ./secrets
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
+
+                        docker run --rm -v "$WORKSPACE":/workspace -w /workspace alpine rm -f .env || true
                         cp "$ENV_FILE" .env
 
                         docker compose -p llosa_dev down --remove-orphans
@@ -94,6 +96,8 @@ pipeline {
                         mkdir -p ./secrets
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
+
+                        docker run --rm -v "$WORKSPACE":/workspace -w /workspace alpine rm -f .env || true
                         cp "$ENV_FILE" .env
 
                         docker compose -p llosa_test down --remove-orphans
