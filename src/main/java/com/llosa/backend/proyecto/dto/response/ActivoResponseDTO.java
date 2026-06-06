@@ -10,6 +10,9 @@ import java.util.UUID;
 public record ActivoResponseDTO(
         UUID id,
         Long pisoId,
+        Integer nroPiso,
+        String torreNombre,
+        String proyectoNombre,
         String nro,
         TipoActivo tipo,
         BigDecimal areaM2,
@@ -21,6 +24,9 @@ public record ActivoResponseDTO(
         return new ActivoResponseDTO(
                 a.getId(),
                 a.getPiso().getId(),
+                a.getPiso().getNroPiso(),
+                a.getPiso().getTorre().getNombre(),
+                a.getPiso().getTorre().getProyecto().getNombre(),
                 a.getNro(),
                 a.getTipo(),
                 a.getAreaM2(),
