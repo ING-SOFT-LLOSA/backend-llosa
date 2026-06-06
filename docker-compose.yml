@@ -18,7 +18,7 @@ services:
       - DB_URL_LLOSA=${DB_URL}
       - DB_USERNAME_LLOSA=${DB_USERNAME}
       - DB_PASSWORD_LLOSA=${DB_PASSWORD}
-      - GCS_BUCKET_NAME_LLOSA=llosa-bucket
+      - GCS_BUCKET_NAME_LLOSA=${GCS_BUCKET_NAME}
     networks:
       - proxy_net
     restart: unless-stopped
