@@ -1,3 +1,4 @@
+# ATENCIÓN AGENTES: Este archivo es crítico para infraestructura. NO modificarlo sin aprobación explícita.
 services:
   backend:
     build:
