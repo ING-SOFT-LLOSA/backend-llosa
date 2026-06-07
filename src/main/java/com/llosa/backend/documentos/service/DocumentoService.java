@@ -1,17 +1,16 @@
 package com.llosa.backend.documentos.service;
 
 import com.google.cloud.storage.*;
-import com.llosa.backend.documentos.dto.DocumentoResponse;
-import com.llosa.backend.documentos.dto.SignedUrlResponse;
-import com.llosa.backend.documentos.dto.StageDocumentResponse;
-import com.llosa.backend.documentos.dto.SubirDocumentoRequest;
+import com.llosa.backend.documentos.dto.*;
 import com.llosa.backend.documentos.entity.Documento;
 import com.llosa.backend.documentos.entity.TipoDocumentoConfig;
 import com.llosa.backend.documentos.enums.TipoDocumento;
 import com.llosa.backend.documentos.repository.DocumentoRepository;
 import com.llosa.backend.documentos.repository.TipoDocumentoConfigRepository;
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
+import com.llosa.backend.proyecto.enums.TipoActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
@@ -22,9 +21,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -40,6 +44,90 @@ public class DocumentoService {
     private final UsuarioRepository usuarioRepository;
     private final Storage storage;
     private final String gcsBucketName;
+
+    @Transactional(readOnly = true)
+    public StageResponse obtenerDetalleEtapa(String etapaProceso, UUID uuidUsuarioActivo) {
+        if (!"contrato".equalsIgnoreCase(etapaProceso)) {
+            return new StageResponse(null);
+        }
+
+        UsuarioActivo ua = usuarioActivoRepository.findById(uuidUsuarioActivo)
+                .orElseThrow(() -> new EntityNotFoundException("UsuarioActivo no encontrado: " + uuidUsuarioActivo));
+
+        List<StageResponse.UnidadResponse> unidades = new ArrayList<>();
+        BigDecimal areaTotal = BigDecimal.ZERO;
+        int departamentos = 0;
+        int estacionamientos = 0;
+
+        // Departamento principal
+        Activo principal = ua.getActivo();
+        if (principal != null) {
+            unidades.add(mapActivoToUnidad(principal));
+            areaTotal = areaTotal.add(principal.getAreaM2());
+            if (principal.getTipo() == TipoActivo.DEPARTAMENTO) {
+                departamentos++;
+            } else if (principal.getTipo() == TipoActivo.COCHERA) {
+                estacionamientos++;
+            }
+        }
+
+        // Cochera opcional
+        Activo cochera = ua.getCochera();
+        if (cochera != null) {
+            unidades.add(mapActivoToUnidad(cochera));
+            areaTotal = areaTotal.add(cochera.getAreaM2());
+            estacionamientos++;
+        }
+
+        StageResponse.ResumenContratoResponse resumen = new StageResponse.ResumenContratoResponse(
+                unidades.size(),
+                String.format(Locale.US, "%.2f m²", areaTotal),
+                unidades,
+                new StageResponse.TotalesResponse(departamentos, estacionamientos)
+        );
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d/M/yyyy");
+        String firmaContrato = ua.getFechaAdquisicion() != null ? ua.getFechaAdquisicion().format(formatter) : null;
+
+        StageResponse.InformacionContratoResponse info = new StageResponse.InformacionContratoResponse(
+                firmaContrato,
+                null,
+                ua.getTipoFinanciamiento()
+        );
+
+        return new StageResponse(new StageResponse.StageDetailsResponse(resumen, info));
+    }
+
+    private StageResponse.UnidadResponse mapActivoToUnidad(Activo activo) {
+        String tipo = "OTRO";
+        String nombre = activo.getNro();
+        String icono = "file";
+        String areaOcupada = null;
+
+        if (activo.getTipo() == TipoActivo.DEPARTAMENTO) {
+            tipo = "DEPARTAMENTO";
+            nombre = "Dpto. " + activo.getNro();
+            icono = "edificio";
+            areaOcupada = String.format(Locale.US, "%.2f m²", activo.getAreaM2());
+        } else if (activo.getTipo() == TipoActivo.COCHERA) {
+            tipo = "ESTACIONAMIENTO";
+            nombre = "Cochera " + activo.getNro();
+            icono = "parking";
+            areaOcupada = null;
+        }
+
+        DecimalFormat df = new DecimalFormat("#,###");
+        String aporte = "S/." + df.format(activo.getPrecio());
+
+        return new StageResponse.UnidadResponse(
+                tipo,
+                nombre,
+                aporte,
+                areaOcupada,
+                String.format(Locale.US, "%.2f m²", activo.getAreaM2()),
+                icono
+        );
+    }
 
     @Transactional
     public DocumentoResponse subirDocumento(UUID usuarioActivoId, MultipartFile file, SubirDocumentoRequest request, Integer subidoPor) {
