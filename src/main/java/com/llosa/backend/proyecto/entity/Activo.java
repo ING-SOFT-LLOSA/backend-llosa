@@ -48,6 +48,9 @@ public class Activo {
     private BigDecimal precio = BigDecimal.valueOf(0.0);
 
     private String descripcion = "No existe descripcion todavia";
+    // FIX: Added @Builder.Default
+    @Builder.Default
+    private String linkRecorridoVirtual = "";
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
