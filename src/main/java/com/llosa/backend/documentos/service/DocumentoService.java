@@ -6,8 +6,10 @@ import com.llosa.backend.documentos.dto.SignedUrlResponse;
 import com.llosa.backend.documentos.dto.StageDocumentResponse;
 import com.llosa.backend.documentos.dto.SubirDocumentoRequest;
 import com.llosa.backend.documentos.entity.Documento;
+import com.llosa.backend.documentos.entity.TipoDocumentoConfig;
 import com.llosa.backend.documentos.enums.TipoDocumento;
 import com.llosa.backend.documentos.repository.DocumentoRepository;
+import com.llosa.backend.documentos.repository.TipoDocumentoConfigRepository;
 import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
@@ -21,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -29,11 +32,10 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class DocumentoService {
 
-    private static final long MAX_SIZE_PDF   = 20 * 1024 * 1024L;
-    private static final long MAX_SIZE_VIDEO = 50 * 1024 * 1024L;
     private static final long SIGNED_URL_MINUTES = 15L;
 
     private final DocumentoRepository documentoRepository;
+    private final TipoDocumentoConfigRepository tipoDocumentoConfigRepository;
     private final UsuarioActivoRepository usuarioActivoRepository;
     private final UsuarioRepository usuarioRepository;
     private final Storage storage;
@@ -77,15 +79,18 @@ public class DocumentoService {
     }
 
     @Transactional(readOnly = true)
-    public List<DocumentoResponse> listarPorUsuarioActivo(UUID usuarioActivoId) {
+    public List<DocumentoResponse> listarPorUsuarioActivo(UUID usuarioActivoId, TipoDocumento tipoDocumento) {
         if (!usuarioActivoRepository.existsById(usuarioActivoId)) {
             throw new EntityNotFoundException("UsuarioActivo no encontrado: " + usuarioActivoId);
         }
-        return documentoRepository
-                .findByIdReferenciaAndEntidadReferencia(usuarioActivoId.toString(), "USUARIO_ACTIVO")
-                .stream()
-                .map(DocumentoResponse::fromEntity)
-                .toList();
+
+        List<Documento> documentos = tipoDocumento != null
+                ? documentoRepository.findByIdReferenciaAndEntidadReferenciaAndTipoDocumento(
+                usuarioActivoId.toString(), "USUARIO_ACTIVO", tipoDocumento)
+                : documentoRepository.findByIdReferenciaAndEntidadReferencia(
+                usuarioActivoId.toString(), "USUARIO_ACTIVO");
+
+        return documentos.stream().map(DocumentoResponse::fromEntity).toList();
     }
 
     @Transactional(readOnly = true)
@@ -168,33 +173,20 @@ public class DocumentoService {
         if (file.isEmpty()) {
             throw new BusinessException("El archivo no puede estar vacío.");
         }
-        switch (tipo) {
-            case PDF_LEGAL -> {
-                if (!"application/pdf".equals(file.getContentType()))
-                    throw new BusinessException("Solo se permiten archivos PDF para documentos legales.");
-                if (file.getSize() > MAX_SIZE_PDF)
-                    throw new BusinessException("El archivo supera el límite de 20 MB.");
-            }
-            case COMPROBANTE -> {
-                List<String> tipos = List.of("application/pdf", "image/jpeg", "image/png");
-                if (!tipos.contains(file.getContentType()))
-                    throw new BusinessException("Solo se permiten PDF, JPG o PNG para comprobantes.");
-                if (file.getSize() > MAX_SIZE_PDF)
-                    throw new BusinessException("El archivo supera el límite de 20 MB.");
-            }
-            case FOTO_OBRA -> {
-                List<String> tipos = List.of("image/jpeg", "image/png", "image/tiff");
-                if (!tipos.contains(file.getContentType()))
-                    throw new BusinessException("Solo se permiten JPG, PNG o TIFF para fotos de obra.");
-                if (file.getSize() > MAX_SIZE_PDF)
-                    throw new BusinessException("El archivo supera el límite de 20 MB.");
-            }
-            case VIDEO_OBRA -> {
-                if (!"video/mp4".equals(file.getContentType()))
-                    throw new BusinessException("Solo se permiten archivos MP4 para videos de obra.");
-                if (file.getSize() > MAX_SIZE_VIDEO)
-                    throw new BusinessException("El archivo supera el límite de 50 MB.");
-            }
+
+        TipoDocumentoConfig config = tipoDocumentoConfigRepository.findById(tipo)
+                .orElseThrow(() -> new BusinessException("Tipo de documento no configurado: " + tipo));
+
+        List<String> mimesPermitidos = Arrays.asList(config.getMimePermitidos().split(","));
+
+        if (!mimesPermitidos.contains(file.getContentType())) {
+            throw new BusinessException("Tipo de archivo no permitido para " + tipo +
+                    ". Permitidos: " + config.getMimePermitidos());
+        }
+
+        if (file.getSize() > config.getMaxSizeBytes()) {
+            long maxMb = config.getMaxSizeBytes() / (1024 * 1024);
+            throw new BusinessException("El archivo supera el límite de " + maxMb + " MB.");
         }
     }
 

@@ -4,6 +4,7 @@ import com.llosa.backend.documentos.dto.StageDocumentResponse;
 import com.llosa.backend.documentos.dto.SubirDocumentoRequest;
 import com.llosa.backend.documentos.dto.DocumentoResponse;
 import com.llosa.backend.documentos.dto.SignedUrlResponse;
+import com.llosa.backend.documentos.enums.TipoDocumento;
 import com.llosa.backend.documentos.service.DocumentoService;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.seguridad.entity.Usuario;
@@ -46,10 +47,11 @@ public class DocumentoController {
     @PreAuthorize("hasAuthority('DOCS_VER')")
     @GetMapping("/usuario-activo/{usuarioActivoId}")
     public ResponseEntity<List<DocumentoResponse>> listarPorUsuarioActivo(
-            @PathVariable UUID usuarioActivoId
+            @PathVariable UUID usuarioActivoId,
+            @RequestParam(required = false) TipoDocumento tipoDocumento
     ) {
         return ResponseEntity.ok(
-                documentoService.listarPorUsuarioActivo(usuarioActivoId)
+                documentoService.listarPorUsuarioActivo(usuarioActivoId, tipoDocumento)
         );
     }
 
