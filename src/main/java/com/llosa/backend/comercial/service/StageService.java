@@ -3,11 +3,15 @@ package com.llosa.backend.comercial.service;
 import com.llosa.backend.comercial.dto.StageDocumentResponse;
 import com.llosa.backend.comercial.dto.StageResponse;
 import com.llosa.backend.comercial.entity.HitoProcesoCompra;
+import com.llosa.backend.comercial.entity.RequisitoDocumental;
 import com.llosa.backend.comercial.enums.EstadoHitoComercial;
 import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.repository.HitoProcesoCompraRepository;
+import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
+import com.llosa.backend.documentos.dto.SignedUrlResponse;
 import com.llosa.backend.documentos.entity.Documento;
 import com.llosa.backend.documentos.repository.DocumentoRepository;
+import com.llosa.backend.documentos.service.DocumentoService;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
@@ -20,8 +24,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -33,6 +39,12 @@ public class StageService {
     private final UsuarioActivoRepository usuarioActivoRepository;
     private final UsuarioRepository usuarioRepository;
     private final DocumentoRepository documentoRepository;
+    private final RequisitoDocumentalRepository requisitoDocumentalRepository;
+    private final DocumentoService documentoService;
+
+    private static final String ENTIDAD_REFERENCIA_REQUISITO = "REQUISITO";
+    private static final DateTimeFormatter FRONT_DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
 
     private static final List<EtapaProceso> ORDEN_ETAPAS = Arrays.asList(EtapaProceso.values());
     private static final int TOTAL_STEPS = ORDEN_ETAPAS.size();
@@ -94,32 +106,59 @@ public class StageService {
      * Devuelve los documentos asociados al expediente para una etapa dada.
      */
     public StageDocumentResponse obtenerDocumentosStage(String firebaseUid, UUID uuidUsuarioActivo, EtapaProceso etapaProceso) {
-
         validarAcceso(firebaseUid, uuidUsuarioActivo);
 
-        List<Documento> documentos = documentoRepository
-                .findByIdReferenciaAndEntidadReferencia(
-                        uuidUsuarioActivo.toString(),
-                        "USUARIO_ACTIVO"
-                );
+        HitoProcesoCompra hitoComercial = hitoRepository
+                .findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uuidUsuarioActivo, etapaProceso)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "No existe hito comercial para uuidUsuarioActivo=" + uuidUsuarioActivo
+                                + " y etapaProceso=" + etapaProceso));
 
-        List<StageDocumentResponse.DocumentoItem> items = documentos.stream()
-                .map(doc -> new StageDocumentResponse.DocumentoItem(
-                        doc.getId().toString(),
-                        doc.getNombreOriginal(),
-                        resolverDescripcion(doc),
-                        doc.getCreatedAt() != null ? "completed" : "pending",
-                        doc.getCreatedAt() != null ? doc.getCreatedAt().toLocalDate().toString() : null,
-                        true,
-                        "/api/documentos/" + doc.getId() + "/signed-url",
-                        true,
-                        null,
-                        resolverIcono(doc)
-                ))
+        List<RequisitoDocumental> requisitos = requisitoDocumentalRepository
+                .findByHitoComercial_UuidHitoComercialOrderByFechaEmisionDesc(hitoComercial.getUuidHitoComercial());
+
+        List<StageDocumentResponse.DocumentoItem> items = requisitos.stream()
+                .map(requisito -> {
+                    Documento documento = documentoRepository
+                            .findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc(
+                                    ENTIDAD_REFERENCIA_REQUISITO,
+                                    requisito.getId().toString()
+                            )
+                            .orElse(null);
+
+                    boolean hasDownload = documento != null;
+                    String downloadUrl = null;
+
+                    if (hasDownload) {
+                        SignedUrlResponse signed = documentoService.generarSignedUrl(documento.getId(), null);
+                        downloadUrl = signed.url();
+                    }
+
+                    String status = requisito.getEstado() != null
+                            ? requisito.getEstado().toLowerCase(Locale.ROOT)
+                            : "pendiente";
+
+                    String emissionDate = requisito.getFechaEmision() != null
+                            ? requisito.getFechaEmision().format(FRONT_DATE_FORMATTER)
+                            : null;
+
+                    return new StageDocumentResponse.DocumentoItem(
+                            requisito.getId().toString(),
+                            requisito.getTitulo(),
+                            requisito.getDescripcion(),
+                            status,
+                            emissionDate,
+                            hasDownload,
+                            downloadUrl,
+                            true,
+                            requisito.getNotaCorporativa(),
+                            requisito.getIcono()
+                    );
+                })
                 .toList();
 
         return new StageDocumentResponse(
-                "Documentos — " + etapaProceso.name(),
+                "Documentos del " + etapaProceso.name().charAt(0) + etapaProceso.name().substring(1).toLowerCase(Locale.ROOT),
                 items.size(),
                 items
         );
@@ -159,21 +198,4 @@ public class StageService {
         return String.format("%,.2f", precio);
     }
 
-    private String resolverDescripcion(Documento doc) {
-        return switch (doc.getTipoDocumento()) {
-            case PDF_LEGAL -> "Documento legal en formato PDF";
-            case COMPROBANTE -> "Comprobante de pago";
-            case FOTO_OBRA -> "Fotografía de avance de obra";
-            case VIDEO_OBRA -> "Video de avance de obra";
-        };
-    }
-
-    private String resolverIcono(Documento doc) {
-        return switch (doc.getTipoDocumento()) {
-            case PDF_LEGAL -> "contract";
-            case COMPROBANTE -> "bank";
-            case FOTO_OBRA -> "clipboard";
-            case VIDEO_OBRA -> "file";
-        };
-    }
 }

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -17,4 +18,9 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
             String idReferencia, String entidadReferencia, TipoDocumento tipoDocumento);
 
     List<Documento> findBySubidoPor(Integer usuarioId);
+
+    Optional<Documento> findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc(
+            String entidadReferencia,
+            String idReferencia
+    );
 }
