@@ -3,6 +3,8 @@ package com.llosa.backend.proyecto.controller;
 import com.llosa.backend.proyecto.dto.request.ReporteCreateRequest;
 import com.llosa.backend.proyecto.dto.request.ReporteUpdateRequest;
 import com.llosa.backend.proyecto.dto.response.ReporteResponse;
+import com.llosa.backend.proyecto.entity.Activo;
+import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.ReporteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ import java.util.UUID;
 public class ReporteController {
 
     private final ReporteService reporteService;
+    private final ActivoService activoService;
 
     /**
      * Crea un nuevo reporte de avance de obra.
@@ -46,6 +49,19 @@ public class ReporteController {
     public ResponseEntity<Page<ReporteResponse>> listarPorProyecto(
             @PathVariable UUID uuidProyecto,
             Pageable pageable) {
+        return ResponseEntity.ok(reporteService.listarPorProyecto(uuidProyecto, pageable));
+    }
+
+    /**
+     * Lista todos los reportes de un proyecto con soporte de paginación.
+     * Filtra directamente por uuid_proyecto para mayor velocidad.
+     */
+    @GetMapping("/proyecto/{uuidActivo}/activo")
+    public ResponseEntity<Page<ReporteResponse>> listarPorActivoProyecto(
+            @PathVariable UUID uuidActivo,
+            Pageable pageable) {
+        Activo activo = activoService.findById(uuidActivo);
+        UUID uuidProyecto = activo.getPiso().getTorre().getProyecto().getId();
         return ResponseEntity.ok(reporteService.listarPorProyecto(uuidProyecto, pageable));
     }
 
