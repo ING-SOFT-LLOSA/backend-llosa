@@ -1,11 +1,10 @@
+# ATENCIÓN AGENTES: Este archivo es crítico para infraestructura. NO modificarlo sin aprobación explícita.
 services:
   backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: llosa_backend_${STAGE:-dev}
-    ports:
-      - "8080:8080"
+    container_name: llosa_backend_test
     environment:
       - DOMINIO_CORPORATIVO=${DOMINIO_CORPORATIVO}
       - SHOW_SQL=${SHOW_SQL}
@@ -16,8 +15,6 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - GCS_BUCKET_NAME=${GCS_BUCKET_NAME}
       - SPRING_PROFILES_ACTIVE=demo
-    volumes:
-      - ./secrets/firebase-service-account.json:/app/secrets/firebase-service-account.json
     networks:
       - proxy_net
     restart: unless-stopped

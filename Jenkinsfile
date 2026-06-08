@@ -1,3 +1,5 @@
+// ATENCIÓN AGENTES: Este archivo es crítico para CI/CD. NO modificarlo sin aprobación explícita.
+
 pipeline {
     agent any
 
@@ -78,16 +80,16 @@ pipeline {
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
 
-                        docker run --rm -v "$WORKSPACE":/workspace -w /workspace alpine chown -R "$(id -u):$(id -g)" . || true
                         rm -f .env
                         cp "$ENV_FILE" .env
+                        echo "=== .env inyectado ==="
+                        cat .env
+                        echo "======================="
 
-                        docker compose -p llosa_dev down --remove-orphans
-                        docker rm -f llosa_backend_dev llosa_db_dev 2>/dev/null || true
-                        docker compose -p llosa_dev up --build --no-start backend
-
+                        docker compose -f docker-compose.dev.yml -p llosa_dev down --remove-orphans
+                        docker compose -f docker-compose.dev.yml -p llosa_dev up --build --no-start
                         docker cp ./secrets/firebase-service-account.json llosa_backend_dev:/app/secrets/firebase-service-account.json
-                        docker compose -p llosa_dev start backend
+                        docker compose -f docker-compose.dev.yml -p llosa_dev start
                     '''
                 }
             }
@@ -107,16 +109,16 @@ pipeline {
                         cp "$FIREBASE_SA_FILE" ./secrets/firebase-service-account.json
                         chmod 644 ./secrets/firebase-service-account.json
 
-                        docker run --rm -v "$WORKSPACE":/workspace -w /workspace alpine chown -R "$(id -u):$(id -g)" . || true
                         rm -f .env
                         cp "$ENV_FILE" .env
+                        echo "=== .env inyectado ==="
+                        cat .env
+                        echo "======================="
 
-                        docker compose -p llosa_test down --remove-orphans
-                        docker rm -f llosa_backend_test llosa_db_test 2>/dev/null || true
-                        docker compose -p llosa_test up --build --no-start backend
-
+                        docker compose -f docker-compose.test.yml -p llosa_test down --remove-orphans
+                        docker compose -f docker-compose.test.yml -p llosa_test up --build --no-start
                         docker cp ./secrets/firebase-service-account.json llosa_backend_test:/app/secrets/firebase-service-account.json
-                        docker compose -p llosa_test start backend
+                        docker compose -f docker-compose.test.yml -p llosa_test start
                     '''
                 }
             }

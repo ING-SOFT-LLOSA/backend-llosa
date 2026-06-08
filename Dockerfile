@@ -8,9 +8,6 @@ RUN mkdir -p /build/.m2/repository && chmod -R 777 /build
 COPY pom.xml .
 COPY src ./src
 
-ARG FIREBASE_API_KEY
-ENV FIREBASE_API_KEY=${FIREBASE_API_KEY}
-
 # 2. Forzar a Maven a escribir localmente usando parámetros del sistema
 RUN mvn clean package -DskipTests -Dmaven.test.skip=true -Dmaven.repo.local=/build/.m2/repository
 
