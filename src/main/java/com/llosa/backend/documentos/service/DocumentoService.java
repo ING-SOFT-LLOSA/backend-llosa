@@ -228,20 +228,29 @@ public class DocumentoService {
         Documento documento = documentoRepository.findById(documentoId)
                 .orElseThrow(() -> new EntityNotFoundException("Documento no encontrado: " + documentoId));
 
-        BlobInfo blobInfo = BlobInfo.newBuilder(
-                BlobId.of(gcsBucketName, documento.getRutaGcs())
-        ).build();
-
         Instant expiracion = Instant.now().plusSeconds(SIGNED_URL_MINUTES * 60);
+        return new SignedUrlResponse(firmarUrl(documento.getRutaGcs()), expiracion);
+    }
 
-        String url = storage.signUrl(
+    // ─── Private URL signing helper ─────────────────────────────────────────────
+
+    private String firmarUrl(String rutaGcs) {
+        BlobInfo blobInfo = BlobInfo.newBuilder(BlobId.of(gcsBucketName, rutaGcs)).build();
+        return storage.signUrl(
                 blobInfo,
                 SIGNED_URL_MINUTES,
                 TimeUnit.MINUTES,
                 Storage.SignUrlOption.withV4Signature()
         ).toString();
+    }
 
-        return new SignedUrlResponse(url, expiracion);
+    @Transactional(readOnly = true)
+    public List<DocumentoResponse> obtenerPorReferencia(String entidadReferencia, String idReferencia) {
+        return documentoRepository
+                .findByIdReferenciaAndEntidadReferencia(idReferencia, entidadReferencia)
+                .stream()
+                .map(doc -> DocumentoResponse.fromEntity(doc, firmarUrl(doc.getRutaGcs())))
+                .toList();
     }
 
     @Transactional
