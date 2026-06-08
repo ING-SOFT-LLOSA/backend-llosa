@@ -65,4 +65,8 @@ public class UsuarioActivo {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uuid_activo", nullable = false)
     private Activo activo;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uuid_cochera")
+    private Activo cochera;
 }

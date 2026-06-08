@@ -24,20 +24,20 @@ import java.util.UUID;
 @ToString(exclude = {"piso"})
 public class Activo {
 
-    // ATRIBUTOS DE LA CLASE
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "uuid_activo", updatable = false, nullable = false)
     private UUID id;
 
     @Column(nullable = false)
-    private String nro; // Ejemplo : DEPARTAMENTO 408
+    private String nro;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TipoActivo tipo; // Para saber si es area comun o candidato a venta
+    private TipoActivo tipo;
 
+    // FIX: Agregar @Builder.Default porque tiene valor inicial
+    @Builder.Default
     @Column(nullable = false, name = "area_m2")
     private BigDecimal areaM2 = BigDecimal.valueOf(0.0);
 
@@ -45,9 +45,16 @@ public class Activo {
     @Column(nullable = false)
     private EstadoComercialActivo estadoComercial;
 
+    // FIX: Agregar @Builder.Default porque tiene valor inicial
+    @Builder.Default
     private BigDecimal precio = BigDecimal.valueOf(0.0);
 
+    // FIX: Agregar @Builder.Default porque tiene valor inicial
+    @Builder.Default
     private String descripcion = "No existe descripcion todavia";
+
+    @Builder.Default
+    private String linkRecorridoVirtual = "";
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -56,8 +63,6 @@ public class Activo {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    // RELACIONES A LAS DIFERENTES TABLAS
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_piso", nullable = false)

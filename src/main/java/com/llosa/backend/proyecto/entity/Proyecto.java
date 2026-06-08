@@ -35,10 +35,6 @@ public class Proyecto {
     @Builder.Default
     private Boolean precertificacionEdgeLeed = false;
 
-    // FIX: Added @Builder.Default
-    @Builder.Default
-    private String linkRecorridoVirtual = ""; // cambiar esto a activo
-
     private String departamento;
 
     private String distrito;

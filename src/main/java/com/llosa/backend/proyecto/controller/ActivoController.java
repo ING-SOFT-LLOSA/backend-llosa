@@ -25,7 +25,6 @@ public class ActivoController {
     private final HitoPisoService hitoPisoService;
     private final ActivoService activoService;
     private final SeguimientoService seguimientoService;
-
     /*
     Endpoint Obtener los activos por piso_id
     Estado: Funcional
