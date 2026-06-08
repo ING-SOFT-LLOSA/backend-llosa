@@ -3,7 +3,7 @@ package com.llosa.backend.documentos.controller;
 import com.llosa.backend.comercial.dto.StageDocumentResponse;
 import com.llosa.backend.comercial.dto.StageResponse;
 import com.llosa.backend.comercial.enums.EtapaProceso;
-import com.llosa.backend.comercial.service.StageService;
+import com.llosa.backend.comercial.service.impl.StageServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,7 +17,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class StageController {
 
-    private final StageService stageService;
+    private final StageServiceImpl stageService;
 
     /**
      * Endpoint 1 — GET /api/stage/{etapaProceso}?uuidUsuarioActivo=xxx

@@ -131,16 +131,36 @@ public class DocumentoService {
 
     @Transactional
     public DocumentoResponse subirDocumento(UUID usuarioActivoId, MultipartFile file, SubirDocumentoRequest request, Integer subidoPor) {
+        return subirDocumentoPolimorfico(
+                usuarioActivoId,
+                file,
+                request.tipoDocumento(),
+                usuarioActivoId.toString(),
+                "USUARIO_ACTIVO",
+                subidoPor
+        );
+    }
 
+    @Transactional
+    public DocumentoResponse subirDocumentoPolimorfico(
+            UUID usuarioActivoId,
+            MultipartFile file,
+            TipoDocumento tipoDocumento,
+            String idReferencia,
+            String entidadReferencia,
+            Integer subidoPor
+    ) {
+        // Buscamos el usuario activo solo para validar y armar la ruta de carpetas en GCS
         UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(usuarioActivoId)
                 .orElseThrow(() -> new EntityNotFoundException("UsuarioActivo no encontrado: " + usuarioActivoId));
 
-        validarArchivo(file, request.tipoDocumento());
+        validarArchivo(file, tipoDocumento);
 
         String extension = obtenerExtension(file.getOriginalFilename());
         UUID uuidArchivo = UUID.randomUUID();
-        String rutaGcs = String.format("expedientes/%s/%s.%s",
-                usuarioActivoId, uuidArchivo, extension);
+
+        // Mantenemos tu estructura de carpetas en GCS organizada por cliente
+        String rutaGcs = String.format("expedientes/%s/%s.%s", usuarioActivoId, uuidArchivo, extension);
 
         try {
             BlobId blobId = BlobId.of(gcsBucketName, rutaGcs);
@@ -152,12 +172,13 @@ public class DocumentoService {
             throw new BusinessException("Error al subir el archivo a GCS: " + e.getMessage());
         }
 
+        // Construimos el documento con los datos DINÁMICOS que nos pasen
         Documento documento = Documento.builder()
                 .rutaGcs(rutaGcs)
                 .nombreOriginal(file.getOriginalFilename())
-                .idReferencia(usuarioActivoId.toString())
-                .entidadReferencia("USUARIO_ACTIVO")
-                .tipoDocumento(request.tipoDocumento())
+                .idReferencia(idReferencia)          // <--- DINÁMICO
+                .entidadReferencia(entidadReferencia)  // <--- DINÁMICO
+                .tipoDocumento(tipoDocumento)
                 .tipoMime(file.getContentType())
                 .accesoRestringido(true)
                 .subidoPor(subidoPor)
