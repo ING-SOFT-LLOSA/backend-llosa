@@ -40,7 +40,6 @@ class ProyectoServiceTest {
                 .nombre("Torre Sol")
                 .descripcion("Proyecto test")
                 .precertificacionEdgeLeed(false)
-                .linkRecorridoVirtual("")
                 .departamento("Lima")
                 .distrito("Miraflores")
                 .direccion("Av. Test 123")

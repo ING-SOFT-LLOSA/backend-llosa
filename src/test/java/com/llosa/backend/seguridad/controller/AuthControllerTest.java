@@ -6,6 +6,7 @@ import com.llosa.backend.exception.AccesoDenegadoException;
 import com.llosa.backend.exception.GlobalExceptionHandler;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.seguridad.dto.PerfilConPermisosResponse;
+import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.seguridad.service.AuthService;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.Test;
@@ -138,8 +139,8 @@ class AuthControllerTest {
     @Configuration
     static class TestConfig implements WebMvcConfigurer {
         @Bean
-        AuthController authController(AuthService authService) {
-            return new AuthController(authService);
+        AuthController authController(AuthService authService, UsuarioRepository usuarioRepository) {
+            return new AuthController(authService, usuarioRepository);
         }
 
         @Override
