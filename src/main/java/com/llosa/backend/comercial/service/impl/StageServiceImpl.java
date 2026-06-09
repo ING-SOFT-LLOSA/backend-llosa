@@ -50,10 +50,7 @@ public class StageServiceImpl implements StageService {
     private static final List<EtapaProceso> ORDEN_ETAPAS = Arrays.asList(EtapaProceso.values());
     private static final int TOTAL_STEPS = ORDEN_ETAPAS.size();
 
-    /**
-     * Endpoint 1 — GET /api/stage/{etapaProceso}
-     * Devuelve el stepper de hitos de una etapa + stageDetails si es CONTRATO.
-     */
+    @Override
     public StageResponse obtenerStage(String firebaseUid, UUID uuidUsuarioActivo, EtapaProceso etapaProceso) {
 
         UsuarioActivo usuarioActivo = validarAcceso(firebaseUid, uuidUsuarioActivo);
@@ -64,7 +61,6 @@ public class StageServiceImpl implements StageService {
                 .filter(h -> h.getEtapaProceso() == etapaProceso)
                 .toList();
 
-        // stage info
         int stepIndex = ORDEN_ETAPAS.indexOf(etapaProceso) + 1;
         double progreso = calcularProgreso(hitos);
 
@@ -76,7 +72,6 @@ public class StageServiceImpl implements StageService {
                 progreso
         );
 
-        // stepper items
         List<StageResponse.StepperItem> stepperItems = hitos.stream()
                 .map(h -> new StageResponse.StepperItem(
                         h.getNombreHito(),
@@ -85,7 +80,6 @@ public class StageServiceImpl implements StageService {
                 ))
                 .toList();
 
-        // stageDetails solo para CONTRATO
         StageResponse.StageDetails stageDetails = null;
         if (etapaProceso == EtapaProceso.CONTRATO) {
             Activo activo = usuarioActivo.getActivo();
@@ -95,17 +89,14 @@ public class StageServiceImpl implements StageService {
                     usuarioActivo.getFechaAdquisicion() != null
                             ? usuarioActivo.getFechaAdquisicion().toLocalDate().toString()
                             : null,
-                    null // disbursementDate: pendiente de implementar (ver doc)
+                    null
             );
         }
 
         return new StageResponse(stageInfo, stepperItems, stageDetails);
     }
 
-    /**
-     * Endpoint 2 — GET /api/stage/{etapaProceso}/documents
-     * Devuelve los documentos asociados al expediente para una etapa dada.
-     */
+    @Override
     public StageDocumentResponse obtenerDocumentosStage(String firebaseUid, UUID uuidUsuarioActivo, EtapaProceso etapaProceso) {
         validarAcceso(firebaseUid, uuidUsuarioActivo);
 
@@ -131,7 +122,8 @@ public class StageServiceImpl implements StageService {
                     String downloadUrl = null;
 
                     if (hasDownload) {
-                        SignedUrlResponse signed = documentoService.generarSignedUrl(documento.getId(), null);
+                        // generarSignedUrl solo recibe UUID ahora
+                        SignedUrlResponse signed = documentoService.generarSignedUrl(documento.getId());
                         downloadUrl = signed.url();
                     }
 
@@ -178,7 +170,6 @@ public class StageServiceImpl implements StageService {
         boolean tieneAcceso = usuarioActivo.getClientes().stream()
                 .anyMatch(c -> c.getId().equals(usuario.getId()));
 
-        // Admins y empleados tienen acceso directo
         if (!tieneAcceso && "CLIENTE".equals(usuario.getTipoUsuario())) {
             throw new org.springframework.security.access.AccessDeniedException(
                     "No tienes acceso a este expediente");
@@ -198,5 +189,4 @@ public class StageServiceImpl implements StageService {
     private String formatearPrecio(BigDecimal precio) {
         return String.format("%,.2f", precio);
     }
-
 }

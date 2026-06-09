@@ -19,7 +19,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping("/api/requisitos-documentales")
 public class RequisitoDocumentalController {
-
     private final RequisitoDocumentalService requisitoService;
 
     /**
