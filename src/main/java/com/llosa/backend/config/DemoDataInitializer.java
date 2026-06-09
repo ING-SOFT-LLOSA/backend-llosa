@@ -105,7 +105,7 @@ public class DemoDataInitializer implements CommandLineRunner {
 
         // ─── SOFÍA: Separación ─────────────────────────────────────────────
         var dep402 = proyectoLO.getTorres().getFirst().getPisos().get(3).getActivos().get(1);
-        var coch3 = proyectoLO.getTorres().get(1).getPisos().getFirst().getActivos().get(2);
+        var coch3 = proyectoLO.getTorres().get(1).getPisos().getFirst().getActivos().get(0);
         var uaSofia = asignarActivo(sofia, dep402, coch3,
                 "Crédito Hipotecario", "Separación", "Minuta Pendiente");
         crearHitos(uaSofia, List.of(
