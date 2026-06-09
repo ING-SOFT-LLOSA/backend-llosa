@@ -25,41 +25,37 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalService {
+
     private final RequisitoDocumentalRepository requisitoRepository;
     private final DocumentoRepository documentoRepository;
-    private final DocumentoService documentoService; // Tu servicio existente
-    private final UsuarioRepository usuarioRepository; // Para auditoría/seguridad
+    private final DocumentoService documentoService;
+    private final UsuarioRepository usuarioRepository;
     private final HitoProcesoCompraRepository hitoRepository;
 
     @Transactional
     public RequisitoDocumental asociarArchivoARequisito(UUID requisitoId, MultipartFile file, String firebaseUid) {
-        // 1. Buscamos el requisito en el negocio
         RequisitoDocumental requisito = requisitoRepository.findById(requisitoId)
                 .orElseThrow(() -> new EntityNotFoundException("Requisito no encontrado"));
 
-        // 2. Buscamos el usuario que está subiendo el archivo (auditoría)
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // 3. Obtenemos el ID del Usuario Activo navegando por el Hito Comercial
-        // (Esto es necesario porque GCS organiza las carpetas usando este ID)
         UUID usuarioActivoId = requisito.getHitoComercial().getUsuarioActivo().getUuidUsuarioActivo();
 
-        // 4. Llamamos al NUEVO método polimórfico de tu DocumentoService
         documentoService.subirDocumentoPolimorfico(
-                usuarioActivoId,            // Para la ruta del Bucket GCS
-                file,                       // El binario
-                TipoDocumento.PDF_LEGAL,    // O el TipoDocumento que mapee con tu Enum
-                requisitoId.toString(),     // id_referencia (ID del Requisito)
-                "REQUISITO",                // entidad_referencia
-                usuario.getId()             // subidoPor (Integer)
+                usuarioActivoId,
+                file,
+                TipoDocumento.PDF_LEGAL,
+                requisitoId.toString(),
+                "REQUISITO",
+                usuario.getId()
         );
 
-        // 5. Actualizamos el estado del requisito en el negocio
         requisito.setEstado("COMPLETADA");
         requisito.setFechaEmision(LocalDate.now());
         return requisitoRepository.save(requisito);
     }
+
     @Transactional
     public void eliminarArchivoDeRequisito(UUID requisitoId, String firebaseUid) {
         RequisitoDocumental requisito = requisitoRepository.findById(requisitoId)
@@ -68,15 +64,12 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // 1. Buscamos el registro en la tabla polimórfica de documentos
         Documento documento = documentoRepository
                 .findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc("REQUISITO", requisitoId.toString())
                 .orElseThrow(() -> new EntityNotFoundException("No hay un archivo físico para este requisito"));
 
-        // 2. Reutilizamos tu método para borrar de GCS y de la tabla 'documento'
         documentoService.eliminarDocumento(documento.getId(), usuario.getId());
 
-        // 3. Reseteamos el estado del negocio
         requisito.setEstado("PENDIENTE");
         requisito.setFechaEmision(null);
         requisitoRepository.save(requisito);
@@ -92,7 +85,7 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
                 .titulo(request.titulo())
                 .descripcion(request.descripcion())
                 .notaCorporativa(request.notaCorporativa())
-                .estado("PENDIENTE") // Todo requisito inicia pendiente
+                .estado("PENDIENTE")
                 .icono(request.icono() != null ? request.icono() : "description")
                 .build();
 
@@ -123,14 +116,10 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // CONTROL DE SEGURIDAD AMBIENTAL:
-        // Si el requisito tiene un archivo físico subido, debemos borrarlo de GCS antes de eliminar el requisito
         documentoRepository
                 .findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc("REQUISITO", id.toString())
                 .ifPresent(doc -> documentoService.eliminarDocumento(doc.getId(), usuario.getId()));
 
-        // Ahora sí, borramos el registro del requisito en la base de datos de manera segura
         requisitoRepository.delete(requisito);
     }
 }
-
