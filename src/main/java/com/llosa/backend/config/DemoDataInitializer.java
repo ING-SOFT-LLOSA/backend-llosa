@@ -124,7 +124,6 @@ public class DemoDataInitializer implements CommandLineRunner {
                 .nombre("Residencial Los Olivos")
                 .descripcion("Proyecto de vivienda multifamiliar con 2 torres y 21 unidades")
                 .precertificacionEdgeLeed(true)
-                .linkRecorridoVirtual("https://tour.virtual/llosa-olivos")
                 .departamento("Lima")
                 .distrito("Los Olivos")
                 .direccion("Av. Universitaria 1234")

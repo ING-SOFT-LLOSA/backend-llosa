@@ -1,15 +1,16 @@
 package com.llosa.backend.documentos.service;
 
 import com.google.cloud.storage.*;
-import com.llosa.backend.documentos.dto.DocumentoResponse;
-import com.llosa.backend.documentos.dto.SignedUrlResponse;
-import com.llosa.backend.documentos.dto.StageDocumentResponse;
-import com.llosa.backend.documentos.dto.SubirDocumentoRequest;
+import com.llosa.backend.documentos.dto.*;
 import com.llosa.backend.documentos.entity.Documento;
+import com.llosa.backend.documentos.entity.TipoDocumentoConfig;
 import com.llosa.backend.documentos.enums.TipoDocumento;
 import com.llosa.backend.documentos.repository.DocumentoRepository;
+import com.llosa.backend.documentos.repository.TipoDocumentoConfigRepository;
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
+import com.llosa.backend.proyecto.enums.TipoActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
@@ -20,8 +21,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -29,28 +36,131 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class DocumentoService {
 
-    private static final long MAX_SIZE_PDF   = 20 * 1024 * 1024L;
-    private static final long MAX_SIZE_VIDEO = 50 * 1024 * 1024L;
     private static final long SIGNED_URL_MINUTES = 15L;
 
     private final DocumentoRepository documentoRepository;
+    private final TipoDocumentoConfigRepository tipoDocumentoConfigRepository;
     private final UsuarioActivoRepository usuarioActivoRepository;
     private final UsuarioRepository usuarioRepository;
     private final Storage storage;
     private final String gcsBucketName;
 
+    @Transactional(readOnly = true)
+    public StageResponse obtenerDetalleEtapa(String etapaProceso, UUID uuidUsuarioActivo) {
+        if (!"contrato".equalsIgnoreCase(etapaProceso)) {
+            return new StageResponse(null);
+        }
+
+        UsuarioActivo ua = usuarioActivoRepository.findById(uuidUsuarioActivo)
+                .orElseThrow(() -> new EntityNotFoundException("UsuarioActivo no encontrado: " + uuidUsuarioActivo));
+
+        List<StageResponse.UnidadResponse> unidades = new ArrayList<>();
+        BigDecimal areaTotal = BigDecimal.ZERO;
+        int departamentos = 0;
+        int estacionamientos = 0;
+
+        // Departamento principal
+        Activo principal = ua.getActivo();
+        if (principal != null) {
+            unidades.add(mapActivoToUnidad(principal));
+            areaTotal = areaTotal.add(principal.getAreaM2());
+            if (principal.getTipo() == TipoActivo.DEPARTAMENTO) {
+                departamentos++;
+            } else if (principal.getTipo() == TipoActivo.COCHERA) {
+                estacionamientos++;
+            }
+        }
+
+        // Cochera opcional
+        Activo cochera = ua.getCochera();
+        if (cochera != null) {
+            unidades.add(mapActivoToUnidad(cochera));
+            areaTotal = areaTotal.add(cochera.getAreaM2());
+            estacionamientos++;
+        }
+
+        StageResponse.ResumenContratoResponse resumen = new StageResponse.ResumenContratoResponse(
+                unidades.size(),
+                String.format(Locale.US, "%.2f m²", areaTotal),
+                unidades,
+                new StageResponse.TotalesResponse(departamentos, estacionamientos)
+        );
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d/M/yyyy");
+        String firmaContrato = ua.getFechaAdquisicion() != null ? ua.getFechaAdquisicion().format(formatter) : null;
+
+        StageResponse.InformacionContratoResponse info = new StageResponse.InformacionContratoResponse(
+                firmaContrato,
+                null,
+                ua.getTipoFinanciamiento()
+        );
+
+        return new StageResponse(new StageResponse.StageDetailsResponse(resumen, info));
+    }
+
+    private StageResponse.UnidadResponse mapActivoToUnidad(Activo activo) {
+        String tipo = "OTRO";
+        String nombre = activo.getNro();
+        String icono = "file";
+        String areaOcupada = null;
+
+        if (activo.getTipo() == TipoActivo.DEPARTAMENTO) {
+            tipo = "DEPARTAMENTO";
+            nombre = "Dpto. " + activo.getNro();
+            icono = "edificio";
+            areaOcupada = String.format(Locale.US, "%.2f m²", activo.getAreaM2());
+        } else if (activo.getTipo() == TipoActivo.COCHERA) {
+            tipo = "ESTACIONAMIENTO";
+            nombre = "Cochera " + activo.getNro();
+            icono = "parking";
+            areaOcupada = null;
+        }
+
+        DecimalFormat df = new DecimalFormat("#,###");
+        String aporte = "S/." + df.format(activo.getPrecio());
+
+        return new StageResponse.UnidadResponse(
+                tipo,
+                nombre,
+                aporte,
+                areaOcupada,
+                String.format(Locale.US, "%.2f m²", activo.getAreaM2()),
+                icono
+        );
+    }
+
     @Transactional
     public DocumentoResponse subirDocumento(UUID usuarioActivoId, MultipartFile file, SubirDocumentoRequest request, Integer subidoPor) {
+        return subirDocumentoPolimorfico(
+                usuarioActivoId,
+                file,
+                request.tipoDocumento(),
+                usuarioActivoId.toString(),
+                "USUARIO_ACTIVO",
+                subidoPor
+        );
+    }
 
+    @Transactional
+    public DocumentoResponse subirDocumentoPolimorfico(
+            UUID usuarioActivoId,
+            MultipartFile file,
+            TipoDocumento tipoDocumento,
+            String idReferencia,
+            String entidadReferencia,
+            Integer subidoPor
+    ) {
+        // Buscamos el usuario activo solo para validar y armar la ruta de carpetas en GCS
         UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(usuarioActivoId)
                 .orElseThrow(() -> new EntityNotFoundException("UsuarioActivo no encontrado: " + usuarioActivoId));
 
-        validarArchivo(file, request.tipoDocumento());
+        validarArchivo(file, tipoDocumento);
 
         String extension = obtenerExtension(file.getOriginalFilename());
         UUID uuidArchivo = UUID.randomUUID();
-        String rutaGcs = String.format("expedientes/%s/%s.%s",
-                usuarioActivoId, uuidArchivo, extension);
+
+        // Mantenemos tu estructura de carpetas en GCS organizada por cliente
+        String rutaGcs = String.format("expedientes/%s/%s.%s", usuarioActivoId, uuidArchivo, extension);
 
         try {
             BlobId blobId = BlobId.of(gcsBucketName, rutaGcs);
@@ -62,12 +172,13 @@ public class DocumentoService {
             throw new BusinessException("Error al subir el archivo a GCS: " + e.getMessage());
         }
 
+        // Construimos el documento con los datos DINÁMICOS que nos pasen
         Documento documento = Documento.builder()
                 .rutaGcs(rutaGcs)
                 .nombreOriginal(file.getOriginalFilename())
-                .idReferencia(usuarioActivoId.toString())
-                .entidadReferencia("USUARIO_ACTIVO")
-                .tipoDocumento(request.tipoDocumento())
+                .idReferencia(idReferencia)          // <--- DINÁMICO
+                .entidadReferencia(entidadReferencia)  // <--- DINÁMICO
+                .tipoDocumento(tipoDocumento)
                 .tipoMime(file.getContentType())
                 .accesoRestringido(true)
                 .subidoPor(subidoPor)
@@ -77,15 +188,18 @@ public class DocumentoService {
     }
 
     @Transactional(readOnly = true)
-    public List<DocumentoResponse> listarPorUsuarioActivo(UUID usuarioActivoId) {
+    public List<DocumentoResponse> listarPorUsuarioActivo(UUID usuarioActivoId, TipoDocumento tipoDocumento) {
         if (!usuarioActivoRepository.existsById(usuarioActivoId)) {
             throw new EntityNotFoundException("UsuarioActivo no encontrado: " + usuarioActivoId);
         }
-        return documentoRepository
-                .findByIdReferenciaAndEntidadReferencia(usuarioActivoId.toString(), "USUARIO_ACTIVO")
-                .stream()
-                .map(DocumentoResponse::fromEntity)
-                .toList();
+
+        List<Documento> documentos = tipoDocumento != null
+                ? documentoRepository.findByIdReferenciaAndEntidadReferenciaAndTipoDocumento(
+                usuarioActivoId.toString(), "USUARIO_ACTIVO", tipoDocumento)
+                : documentoRepository.findByIdReferenciaAndEntidadReferencia(
+                usuarioActivoId.toString(), "USUARIO_ACTIVO");
+
+        return documentos.stream().map(DocumentoResponse::fromEntity).toList();
     }
 
     @Transactional(readOnly = true)
@@ -135,20 +249,29 @@ public class DocumentoService {
         Documento documento = documentoRepository.findById(documentoId)
                 .orElseThrow(() -> new EntityNotFoundException("Documento no encontrado: " + documentoId));
 
-        BlobInfo blobInfo = BlobInfo.newBuilder(
-                BlobId.of(gcsBucketName, documento.getRutaGcs())
-        ).build();
-
         Instant expiracion = Instant.now().plusSeconds(SIGNED_URL_MINUTES * 60);
+        return new SignedUrlResponse(firmarUrl(documento.getRutaGcs()), expiracion);
+    }
 
-        String url = storage.signUrl(
+    // ─── Private URL signing helper ─────────────────────────────────────────────
+
+    private String firmarUrl(String rutaGcs) {
+        BlobInfo blobInfo = BlobInfo.newBuilder(BlobId.of(gcsBucketName, rutaGcs)).build();
+        return storage.signUrl(
                 blobInfo,
                 SIGNED_URL_MINUTES,
                 TimeUnit.MINUTES,
                 Storage.SignUrlOption.withV4Signature()
         ).toString();
+    }
 
-        return new SignedUrlResponse(url, expiracion);
+    @Transactional(readOnly = true)
+    public List<DocumentoResponse> obtenerPorReferencia(String entidadReferencia, String idReferencia) {
+        return documentoRepository
+                .findByIdReferenciaAndEntidadReferencia(idReferencia, entidadReferencia)
+                .stream()
+                .map(doc -> DocumentoResponse.fromEntity(doc, firmarUrl(doc.getRutaGcs())))
+                .toList();
     }
 
     @Transactional
@@ -168,33 +291,20 @@ public class DocumentoService {
         if (file.isEmpty()) {
             throw new BusinessException("El archivo no puede estar vacío.");
         }
-        switch (tipo) {
-            case PDF_LEGAL -> {
-                if (!"application/pdf".equals(file.getContentType()))
-                    throw new BusinessException("Solo se permiten archivos PDF para documentos legales.");
-                if (file.getSize() > MAX_SIZE_PDF)
-                    throw new BusinessException("El archivo supera el límite de 20 MB.");
-            }
-            case COMPROBANTE -> {
-                List<String> tipos = List.of("application/pdf", "image/jpeg", "image/png");
-                if (!tipos.contains(file.getContentType()))
-                    throw new BusinessException("Solo se permiten PDF, JPG o PNG para comprobantes.");
-                if (file.getSize() > MAX_SIZE_PDF)
-                    throw new BusinessException("El archivo supera el límite de 20 MB.");
-            }
-            case FOTO_OBRA -> {
-                List<String> tipos = List.of("image/jpeg", "image/png", "image/tiff");
-                if (!tipos.contains(file.getContentType()))
-                    throw new BusinessException("Solo se permiten JPG, PNG o TIFF para fotos de obra.");
-                if (file.getSize() > MAX_SIZE_PDF)
-                    throw new BusinessException("El archivo supera el límite de 20 MB.");
-            }
-            case VIDEO_OBRA -> {
-                if (!"video/mp4".equals(file.getContentType()))
-                    throw new BusinessException("Solo se permiten archivos MP4 para videos de obra.");
-                if (file.getSize() > MAX_SIZE_VIDEO)
-                    throw new BusinessException("El archivo supera el límite de 50 MB.");
-            }
+
+        TipoDocumentoConfig config = tipoDocumentoConfigRepository.findById(tipo)
+                .orElseThrow(() -> new BusinessException("Tipo de documento no configurado: " + tipo));
+
+        List<String> mimesPermitidos = Arrays.asList(config.getMimePermitidos().split(","));
+
+        if (!mimesPermitidos.contains(file.getContentType())) {
+            throw new BusinessException("Tipo de archivo no permitido para " + tipo +
+                    ". Permitidos: " + config.getMimePermitidos());
+        }
+
+        if (file.getSize() > config.getMaxSizeBytes()) {
+            long maxMb = config.getMaxSizeBytes() / (1024 * 1024);
+            throw new BusinessException("El archivo supera el límite de " + maxMb + " MB.");
         }
     }
 

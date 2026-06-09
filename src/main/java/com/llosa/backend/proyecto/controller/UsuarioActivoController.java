@@ -105,8 +105,6 @@ public class UsuarioActivoController {
         return ResponseEntity.ok(activos);
     }
 
-
-
     /**
      * Retorna el usuario eliminado
      * Estado: Funcional

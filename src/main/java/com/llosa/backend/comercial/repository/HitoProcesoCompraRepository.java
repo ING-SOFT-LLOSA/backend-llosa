@@ -1,6 +1,7 @@
 package com.llosa.backend.comercial.repository;
 
 import com.llosa.backend.comercial.entity.HitoProcesoCompra;
+import com.llosa.backend.comercial.enums.EtapaProceso;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -24,5 +25,10 @@ public interface HitoProcesoCompraRepository extends JpaRepository<HitoProcesoCo
     Optional<HitoProcesoCompra> findByUsuarioActivo_UuidUsuarioActivoAndOrden(
             UUID uuidUsuarioActivo,
             Integer orden
+    );
+
+    Optional<HitoProcesoCompra> findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(
+            UUID uuidUsuarioActivo,
+            EtapaProceso etapaProceso
     );
 }
