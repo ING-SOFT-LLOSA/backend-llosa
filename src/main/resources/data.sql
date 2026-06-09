@@ -100,3 +100,10 @@ VALUES (
            CURRENT_TIMESTAMP
        )
     ON CONFLICT (firebase_uuid) DO NOTHING;
+-- Configuración de tipos de documento (2NF)
+INSERT INTO tipo_documento_config (tipo_documento, descripcion, mime_permitidos, max_size_bytes) VALUES
+                                                                                     ('PDF_LEGAL',   'Documento legal en formato PDF',         'application/pdf',                              20971520),
+                                                                                     ('COMPROBANTE', 'Comprobante de pago (PDF, JPG o PNG)',   'application/pdf,image/jpeg,image/png',         20971520),
+                                                                                     ('FOTO_OBRA',   'Fotografía de avance de obra',           'image/jpeg,image/png,image/tiff',              20971520),
+                                                                                     ('VIDEO_OBRA',  'Video de avance de obra en formato MP4', 'video/mp4',                                    52428800)
+    ON CONFLICT (tipo_documento) DO NOTHING;
