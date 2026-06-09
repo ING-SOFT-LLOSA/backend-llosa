@@ -10,19 +10,19 @@ INSERT INTO roles (nombre, descripcion) VALUES
 
 -- Funciones del sistema
 INSERT INTO funcion (nombre_codigo, descripcion) VALUES
-                                                     ('PROY_VER',        'Ver proyectos'),
-                                                     ('PROY_CREAR',      'Crear proyectos'),
-                                                     ('PROY_EDITAR',     'Editar proyectos'),
-                                                     ('USER_GESTIONAR',  'Gestionar usuarios'),
-                                                     ('USER_VER',        'Ver usuarios'),
-                                                     ('ROL_GESTIONAR',   'Gestionar roles y funciones'),
-                                                     ('DOCS_VER',        'Ver documentos'),
-                                                     ('DOCS_SUBIR',      'Subir documentos'),
-                                                     ('PAGOS_VER',       'Ver pagos'),
-                                                     ('CONTRATO_VER',    'Ver contratos'),
-                                                     ('CONTRATO_EDITAR', 'Editar contratos'),
-                                                     ('OBRA_VER',        'Ver avance de obra'),
-                                                     ('OBRA_EDITAR',     'Editar avance de obra')
+                                                     ('PROY_VER',       'Ver proyectos'),
+                                                     ('PROY_CREAR',     'Crear proyectos'),
+                                                     ('PROY_EDITAR',    'Editar proyectos'),
+                                                     ('USER_GESTIONAR', 'Gestionar usuarios'),
+                                                     ('USER_VER',       'Ver usuarios'),
+                                                     ('ROL_GESTIONAR',  'Gestionar roles y funciones'),
+                                                     ('DOCS_VER',       'Ver documentos'),
+                                                     ('DOCS_SUBIR',     'Subir documentos'),
+                                                     ('PAGOS_VER',      'Ver pagos'),
+                                                     ('CONTRATO_VER',   'Ver contratos'),
+                                                     ('CONTRATO_EDITAR','Editar contratos'),
+                                                     ('OBRA_VER',       'Ver avance de obra'),
+                                                     ('OBRA_EDITAR',    'Editar avance de obra')
     ON CONFLICT (nombre_codigo) DO NOTHING;
 
 -- Permisos del ADMIN (todo)
@@ -67,14 +67,14 @@ WHERE r.nombre = 'CLIENTE'
   AND f.nombre_codigo IN ('PROY_VER','DOCS_VER','PAGOS_VER','OBRA_VER','CONTRATO_VER','USER_VER')
     ON CONFLICT DO NOTHING;
 
--- Índices (seguros si ya existen)
+-- Creación de índices de forma segura (ignora si ya existen)
 CREATE INDEX IF NOT EXISTS idx_usuario_firebase_uuid ON usuario(firebase_uuid);
 CREATE INDEX IF NOT EXISTS idx_usuario_email         ON usuario(email);
 CREATE INDEX IF NOT EXISTS idx_rol_funcion_rol       ON rol_funcion(id_rol);
 
 -- Usuario superadmin por defecto para desarrollo
 -- Firebase project: llosa-edificaciones
-INSERT INTO usuario (firebase_uuid, tipo_usuario, id_rol, nombre, apellidos, email, activo, created_at)
+INSERT INTO usuario (firebase_uuid, tipo_usuario, id_rol, nombre, apellidos, email, activo,created_at)
 VALUES (
            'DmwXY6eVpcOUhf7TnSUKYQvKlIj2',
            'EMPLEADO',
@@ -88,7 +88,7 @@ VALUES (
     ON CONFLICT (firebase_uuid) DO NOTHING;
 
 -- Firebase project: llosa-edificaciones
-INSERT INTO usuario (firebase_uuid, tipo_usuario, id_rol, nombre, apellidos, email, activo, created_at)
+INSERT INTO usuario (firebase_uuid, tipo_usuario, id_rol, nombre, apellidos, email, activo,created_at)
 VALUES (
            'DqH1tZKj8GU0AcTsev7JmVWt8xj2',
            'CLIENTE',
@@ -100,7 +100,6 @@ VALUES (
            CURRENT_TIMESTAMP
        )
     ON CONFLICT (firebase_uuid) DO NOTHING;
-
 -- Configuración de tipos de documento (2NF)
 INSERT INTO tipo_documento_config (tipo_documento, descripcion, mime_permitidos, max_size_bytes) VALUES
                                                                                                      ('PDF_LEGAL',   'Documento legal en formato PDF',         'application/pdf',                              20971520),

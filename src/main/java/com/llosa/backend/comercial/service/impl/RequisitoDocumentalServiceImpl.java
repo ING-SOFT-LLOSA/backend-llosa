@@ -30,7 +30,7 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
     private final DocumentoRepository documentoRepository;
     private final DocumentoService documentoService;
     private final UsuarioRepository usuarioRepository;
-    private final HitoProcesoCompraRepository hitoRepository;
+    private final HitoProcesoCompraRepository hitoComercialRepository;
 
     @Transactional
     public RequisitoDocumental asociarArchivoARequisito(UUID requisitoId, MultipartFile file, String firebaseUid) {
@@ -77,7 +77,7 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
 
     @Transactional
     public RequisitoDocumental crearRequisito(RequisitoCreateRequest request) {
-        HitoProcesoCompra hito = hitoRepository.findById(request.hitoProcesoCompraId())
+        HitoProcesoCompra hito = hitoComercialRepository.findById(request.hitoProcesoCompraId())
                 .orElseThrow(() -> new EntityNotFoundException("Hito de proceso de compra no encontrado"));
 
         RequisitoDocumental nuevoRequisito = RequisitoDocumental.builder()
@@ -85,10 +85,10 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
                 .titulo(request.titulo())
                 .descripcion(request.descripcion())
                 .notaCorporativa(request.notaCorporativa())
+                .fechaEmision(request.fechaEmision() != null ? request.fechaEmision() : LocalDate.now())
                 .estado("PENDIENTE")
                 .icono(request.icono() != null ? request.icono() : "description")
                 .build();
-
         return requisitoRepository.save(nuevoRequisito);
     }
 
