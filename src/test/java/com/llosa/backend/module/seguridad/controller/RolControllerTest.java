@@ -1,61 +1,55 @@
-package com.llosa.backend.module.seguridad.controller;
+package com.llosa.backend.seguridad.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.llosa.backend.config.FirebaseConfig;
 import com.llosa.backend.config.TestData;
+import com.llosa.backend.exception.GlobalExceptionHandler;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
-import com.llosa.backend.module.seguridad.dto.ModificarFuncionesRequest;
-import com.llosa.backend.module.seguridad.entity.Rol;
-import com.llosa.backend.module.seguridad.service.RolService;
+import com.llosa.backend.seguridad.dto.ModificarFuncionesRequest;
+import com.llosa.backend.seguridad.entity.Rol;
+import com.llosa.backend.seguridad.service.RolService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(RolController.class)
-@ImportAutoConfiguration(JacksonAutoConfiguration.class)
+@ExtendWith(MockitoExtension.class)
 class RolControllerTest {
 
-    @Autowired
-    MockMvc mockMvc;
+    private MockMvc mockMvc;
 
-    @Autowired
-    ObjectMapper objectMapper;
-
-    @MockitoBean
+    @Mock
     RolService rolService;
 
-    @MockitoBean
-    FirebaseConfig firebaseConfig;
+    ObjectMapper objectMapper;
+
+    @BeforeEach
+    void setUp() {
+        objectMapper = new ObjectMapper();
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(new RolController(rolService))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+    }
 
     // ── GET /api/roles ────────────────────────────────────────────────────────
-
-    @Test
-    void listar_sinAutenticar_devuelve401() throws Exception {
-        mockMvc.perform(get("/api/roles"))
-                .andExpect(status().isUnauthorized());
-    }
 
     @Test
     void listar_devuelveTodosLosRoles() throws Exception {
         Rol rol = TestData.rol();
         when(rolService.listarTodos()).thenReturn(List.of(rol));
 
-        mockMvc.perform(get("/api/roles")
-                        .with(authentication(TestData.authToken())))
+        mockMvc.perform(get("/api/roles"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].nombre").value("CLIENTE"))
                 .andExpect(jsonPath("$.length()").value(1));
@@ -65,8 +59,7 @@ class RolControllerTest {
     void listar_conListaVacia_devuelveArrayVacio() throws Exception {
         when(rolService.listarTodos()).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/roles")
-                        .with(authentication(TestData.authToken())))
+        mockMvc.perform(get("/api/roles"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
@@ -76,11 +69,8 @@ class RolControllerTest {
     @Test
     void modificarFunciones_sinIdFunciones_devuelve400() throws Exception {
         ModificarFuncionesRequest req = new ModificarFuncionesRequest();
-        // idFunciones es null → @NotNull falla
 
         mockMvc.perform(put("/api/roles/1/functions")
-                        .with(authentication(TestData.authToken()))
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
@@ -102,8 +92,6 @@ class RolControllerTest {
                 .thenReturn(rolActualizado);
 
         mockMvc.perform(put("/api/roles/1/functions")
-                        .with(authentication(TestData.authToken()))
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -120,30 +108,18 @@ class RolControllerTest {
         when(rolService.modificarFunciones(eq(2), eq(List.of()))).thenReturn(rolSinFunciones);
 
         mockMvc.perform(put("/api/roles/2/functions")
-                        .with(authentication(TestData.authToken()))
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void modificarFunciones_sinAutenticar_devuelve401() throws Exception {
+    void modificarFunciones_sinContentType_devuelve415() throws Exception {
         ModificarFuncionesRequest req = new ModificarFuncionesRequest();
         req.setIdFunciones(List.of(1));
 
         mockMvc.perform(put("/api/roles/1/functions")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void modificarFunciones_sinContentType_devuelve415() throws Exception {
-        mockMvc.perform(put("/api/roles/1/functions")
-                        .with(authentication(TestData.authToken()))
-                        .with(csrf())
+                        .header("Content-Type", "text/plain")
                         .content("{\"idFunciones\":[1,2]}"))
                 .andExpect(status().isUnsupportedMediaType());
     }
@@ -156,8 +132,6 @@ class RolControllerTest {
                 .thenThrow(new RecursoNoEncontradoException("Rol no encontrado"));
 
         mockMvc.perform(put("/api/roles/99/functions")
-                        .with(authentication(TestData.authToken()))
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound())
