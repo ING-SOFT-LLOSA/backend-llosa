@@ -11,7 +11,6 @@ import com.llosa.backend.seguridad.entity.Rol;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.RolRepository;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -25,7 +24,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@Disabled
 @ExtendWith(MockitoExtension.class)
 class UsuarioServiceTest {
 
@@ -71,6 +69,7 @@ class UsuarioServiceTest {
     @Test
     void crearUsuario_exitoso_creaEnFirebaseYPersisteUid() throws Exception {
         CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        req.setTipoUsuario("EMPLEADO");
         when(usuarioRepository.existsByEmail(req.getEmail())).thenReturn(false);
 
         UserRecord mockRecord = mock(UserRecord.class);
@@ -100,6 +99,7 @@ class UsuarioServiceTest {
     @Test
     void crearUsuario_conRolAsignado_persiteRelacion() throws Exception {
         CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        req.setTipoUsuario("EMPLEADO");
         req.setIdRol(1);
         when(usuarioRepository.existsByEmail(req.getEmail())).thenReturn(false);
 
@@ -130,6 +130,7 @@ class UsuarioServiceTest {
     @Test
     void crearUsuario_conRolInexistente_lanzaExcepcion() throws Exception {
         CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        req.setTipoUsuario("EMPLEADO");
         req.setIdRol(999);
         when(usuarioRepository.existsByEmail(req.getEmail())).thenReturn(false);
         when(rolRepository.findById(999)).thenReturn(Optional.empty());
@@ -293,6 +294,7 @@ class UsuarioServiceTest {
     @Test
     void crearUsuario_sinRol_persisteConActivoTrue() throws Exception {
         CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        req.setTipoUsuario("EMPLEADO");
         req.setIdRol(null);
         when(usuarioRepository.existsByEmail(req.getEmail())).thenReturn(false);
 

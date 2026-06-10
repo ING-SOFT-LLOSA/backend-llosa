@@ -3,12 +3,12 @@ package com.llosa.backend.proyecto.service;
 import com.llosa.backend.proyecto.dto.response.ActivoResponseDTO;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.Piso;
+import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.entity.Torre;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.enums.TipoActivo;
 import com.llosa.backend.proyecto.repository.ActivoRepository;
 import com.llosa.backend.proyecto.service.impl.ActivoServiceImpl;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,7 +27,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@Disabled
 @ExtendWith(MockitoExtension.class)
 class ActivoServiceTest {
 
@@ -38,7 +37,9 @@ class ActivoServiceTest {
     @InjectMocks ActivoServiceImpl service;
 
     private Piso buildPiso() {
-        return Piso.builder().id(1L).nroPiso(1).build();
+        Proyecto proyecto = Proyecto.builder().nombre("Proyecto Test").build();
+        Torre torre = Torre.builder().id(1L).nombre("Torre A").proyecto(proyecto).build();
+        return Piso.builder().id(1L).nroPiso(1).torre(torre).build();
     }
 
     private Activo buildActivo(Piso piso) {

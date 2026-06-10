@@ -3,11 +3,12 @@ package com.llosa.backend.proyecto.service;
 import com.llosa.backend.proyecto.dto.response.UsuarioActivoResponseDTO;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.Piso;
+import com.llosa.backend.proyecto.entity.Proyecto;
+import com.llosa.backend.proyecto.entity.Torre;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.enums.TipoActivo;
 import com.llosa.backend.seguridad.entity.Usuario;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -17,7 +18,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 
-@Disabled
 class UsuarioActivoDtoTest {
 
     @Test
@@ -42,7 +42,9 @@ class UsuarioActivoDtoTest {
 
     @Test
     void usuarioActivoResponseDTO_fromEntity_mapea() {
-        Piso piso = Piso.builder().id(1L).nroPiso(1).build();
+        Proyecto proyecto = Proyecto.builder().nombre("Proyecto Test").build();
+        Torre torre = Torre.builder().id(1L).nombre("Torre A").proyecto(proyecto).build();
+        Piso piso = Piso.builder().id(1L).nroPiso(1).torre(torre).build();
         Activo activo = Activo.builder()
                 .id(UUID.randomUUID()).nro("101").tipo(TipoActivo.DEPARTAMENTO)
                 .areaM2(BigDecimal.ZERO).estadoComercial(EstadoComercialActivo.DISPONIBLE)

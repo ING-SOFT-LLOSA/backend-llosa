@@ -8,6 +8,8 @@ import com.llosa.backend.exception.GlobalExceptionHandler;
 import com.llosa.backend.proyecto.dto.request.AsignarActivoDTO;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.Piso;
+import com.llosa.backend.proyecto.entity.Proyecto;
+import com.llosa.backend.proyecto.entity.Torre;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.enums.TipoActivo;
@@ -16,7 +18,6 @@ import com.llosa.backend.proyecto.service.UsuarioActivoService;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import com.llosa.backend.seguridad.service.UsuarioService;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -41,7 +42,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@Disabled
 @WebMvcTest(UsuarioActivoController.class)
 @Import({com.llosa.backend.config.SecurityConfig.class, SecurityTestConfiguration.class, GlobalExceptionHandler.class})
 class UsuarioActivoControllerTest {
@@ -56,7 +56,9 @@ class UsuarioActivoControllerTest {
     @MockitoBean com.llosa.backend.seguridad.repository.UsuarioRepository usuarioRepository;
 
     private Piso buildPiso() {
-        return Piso.builder().id(1L).nroPiso(1).build();
+        Proyecto proyecto = Proyecto.builder().nombre("Proyecto Test").build();
+        Torre torre = Torre.builder().id(1L).nombre("Torre A").proyecto(proyecto).build();
+        return Piso.builder().id(1L).nroPiso(1).torre(torre).build();
     }
 
     private Activo buildActivo() {
