@@ -41,7 +41,7 @@ public class HitoComercialServiceImpl implements HitoComercialService {
                         "UsuarioActivo no encontrado con UUID: " + request.uuidUsuarioActivo()));
 
         HitoProcesoCompra hito = HitoProcesoCompra.builder()
-                .usuarioActivo(usuarioActivo)
+                .etapaExpediente(usuarioActivo.getEtapas())
                 .etapaProceso(request.etapaProceso())
                 .nombreHito(request.nombreHito())
                 .descripcion(request.descripcion())
