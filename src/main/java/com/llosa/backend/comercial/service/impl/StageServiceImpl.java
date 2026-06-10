@@ -131,14 +131,25 @@ public class StageServiceImpl implements StageService {
     public StageDocumentResponse obtenerDocumentosStage(String firebaseUid, UUID uuidUsuarioActivo, EtapaProceso etapaProceso) {
         validarAcceso(firebaseUid, uuidUsuarioActivo);
 
-        HitoProcesoCompra hitoComercial = hitoRepository
-                .findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uuidUsuarioActivo, etapaProceso)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "No existe hito comercial para uuidUsuarioActivo=" + uuidUsuarioActivo
-                                + " y etapaProceso=" + etapaProceso));
+        // Obtener todos los hitos de la etapa
+        List<HitoProcesoCompra> hitosDeEtapa = hitoRepository
+                .findByUsuarioActivo_UuidUsuarioActivoOrderByOrdenAsc(uuidUsuarioActivo)
+                .stream()
+                .filter(h -> h.getEtapaProceso() == etapaProceso)
+                .toList();
+
+        if (hitosDeEtapa.isEmpty()) {
+            throw new EntityNotFoundException(
+                    "No existen hitos para la etapa " + etapaProceso + " en el expediente: " + uuidUsuarioActivo);
+        }
+
+        // Recolectar todos los requisitos de todos los hitos de esta etapa
+        List<UUID> uuidHitos = hitosDeEtapa.stream()
+                .map(HitoProcesoCompra::getUuidHitoComercial)
+                .toList();
 
         List<RequisitoDocumental> requisitos = requisitoDocumentalRepository
-                .findByHitoComercial_UuidHitoComercialOrderByFechaEmisionDesc(hitoComercial.getUuidHitoComercial());
+                .findByHitoComercial_UuidHitoComercialInOrderByFechaEmisionDesc(uuidHitos);
 
         List<StageDocumentResponse.DocumentoItem> items = requisitos.stream()
                 .map(requisito -> {

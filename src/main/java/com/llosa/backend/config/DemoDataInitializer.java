@@ -260,14 +260,12 @@ public class DemoDataInitializer implements CommandLineRunner {
     private void crearHitosProcesoCompra(UsuarioActivo ua) {
         var hitos = List.of(
                 hitoCompra(ua, EtapaProceso.SEPARACION, 1, "Firma de Separación", EstadoHitoComercial.COMPLETADO),
-                hitoCompra(ua, EtapaProceso.SEPARACION, 2, "Pago de Separación", EstadoHitoComercial.COMPLETADO),
-                hitoCompra(ua, EtapaProceso.CONTRATO, 3, "Revisión de Contrato", EstadoHitoComercial.EN_PROGRESO),
-                hitoCompra(ua, EtapaProceso.CONTRATO, 4, "Firma de Contrato", EstadoHitoComercial.PENDIENTE),
-                hitoCompra(ua, EtapaProceso.PAGO, 5, "Evaluación Crediticia", EstadoHitoComercial.PENDIENTE),
-                hitoCompra(ua, EtapaProceso.PAGO, 6, "Desembolso", EstadoHitoComercial.PENDIENTE),
-                hitoCompra(ua, EtapaProceso.ENTREGA, 7, "Coordinación de Entrega", EstadoHitoComercial.PENDIENTE),
-                hitoCompra(ua, EtapaProceso.ENTREGA, 8, "Acta de Entrega", EstadoHitoComercial.PENDIENTE),
-                hitoCompra(ua, EtapaProceso.SANEAMIENTO, 9, "Trámite de Saneamiento", EstadoHitoComercial.PENDIENTE)
+                hitoCompra(ua, EtapaProceso.CONTRATO, 2, "Revisión de Contrato", EstadoHitoComercial.EN_PROGRESO),
+                hitoCompra(ua, EtapaProceso.CONTRATO, 3, "Firma de Contrato", EstadoHitoComercial.PENDIENTE),
+                // Etapa PAGO se deja vacía para ser llenada por la Carta de Aprobación
+                hitoCompra(ua, EtapaProceso.ENTREGA, 4, "Coordinación de Entrega", EstadoHitoComercial.PENDIENTE),
+                hitoCompra(ua, EtapaProceso.ENTREGA, 5, "Acta de Entrega", EstadoHitoComercial.PENDIENTE),
+                hitoCompra(ua, EtapaProceso.SANEAMIENTO, 6, "Trámite de Saneamiento", EstadoHitoComercial.PENDIENTE)
         );
         hitoProcesoCompraRepository.saveAll(hitos);
         log.info("{} hitos de proceso de compra creados", hitos.size());

@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface RequisitoDocumentalRepository extends JpaRepository<RequisitoDocumental, UUID> {
 
     List<RequisitoDocumental> findByHitoComercial_UuidHitoComercialOrderByFechaEmisionDesc(UUID uuidHitoComercial);
+
+    List<RequisitoDocumental> findByHitoComercial_UuidHitoComercialInOrderByFechaEmisionDesc(List<UUID> uuidHitos);
 }
