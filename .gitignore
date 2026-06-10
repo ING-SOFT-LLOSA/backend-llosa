@@ -30,6 +30,14 @@ target/
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
-secrets/firebase-service-account.json
+secrets/
 ### VS Code ###
 .vscode/
+docs
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Logs ###
+*.log

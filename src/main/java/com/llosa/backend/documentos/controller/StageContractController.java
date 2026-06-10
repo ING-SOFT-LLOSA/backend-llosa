@@ -1,6 +1,6 @@
 package com.llosa.backend.documentos.controller;
 
-import com.llosa.backend.documentos.dto.StageResponse;
+import com.llosa.backend.documentos.dto.StageDocumentResponse;
 import com.llosa.backend.documentos.service.DocumentoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +20,7 @@ public class StageContractController {
      * Devuelve los detalles de un contrato inmobiliario para la etapa de contrato.
      */
     @GetMapping("/{etapaProceso}/{uuidUsuarioActivo}")
-    public ResponseEntity<StageResponse> obtenerDetalleEtapa(
+    public ResponseEntity<StageDocumentResponse> obtenerDetalleEtapa(
             @PathVariable String etapaProceso,
             @PathVariable UUID uuidUsuarioActivo
     ) {

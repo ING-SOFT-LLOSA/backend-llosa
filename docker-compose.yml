@@ -1,25 +1,47 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: llosa_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - llosa_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: llosa_backend_${STAGE:-dev}
+    container_name: llosa_backend_dev
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     environment:
+      - DB_URL=jdbc:postgresql://db:5432/${POSTGRES_DB}
+      - DB_USERNAME=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
       - DOMINIO_CORPORATIVO=${DOMINIO_CORPORATIVO}
       - SHOW_SQL=${SHOW_SQL}
-      - SPRING_FLYWAY_SCHEMAS=public,proyectos,seguridad,activos,etapas
-      - FIREBASE_CREDENTIALS_PATH=/app/secrets/firebase-service-account.json
-      - DB_URL=${DB_URL}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
       - GCS_BUCKET_NAME=${GCS_BUCKET_NAME}
+      - FIREBASE_CREDENTIALS_PATH=/app/secrets/firebase-service-account.json
       - SPRING_PROFILES_ACTIVE=demo
     volumes:
       - ./secrets/firebase-service-account.json:/app/secrets/firebase-service-account.json
     networks:
-      - proxy_net
+      - llosa_net
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
@@ -28,6 +50,9 @@ services:
       retries: 3
       start_period: 40s
 
+volumes:
+  pgdata:
+
 networks:
-  proxy_net:
-    external: true
+  llosa_net:
+    driver: bridge
