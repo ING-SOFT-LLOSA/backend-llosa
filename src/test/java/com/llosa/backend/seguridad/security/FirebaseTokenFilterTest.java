@@ -1,14 +1,16 @@
 package com.llosa.backend.seguridad.security;
-
+ 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
+import com.llosa.backend.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.entity.Rol;
+import com.llosa.backend.seguridad.entity.Funcion;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -24,10 +26,7 @@ import static org.mockito.Mockito.*;
  
 @ExtendWith(MockitoExtension.class)
 class FirebaseTokenFilterTest {
-
-    @Mock
-    UsuarioRepository usuarioRepository;
-
+ 
     private FirebaseTokenFilter filter;
     private UsuarioRepository usuarioRepository;
     private MockHttpServletResponse response;
@@ -35,6 +34,7 @@ class FirebaseTokenFilterTest {
  
     @BeforeEach
     void setUp() {
+        usuarioRepository = mock(UsuarioRepository.class);
         filter = new FirebaseTokenFilter(usuarioRepository);
         response = new MockHttpServletResponse();
         filterChain = mock(FilterChain.class);

@@ -31,6 +31,12 @@ class CartaAprobacionServiceImplTest {
     @Mock
     UsuarioActivoRepository usuarioActivoRepository;
 
+    @Mock
+    com.llosa.backend.comercial.repository.HitoProcesoCompraRepository hitoRepository;
+
+    @Mock
+    com.llosa.backend.comercial.service.HitoComercialService hitoComercialService;
+
     @InjectMocks
     CartaAprobacionServiceImpl cartaAprobacionService;
 

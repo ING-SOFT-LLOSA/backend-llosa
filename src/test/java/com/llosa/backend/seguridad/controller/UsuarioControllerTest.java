@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UsuarioController.class)
-@Import({com.llosa.backend.config.SecurityConfig.class, SecurityTestConfiguration.class})
+@Import({com.llosa.backend.config.SecurityConfig.class, SecurityTestConfiguration.class, com.llosa.backend.exception.GlobalExceptionHandler.class})
 class UsuarioControllerTest {
 
     @Autowired

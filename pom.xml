@@ -130,13 +130,16 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>postgresql</artifactId>
 			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
-
-
 	</dependencies>
 
 	<build>
@@ -195,8 +198,26 @@
 			<!-- Surefire: excluye tag "stress" del ciclo test normal -->
 			<!-- api.version=1.41 fuerza docker-java a usar API ≥1.40 (Docker 29.x exige mínimo 1.40) -->
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.8.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>properties</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
+					<argLine>
+						-javaagent:${org.mockito:mockito-core:jar}
+						-XX:+EnableDynamicAgentLoading
+						-Djdk.attach.allowAttachSelf=true
+					</argLine>
 					<excludedGroups>stress</excludedGroups>
 					<systemPropertyVariables>
 						<api.version>1.41</api.version>

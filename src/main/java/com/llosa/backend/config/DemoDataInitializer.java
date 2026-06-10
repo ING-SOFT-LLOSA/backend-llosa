@@ -74,7 +74,14 @@ public class DemoDataInitializer implements CommandLineRunner {
         var admin = crearUsuarioDemo("demo.admin@llosa.com", "Demo123!", "ADMIN", "EMPLEADO", "Admin", "Sistema");
         var asesor = crearUsuarioDemo("demo.asesor@llosa.com", "Demo123!", "ASESOR", "EMPLEADO", "Carlos", "Asesor");
         var cliente = crearUsuarioDemo("demo.cliente@llosa.com", "Demo123!", "CLIENTE", "CLIENTE", "María", "Cliente");
-        if (admin == null || asesor == null || cliente == null) {
+        
+        var sofia = crearUsuarioDemo("sofia@cliente.com", "Demo123!", "CLIENTE", "CLIENTE", "Sofía", "Pérez");
+        var ricardo = crearUsuarioDemo("ricardo@cliente.com", "Demo123!", "CLIENTE", "CLIENTE", "Ricardo", "Gómez");
+        var carmen = crearUsuarioDemo("carmen@cliente.com", "Demo123!", "CLIENTE", "CLIENTE", "Carmen", "López");
+        var tecnico = crearUsuarioDemo("tecnico@llosa.com", "Demo123!", "ASESOR", "EMPLEADO", "Juan", "Técnico");
+        var rolCliente = carmen.getRol();
+
+        if (admin == null || asesor == null || cliente == null || sofia == null || ricardo == null || carmen == null || tecnico == null) {
             log.warn("No se pudieron crear los usuarios demo, abortando.");
             return;
         }
@@ -192,12 +199,28 @@ public class DemoDataInitializer implements CommandLineRunner {
         crearHitosPisoDemo(proyectoSI);
         crearHitosPisoDemo(proyectoLM);
 
+        var depto301 = proyectoLO.getTorres().getFirst().getPisos().get(2).getActivos().get(0);
+        var usuarioActivo = uaRicardo;
+
         log.info("=== Datos demo inicializados correctamente ===");
         log.info("Usuario admin:   demo.admin@llosa.com / Demo123!  (rol=ADMIN)");
         log.info("Usuario asesor:  demo.asesor@llosa.com / Demo123!  (rol=ASESOR)");
         log.info("Usuario cliente: demo.cliente@llosa.com / Demo123! (rol=CLIENTE)");
         log.info("Activo asignado al cliente: {} (id={})", depto301.getNro(), depto301.getId());
         log.info("UUID UsuarioActivo (uuidUsuarioActivo): {}", usuarioActivo.getUuidUsuarioActivo());
+    }
+
+    private Usuario crearUsuarioDemo(String email, String password, String rolNombre,
+                                     String tipoUsuario, String nombre, String apellidos) {
+        var rol = rolRepository.findByNombre(rolNombre)
+                .orElseGet(() -> {
+                    var newRol = new Rol();
+                    newRol.setNombre(rolNombre);
+                    return rolRepository.save(newRol);
+                });
+
+        return crearUsuario(email, password, rolNombre, tipoUsuario, nombre, apellidos,
+                "DNI", UUID.randomUUID().toString().substring(0, 8), "999888777", rol);
     }
 
     private Usuario crearUsuario(String email, String password, String rolNombre,
@@ -507,6 +530,16 @@ public class DemoDataInitializer implements CommandLineRunner {
         );
         hitoProcesoCompraRepository.saveAll(hitos);
         log.info("{} hitos de compra creados para activo {}", hitos.size(), ua.getActivo().getNro());
+    }
+
+    private void crearHitos(UsuarioActivo ua, List<HitoProcesoCompra> hitos) {
+        hitoProcesoCompraRepository.saveAll(hitos);
+        log.info("{} hitos de compra creados para activo {}", hitos.size(), ua.getActivo().getNro());
+    }
+
+    private HitoProcesoCompra hitoCompra(UsuarioActivo ua, EtapaProceso etapa, int orden,
+                                         String nombre, EstadoHitoComercial estado) {
+        return hitoCompra(ua, etapa, orden, nombre, estado, null);
     }
 
     private HitoProcesoCompra hitoCompra(UsuarioActivo ua, EtapaProceso etapa, int orden,

@@ -66,7 +66,7 @@ public class CartaAprobacionServiceImpl implements CartaAprobacionService {
     private void generarHitosHipotecarios(UsuarioActivo ua) {
         log.info("Generando hitos de crédito hipotecario para el expediente: {}", ua.getUuidUsuarioActivo());
 
-        // 1. Obtener todos los hitos actuales para encontrar el orden de inicio de PAGO y limpiar la etapa
+        // 1. Obtener todos los hitos actuales para encontrar el orden de inicio de PAGO
         List<HitoProcesoCompra> todosLosHitos = hitoRepository.findByUsuarioActivo_UuidUsuarioActivoOrderByOrdenAsc(ua.getUuidUsuarioActivo());
 
         int ordenInicio = todosLosHitos.stream()
@@ -75,15 +75,8 @@ public class CartaAprobacionServiceImpl implements CartaAprobacionService {
                 .findFirst()
                 .orElse(5); // Fallback
 
-        // 2. Eliminar de forma explícita todos los hitos de la etapa PAGO
-        List<HitoProcesoCompra> hitosPagoExistentes = todosLosHitos.stream()
-                .filter(h -> h.getEtapaProceso() == EtapaProceso.PAGO)
-                .toList();
-        
-        if (!hitosPagoExistentes.isEmpty()) {
-            hitoRepository.deleteAllInBatch(hitosPagoExistentes);
-            hitoRepository.flush(); // Forzar borrado físico
-        }
+        // 2. Eliminar hitos previos de la etapa PAGO
+        hitoRepository.deleteByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(ua.getUuidUsuarioActivo(), EtapaProceso.PAGO);
 
         // 3. Definir e insertar los nuevos hitos hipotecarios
         List<String> nombresHitos = List.of(
@@ -106,7 +99,6 @@ public class CartaAprobacionServiceImpl implements CartaAprobacionService {
                     .build();
             hitoRepository.save(hito);
         }
-        hitoRepository.flush(); // Forzar inserción física
 
         // 4. Re-indexar usando el servicio especializado
         hitoComercialService.reindexarHitos(ua.getUuidUsuarioActivo());

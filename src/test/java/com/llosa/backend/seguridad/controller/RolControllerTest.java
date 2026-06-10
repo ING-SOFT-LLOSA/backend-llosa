@@ -1,11 +1,9 @@
 package com.llosa.backend.seguridad.controller;
-package com.llosa.backend.seguridad.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llosa.backend.config.FirebaseConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
-import com.llosa.backend.exception.GlobalExceptionHandler;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.seguridad.dto.ModificarFuncionesRequest;
 import com.llosa.backend.seguridad.entity.Rol;
@@ -17,24 +15,24 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RolController.class)
-@Import({com.llosa.backend.config.SecurityConfig.class, SecurityTestConfiguration.class})
+@Import({com.llosa.backend.config.SecurityConfig.class, SecurityTestConfiguration.class, com.llosa.backend.exception.GlobalExceptionHandler.class})
 class RolControllerTest {
 
-    private MockMvc mockMvc;
+    @Autowired
+    MockMvc mockMvc;
 
-    @Mock
-    RolService rolService;
-
+    @Autowired
     ObjectMapper objectMapper;
 
     @MockitoBean
@@ -61,7 +59,8 @@ class RolControllerTest {
         Rol rol = TestData.rol();
         when(rolService.listarTodos()).thenReturn(List.of(rol));
 
-        mockMvc.perform(get("/api/roles"))
+        mockMvc.perform(get("/api/roles")
+                        .with(authentication(TestData.authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].nombre").value("CLIENTE"))
                 .andExpect(jsonPath("$.length()").value(1));
@@ -72,7 +71,8 @@ class RolControllerTest {
         // Devuelve 200 con array vacío
         when(rolService.listarTodos()).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/roles"))
+        mockMvc.perform(get("/api/roles")
+                        .with(authentication(TestData.authToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
@@ -83,8 +83,11 @@ class RolControllerTest {
     void modificarFunciones_sinIdFunciones() throws Exception {
         // Devuelve 400
         ModificarFuncionesRequest req = new ModificarFuncionesRequest();
+        // idFunciones es null → @NotNull falla
 
         mockMvc.perform(put("/api/roles/1/functions")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
@@ -107,6 +110,8 @@ class RolControllerTest {
                 .thenReturn(rolActualizado);
 
         mockMvc.perform(put("/api/roles/1/functions")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -124,6 +129,8 @@ class RolControllerTest {
         when(rolService.modificarFunciones(eq(2), eq(List.of()))).thenReturn(rolSinFunciones);
 
         mockMvc.perform(put("/api/roles/2/functions")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
@@ -161,6 +168,8 @@ class RolControllerTest {
                 .thenThrow(new RecursoNoEncontradoException("Rol no encontrado"));
 
         mockMvc.perform(put("/api/roles/99/functions")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound())
