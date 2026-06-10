@@ -1,8 +1,10 @@
 package com.llosa.backend.config;
 
-import com.llosa.backend.security.FirebaseAuthenticationToken;
+import com.llosa.backend.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.MethodParameter;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,6 +15,8 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
+
+import static org.mockito.Mockito.mock;
 
 @TestConfiguration
 public class SecurityTestConfiguration implements WebMvcConfigurer {

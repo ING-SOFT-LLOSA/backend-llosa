@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FirebaseTokenFilter extends OncePerRequestFilter {
 
-    // Inyectamos tu repositorio exacto
     private final UsuarioRepository usuarioRepository;
 
     @Override

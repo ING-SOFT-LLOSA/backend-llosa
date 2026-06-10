@@ -1,10 +1,10 @@
-package com.llosa.backend.module.seguridad.service;
+package com.llosa.backend.seguridad.service;
 
 import com.llosa.backend.config.TestData;
-import com.llosa.backend.module.seguridad.entity.Funcion;
-import com.llosa.backend.module.seguridad.entity.Rol;
-import com.llosa.backend.module.seguridad.repository.FuncionRepository;
-import com.llosa.backend.module.seguridad.repository.RolRepository;
+import com.llosa.backend.seguridad.entity.Funcion;
+import com.llosa.backend.seguridad.entity.Rol;
+import com.llosa.backend.seguridad.repository.FuncionRepository;
+import com.llosa.backend.seguridad.repository.RolRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

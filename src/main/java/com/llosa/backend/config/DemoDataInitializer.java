@@ -50,16 +50,17 @@ public class DemoDataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (usuarioRepository.findByEmail("demo.asesor@llosa.com").isPresent()) {
+        if (usuarioRepository.findByEmail("demo.admin@llosa.com").isPresent()) {
             log.info("Datos demo ya existen, omitiendo inicialización.");
             return;
         }
 
         log.info("=== Inicializando datos demo ===");
 
+        var admin = crearUsuarioDemo("demo.admin@llosa.com", "Demo123!", "ADMIN", "EMPLEADO", "Admin", "Sistema");
         var asesor = crearUsuarioDemo("demo.asesor@llosa.com", "Demo123!", "ASESOR", "EMPLEADO", "Carlos", "Asesor");
         var cliente = crearUsuarioDemo("demo.cliente@llosa.com", "Demo123!", "CLIENTE", "CLIENTE", "María", "Cliente");
-        if (asesor == null || cliente == null) {
+        if (admin == null || asesor == null || cliente == null) {
             log.warn("No se pudieron crear los usuarios demo, abortando.");
             return;
         }
@@ -72,6 +73,11 @@ public class DemoDataInitializer implements CommandLineRunner {
         crearHitosProcesoCompra(usuarioActivo);
 
         log.info("=== Datos demo inicializados correctamente ===");
+        log.info("Usuario admin:   demo.admin@llosa.com / Demo123!  (rol=ADMIN)");
+        log.info("Usuario asesor:  demo.asesor@llosa.com / Demo123!  (rol=ASESOR)");
+        log.info("Usuario cliente: demo.cliente@llosa.com / Demo123! (rol=CLIENTE)");
+        log.info("Activo asignado al cliente: {} (id={})", depto301.getNro(), depto301.getId());
+        log.info("UUID UsuarioActivo (uuidUsuarioActivo): {}", usuarioActivo.getUuidUsuarioActivo());
     }
 
     private Usuario crearUsuarioDemo(String email, String password, String rolNombre,
