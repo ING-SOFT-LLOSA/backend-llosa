@@ -2,8 +2,11 @@ package com.llosa.backend.comercial.service.impl;
 
 import com.llosa.backend.comercial.dto.RequisitoCreateRequest;
 import com.llosa.backend.comercial.dto.RequisitoUpdateRequest;
+import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.comercial.entity.HitoProcesoCompra;
 import com.llosa.backend.comercial.entity.RequisitoDocumental;
+import com.llosa.backend.comercial.enums.EtapaRequisitoDocumental;
+import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.HitoProcesoCompraRepository;
 import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
 import com.llosa.backend.comercial.service.RequisitoDocumentalService;
@@ -31,6 +34,7 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
     private final DocumentoService documentoService;
     private final UsuarioRepository usuarioRepository;
     private final HitoProcesoCompraRepository hitoComercialRepository;
+    private final EtapaExpedienteRepository etapaExpedienteRepository;
 
     @Transactional
     public RequisitoDocumental asociarArchivoARequisito(UUID requisitoId, MultipartFile file, String firebaseUid) {
@@ -40,18 +44,16 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        UUID usuarioActivoId = requisito.getHitoComercial().getUsuarioActivo().getUuidUsuarioActivo();
-
+        // CORRECCIÓN: Llamamos a la nueva firma de subirDocumentoPolimorfico sin el UUID del contrato
         documentoService.subirDocumentoPolimorfico(
-                usuarioActivoId,
                 file,
-                TipoDocumento.PDF_LEGAL,
+                TipoDocumento.PDF_LEGAL, // O el tipo dinámico si lo necesitas
                 requisitoId.toString(),
                 "REQUISITO",
                 usuario.getId()
         );
 
-        requisito.setEstado("COMPLETADA");
+        requisito.setEstado(EtapaRequisitoDocumental.COMPLETADO); // Asegúrate de usar el Enum o String correcto según tu entidad
         requisito.setFechaEmision(LocalDate.now());
         return requisitoRepository.save(requisito);
     }
@@ -70,23 +72,24 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
 
         documentoService.eliminarDocumento(documento.getId(), usuario.getId());
 
-        requisito.setEstado("PENDIENTE");
+        requisito.setEstado(EtapaRequisitoDocumental.PENDIENTE);
         requisito.setFechaEmision(null);
         requisitoRepository.save(requisito);
     }
 
     @Transactional
     public RequisitoDocumental crearRequisito(RequisitoCreateRequest request) {
-        HitoProcesoCompra hito = hitoComercialRepository.findById(request.hitoProcesoCompraId())
-                .orElseThrow(() -> new EntityNotFoundException("Hito de proceso de compra no encontrado"));
+        EtapaExpediente etapaExpediente = etapaExpedienteRepository.findById(request.etapaProcesoCompraId()).orElseThrow(
+                () -> new EntityNotFoundException("Etapa expediente no encontrada con UUID: " + request.etapaProcesoCompraId())
+        );
 
         RequisitoDocumental nuevoRequisito = RequisitoDocumental.builder()
-                .hitoComercial(hito)
+                .etapaExpediente(etapaExpediente)
                 .titulo(request.titulo())
                 .descripcion(request.descripcion())
                 .notaCorporativa(request.notaCorporativa())
                 .fechaEmision(request.fechaEmision() != null ? request.fechaEmision() : LocalDate.now())
-                .estado("PENDIENTE")
+                .estado(EtapaRequisitoDocumental.PENDIENTE)
                 .icono(request.icono() != null ? request.icono() : "description")
                 .build();
         return requisitoRepository.save(nuevoRequisito);

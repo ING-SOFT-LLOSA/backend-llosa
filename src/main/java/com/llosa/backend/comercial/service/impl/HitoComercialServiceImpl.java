@@ -4,13 +4,14 @@ import com.llosa.backend.comercial.dto.EtapaStepperResponse;
 import com.llosa.backend.comercial.dto.HitoComercialRequest;
 import com.llosa.backend.comercial.dto.HitoComercialResponse;
 import com.llosa.backend.comercial.dto.StepperResponse;
+import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.comercial.entity.HitoProcesoCompra;
 import com.llosa.backend.comercial.enums.EstadoHitoComercial;
 import com.llosa.backend.comercial.enums.EtapaProceso;
+import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.HitoProcesoCompraRepository;
 import com.llosa.backend.comercial.service.HitoComercialService;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
-import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,17 +33,17 @@ import java.util.stream.Collectors;
 public class HitoComercialServiceImpl implements HitoComercialService {
 
     private final HitoProcesoCompraRepository hitoRepository;
+    private final EtapaExpedienteRepository etapaExpedienteRepository;
     private final UsuarioActivoRepository usuarioActivoRepository;
 
     @Override
     public HitoComercialResponse crearHito(HitoComercialRequest request) {
-        UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(request.uuidUsuarioActivo())
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "UsuarioActivo no encontrado con UUID: " + request.uuidUsuarioActivo()));
+        EtapaExpediente etapaExpediente = etapaExpedienteRepository.findById(request.uuidEstapaExpediente()).orElseThrow(
+                () -> new RecursoNoEncontradoException("Etapa expediente no encontrada con UUID: " + request.uuidEstapaExpediente())
+        );
 
         HitoProcesoCompra hito = HitoProcesoCompra.builder()
-                .etapaExpediente(usuarioActivo.getEtapas())
-                .etapaProceso(request.etapaProceso())
+                .etapaExpediente(etapaExpediente)
                 .nombreHito(request.nombreHito())
                 .descripcion(request.descripcion())
                 .orden(request.orden())
@@ -51,8 +52,8 @@ public class HitoComercialServiceImpl implements HitoComercialService {
                 .build();
 
         HitoProcesoCompra guardado = hitoRepository.save(hito);
-        log.info("Hito comercial creado: {} para UsuarioActivo: {}",
-                guardado.getUuidHitoComercial(), request.uuidUsuarioActivo());
+        log.info("Hito comercial creado: {} para EtapaExpediente: {}",
+                guardado.getUuidHitoComercial(), request.uuidEstapaExpediente());
 
         return HitoComercialResponse.fromEntity(guardado);
     }
@@ -82,18 +83,24 @@ public class HitoComercialServiceImpl implements HitoComercialService {
 
             if (ordenActual > 1) {
 
-                HitoProcesoCompra hitoAnterior = hitoRepository
-                        .findByUsuarioActivo_UuidUsuarioActivoAndOrden(
-                                hito.getUsuarioActivo().getUuidUsuarioActivo(),
-                                ordenActual - 1
-                        )
-                        .orElseThrow(() -> new IllegalStateException(
-                                "No existe el hito anterior para el orden " + (ordenActual - 1)
-                        ));
+                UUID etapaId =
+                        hito.getEtapaExpediente().getUuidEtapaExpediente();
+
+                HitoProcesoCompra hitoAnterior =
+                        hitoRepository
+                                .findByEtapaExpediente_UuidEtapaExpedienteAndOrden(
+                                        etapaId,
+                                        ordenActual - 1
+                                )
+                                .orElseThrow(() -> new IllegalStateException(
+                                        "No existe el hito anterior para el orden "
+                                                + (ordenActual - 1)
+                                ));
 
                 if (hitoAnterior.getEstado() != EstadoHitoComercial.COMPLETADO) {
                     throw new IllegalStateException(
-                            "Debe completar primero el hito anterior: " + hitoAnterior.getNombreHito()
+                            "Debe completar primero el hito anterior: "
+                                    + hitoAnterior.getNombreHito()
                     );
                 }
             }
@@ -123,18 +130,15 @@ public class HitoComercialServiceImpl implements HitoComercialService {
                     "UsuarioActivo no encontrado con UUID: " + uuidUsuarioActivo);
         }
 
-        List<HitoProcesoCompra> todosLosHitos =
-                hitoRepository.findByUsuarioActivo_UuidUsuarioActivoOrderByOrdenAsc(uuidUsuarioActivo);
+        List<EtapaExpediente> etapasExpediente =
+                etapaExpedienteRepository
+                        .findByUsuarioActivo_UuidUsuarioActivoOrderByEtapaProcesoAsc(uuidUsuarioActivo);
 
-        // Agrupar hitos por etapa
-        Map<EtapaProceso, List<HitoProcesoCompra>> hitosPorEtapa = todosLosHitos.stream()
-                .collect(Collectors.groupingBy(HitoProcesoCompra::getEtapaProceso));
-
-        // Construir la lista de etapas respetando el orden natural del enum
-        List<EtapaStepperResponse> etapas = Arrays.stream(EtapaProceso.values())
+        List<EtapaStepperResponse> etapas = etapasExpediente.stream()
                 .map(etapa -> {
                     List<HitoProcesoCompra> hitosDeEtapa =
-                            hitosPorEtapa.getOrDefault(etapa, Collections.emptyList());
+                            hitoRepository.findByEtapaExpediente_UuidEtapaExpedienteOrderByOrdenAsc(
+                                    etapa.getUuidEtapaExpediente());
 
                     List<HitoComercialResponse> hitosResponse = hitosDeEtapa.stream()
                             .map(HitoComercialResponse::fromEntity)
@@ -143,7 +147,7 @@ public class HitoComercialServiceImpl implements HitoComercialService {
                     double porcentaje = calcularPorcentajeAvance(hitosDeEtapa);
 
                     return EtapaStepperResponse.builder()
-                            .etapa(etapa)
+                            .etapa(etapa.getEtapaProceso())
                             .hitos(hitosResponse)
                             .porcentajeAvance(porcentaje)
                             .build();

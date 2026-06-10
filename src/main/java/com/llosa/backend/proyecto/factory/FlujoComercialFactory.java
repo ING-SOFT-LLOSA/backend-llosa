@@ -3,6 +3,7 @@ package com.llosa.backend.proyecto.factory;
 import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.comercial.entity.HitoProcesoCompra;
 import com.llosa.backend.comercial.entity.RequisitoDocumental;
+import com.llosa.backend.comercial.enums.EstadoEtapaExpediente;
 import com.llosa.backend.comercial.enums.EstadoHitoComercial;
 import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.enums.EtapaRequisitoDocumental;
@@ -27,7 +28,7 @@ public class FlujoComercialFactory {
                 : contrato.getTipoFinanciamiento().toUpperCase(Locale.ROOT);
 
         // 1. ETAPA: SEPARACIÓN
-        EtapaExpediente separacion = construirEtapa(contrato, EtapaProceso.SEPARACION, "EN_CURSO");
+        EtapaExpediente separacion = construirEtapa(contrato, EtapaProceso.SEPARACION, EstadoEtapaExpediente.PENDIENTE);
         separacion.getHitosComerciales().add(construirHito(separacion, "Proforma", 1,
                 "Documento preliminar con precio, forma de pago y características de la unidad"));
         separacion.getHitosComerciales().add(construirHito(separacion, "Pago de separación", 2,
@@ -64,7 +65,7 @@ public class FlujoComercialFactory {
         etapas.add(separacion);
 
         // 2. ETAPA: CONTRATO
-        EtapaExpediente contratoEtapa = construirEtapa(contrato, EtapaProceso.CONTRATO, "PENDIENTE");
+        EtapaExpediente contratoEtapa = construirEtapa(contrato, EtapaProceso.CONTRATO, EstadoEtapaExpediente.PENDIENTE);
         contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Revisión del contrato", 1,
                 "El cliente recibe y revisa el borrador del contrato"));
         contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Carta de aprobación del banco", 2,
@@ -103,7 +104,7 @@ public class FlujoComercialFactory {
         etapas.add(contratoEtapa);
 
         // 3. ETAPA: PAGO
-        EtapaExpediente pago = construirEtapa(contrato, EtapaProceso.PAGO, "PENDIENTE");
+        EtapaExpediente pago = construirEtapa(contrato, EtapaProceso.PAGO, EstadoEtapaExpediente.PENDIENTE);
         pago.getHitosComerciales().add(construirHito(pago, "Pago de la cuota inicial", 1,
                 "Paso común de inicio del cronograma de pagos"));
 
@@ -135,7 +136,7 @@ public class FlujoComercialFactory {
 
 
         // 4. ETAPA: ENTREGA
-        EtapaExpediente entrega = construirEtapa(contrato, EtapaProceso.ENTREGA, "PENDIENTE");
+        EtapaExpediente entrega = construirEtapa(contrato, EtapaProceso.ENTREGA, EstadoEtapaExpediente.PENDIENTE);
         entrega.getHitosComerciales().add(construirHito(entrega, "Inmueble terminado", 1,
                 "La obra de la unidad está concluida"));
         entrega.getHitosComerciales().add(construirHito(entrega, "Inmueble cancelado", 2,
@@ -238,7 +239,7 @@ public class FlujoComercialFactory {
         etapas.add(entrega);
 
         // 5. ETAPA: SANEAMIENTO
-        EtapaExpediente saneamiento = construirEtapa(contrato, EtapaProceso.SANEAMIENTO, "PENDIENTE");
+        EtapaExpediente saneamiento = construirEtapa(contrato, EtapaProceso.SANEAMIENTO, EstadoEtapaExpediente.PENDIENTE);
         saneamiento.getHitosComerciales().add(construirHito(saneamiento, "Conformidad de obra", 1,
                 "Resolución municipal que certifica que la obra fue ejecutada conforme"));
         saneamiento.getHitosComerciales().add(construirHito(saneamiento, "Declaratoria de fábrica", 2,
@@ -293,7 +294,7 @@ public class FlujoComercialFactory {
 // MÉTODOS AUXILIARES
 // =========================================================================
 
-    private EtapaExpediente construirEtapa(UsuarioActivo contrato, EtapaProceso proceso, String estado) {
+    private EtapaExpediente construirEtapa(UsuarioActivo contrato, EtapaProceso proceso, EstadoEtapaExpediente estado) {
         return EtapaExpediente.builder()
                 .usuarioActivo(contrato)
                 .etapaProceso(proceso)

@@ -1,5 +1,6 @@
 package com.llosa.backend.comercial.entity;
 
+import com.llosa.backend.comercial.enums.EstadoEtapaExpediente;
 import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import jakarta.persistence.*;
@@ -35,7 +36,7 @@ public class EtapaExpediente {
 
     @Builder.Default
     @Column(name = "estado", nullable = false, length = 30)
-    private String estado = "PENDIENTE"; // PENDIENTE, EN_CURSO, COMPLETADA
+    private EstadoEtapaExpediente estado = EstadoEtapaExpediente.PENDIENTE; // PENDIENTE, EN_CURSO, COMPLETADA
 
     // Una etapa contiene sus propios hitos secuenciales de negocio
     @OneToMany(mappedBy = "etapaExpediente", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
