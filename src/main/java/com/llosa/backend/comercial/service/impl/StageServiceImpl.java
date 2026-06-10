@@ -14,6 +14,8 @@ import com.llosa.backend.documentos.entity.Documento;
 import com.llosa.backend.documentos.repository.DocumentoRepository;
 import com.llosa.backend.documentos.service.DocumentoService;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
+import com.llosa.backend.pagos.entity.CartaAprobacion;
+import com.llosa.backend.pagos.repository.CartaAprobacionRepository;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
@@ -25,10 +27,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -42,6 +46,7 @@ public class StageServiceImpl implements StageService {
     private final DocumentoRepository documentoRepository;
     private final RequisitoDocumentalRepository requisitoDocumentalRepository;
     private final DocumentoService documentoService;
+    private final CartaAprobacionRepository cartaAprobacionRepository;
 
     private static final String ENTIDAD_REFERENCIA_REQUISITO = "REQUISITO";
     private static final DateTimeFormatter FRONT_DATE_FORMATTER =
@@ -83,13 +88,39 @@ public class StageServiceImpl implements StageService {
         StageResponse.StageDetails stageDetails = null;
         if (etapaProceso == EtapaProceso.CONTRATO) {
             Activo activo = usuarioActivo.getActivo();
+
+            String banco = null;
+            String montoAprobado = null;
+            String cartaFechaEmision = null;
+            String cartaFechaVencimiento = null;
+            String cartaFechaDesembolso = null;
+            String cartaComentarios = null;
+
+            Optional<CartaAprobacion> cartaOpt = cartaAprobacionRepository
+                    .findByUsuarioActivo_UuidUsuarioActivo(uuidUsuarioActivo);
+            if (cartaOpt.isPresent()) {
+                CartaAprobacion ca = cartaOpt.get();
+                banco = ca.getBanco();
+                montoAprobado = ca.getMontoAprobado() != null ? "S/. " + formatearPrecio(ca.getMontoAprobado()) : null;
+                cartaFechaEmision = ca.getFechaEmision() != null ? ca.getFechaEmision().toString() : null;
+                cartaFechaVencimiento = ca.getFechaVencimiento() != null ? ca.getFechaVencimiento().toString() : null;
+                cartaFechaDesembolso = ca.getFechaDesembolsoProyectada() != null ? ca.getFechaDesembolsoProyectada().toString() : null;
+                cartaComentarios = ca.getComentarios();
+            }
+
             stageDetails = new StageResponse.StageDetails(
                     activo.getAreaM2() != null ? activo.getAreaM2() + " m2" : null,
                     activo.getPrecio() != null ? "S/. " + formatearPrecio(activo.getPrecio()) : null,
                     usuarioActivo.getFechaAdquisicion() != null
                             ? usuarioActivo.getFechaAdquisicion().toLocalDate().toString()
                             : null,
-                    null
+                    null,
+                    banco,
+                    montoAprobado,
+                    cartaFechaEmision,
+                    cartaFechaVencimiento,
+                    cartaFechaDesembolso,
+                    cartaComentarios
             );
         }
 

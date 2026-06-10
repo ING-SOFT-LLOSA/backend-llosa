@@ -10,6 +10,10 @@ import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.repository.HitoProcesoCompraRepository;
 import com.llosa.backend.comercial.service.HitoComercialService;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
+import com.llosa.backend.pagos.entity.CronogramaPago;
+import com.llosa.backend.pagos.entity.Pago;
+import com.llosa.backend.pagos.repository.CronogramaPagoRepository;
+import com.llosa.backend.pagos.repository.PagoRepository;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +37,8 @@ public class HitoComercialServiceImpl implements HitoComercialService {
 
     private final HitoProcesoCompraRepository hitoRepository;
     private final UsuarioActivoRepository usuarioActivoRepository;
+    private final CronogramaPagoRepository cronogramaPagoRepository;
+    private final PagoRepository pagoRepository;
 
     @Override
     public HitoComercialResponse crearHito(HitoComercialRequest request) {
@@ -133,14 +139,19 @@ public class HitoComercialServiceImpl implements HitoComercialService {
         // Construir la lista de etapas respetando el orden natural del enum
         List<EtapaStepperResponse> etapas = Arrays.stream(EtapaProceso.values())
                 .map(etapa -> {
-                    List<HitoProcesoCompra> hitosDeEtapa =
-                            hitosPorEtapa.getOrDefault(etapa, Collections.emptyList());
+                    List<HitoComercialResponse> hitosResponse;
 
-                    List<HitoComercialResponse> hitosResponse = hitosDeEtapa.stream()
-                            .map(HitoComercialResponse::fromEntity)
-                            .toList();
+                    if (etapa == EtapaProceso.PAGO) {
+                        hitosResponse = buildPagosHitos(uuidUsuarioActivo, hitosPorEtapa.getOrDefault(etapa, Collections.emptyList()));
+                    } else {
+                        List<HitoProcesoCompra> hitosDeEtapa =
+                                hitosPorEtapa.getOrDefault(etapa, Collections.emptyList());
+                        hitosResponse = hitosDeEtapa.stream()
+                                .map(HitoComercialResponse::fromEntity)
+                                .toList();
+                    }
 
-                    double porcentaje = calcularPorcentajeAvance(hitosDeEtapa);
+                    double porcentaje = calcularPorcentajeAvanceResponse(hitosResponse);
 
                     return EtapaStepperResponse.builder()
                             .etapa(etapa)
@@ -157,6 +168,67 @@ public class HitoComercialServiceImpl implements HitoComercialService {
     }
 
     // ======================== MÉTODOS PRIVADOS ========================
+
+    /**
+     * Para la etapa PAGO, si existe un CronogramaPago, construye los hitos
+     * a partir de las cuotas reales (Pago) en lugar de los HitoProcesoCompra almacenados.
+     */
+    private List<HitoComercialResponse> buildPagosHitos(UUID uuidUsuarioActivo, List<HitoProcesoCompra> hitosAlmacenados) {
+        Optional<CronogramaPago> optCp = cronogramaPagoRepository
+                .findByUsuarioActivo_UuidUsuarioActivo(uuidUsuarioActivo);
+
+        if (optCp.isEmpty()) {
+            return hitosAlmacenados.stream()
+                    .map(HitoComercialResponse::fromEntity)
+                    .toList();
+        }
+
+        List<Pago> pagos = pagoRepository.findByCronograma_IdOrderByNroCuotaAsc(optCp.get().getId());
+
+        if (pagos.isEmpty()) {
+            return hitosAlmacenados.stream()
+                    .map(HitoComercialResponse::fromEntity)
+                    .toList();
+        }
+
+        return pagos.stream()
+                .map(p -> {
+                    EstadoHitoComercial estado = switch (p.getEstado()) {
+                        case "PAGADO" -> EstadoHitoComercial.COMPLETADO;
+                        case "VENCIDO" -> EstadoHitoComercial.COMPLETADO;
+                        default -> EstadoHitoComercial.PENDIENTE;
+                    };
+
+                    String nombre = p.getNroCuota() == 0
+                            ? "Cuota Inicial"
+                            : "Cuota " + p.getNroCuota();
+
+                    return HitoComercialResponse.builder()
+                            .uuidHitoComercial(p.getId())
+                            .uuidUsuarioActivo(uuidUsuarioActivo)
+                            .etapaProceso(EtapaProceso.PAGO)
+                            .nombreHito(nombre)
+                            .descripcion("S/. " + p.getMontoProgramado()
+                                    + " — Vence: " + p.getFechaVencimiento())
+                            .orden(p.getNroCuota())
+                            .estado(estado)
+                            .fechaCompletado(p.getFechaPago())
+                            .createdAt(p.getCreatedAt())
+                            .build();
+                })
+                .toList();
+    }
+
+    /**
+     * Calcula el porcentaje de avance a partir de una lista de HitoComercialResponse.
+     */
+    private double calcularPorcentajeAvanceResponse(List<HitoComercialResponse> hitos) {
+        if (hitos.isEmpty()) return 0.0;
+        long completados = hitos.stream()
+                .filter(h -> h.estado() == EstadoHitoComercial.COMPLETADO)
+                .count();
+        return Math.round(((double) completados / hitos.size()) * 100.0 * 100.0) / 100.0;
+    }
 
     /**
      * Calcula el porcentaje de avance de una lista de hitos.
