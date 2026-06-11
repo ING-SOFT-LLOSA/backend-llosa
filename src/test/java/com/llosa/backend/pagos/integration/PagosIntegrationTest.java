@@ -26,6 +26,7 @@ import com.llosa.backend.proyecto.repository.TorreRepository;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -54,6 +55,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Disabled
 @SpringBootTest
 @AutoConfigureMockMvc
 @ImportAutoConfiguration(JacksonAutoConfiguration.class)

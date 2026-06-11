@@ -24,9 +24,6 @@ pipeline {
                     reuseNode true
                 }
             }
-            environment {
-                TESTCONTAINERS_RYUK_DISABLED = 'true'
-            }
             steps {
                 sh '''
                     mvn clean package -Dmaven.repo.local=.m2/repository

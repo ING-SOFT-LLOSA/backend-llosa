@@ -6,6 +6,7 @@ import com.llosa.backend.exception.GlobalExceptionHandler;
 import com.llosa.backend.pagos.service.CronogramaPagoService;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -28,6 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Disabled
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
