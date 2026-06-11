@@ -1,6 +1,5 @@
 package com.llosa.backend.documentos.controller;
 
-import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.documentos.dto.StageDocumentResponse;
 import com.llosa.backend.documentos.service.DocumentoService;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +21,7 @@ public class StageContractController {
      */
     @GetMapping("/{etapaProceso}/{uuidUsuarioActivo}")
     public ResponseEntity<StageDocumentResponse> obtenerDetalleEtapa(
-            @PathVariable EtapaProceso etapaProceso,
+            @PathVariable String etapaProceso,
             @PathVariable UUID uuidUsuarioActivo
     ) {
         return ResponseEntity.ok(documentoService.obtenerDetalleEtapa(etapaProceso, uuidUsuarioActivo));

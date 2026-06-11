@@ -25,6 +25,12 @@ public record StageResponse(
             String area,
             String totalPrice,
             String deliveryDate,
-            String disbursementDate
+            String disbursementDate,
+            String banco,
+            String montoAprobado,
+            String cartaFechaEmision,
+            String cartaFechaVencimiento,
+            String cartaFechaDesembolso,
+            String cartaComentarios
     ) {}
 }

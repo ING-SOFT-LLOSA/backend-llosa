@@ -1,19 +1,8 @@
 HELP.md
-casos_prueba.md
-CLAUDE.md
-
-### Maven ###
 target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
-.mvn/wrapper/maven-wrapper.properties
+!**/src/main/**/target/
+!**/src/test/**/target/
 
 ### STS ###
 .apt_generated
@@ -23,14 +12,12 @@ buildNumber.properties
 .settings
 .springBeans
 .sts4-cache
-
+.env
 ### IntelliJ IDEA ###
 .idea
 *.iws
 *.iml
 *.ipr
-out/
-
 
 ### NetBeans ###
 /nbproject/private/
@@ -39,74 +26,16 @@ out/
 /nbdist/
 /.nb-gradle/
 build/
+!**/src/main/**/build/
+!**/src/test/**/build/
 secrets/
 ### VS Code ###
 .vscode/
-
-### Eclipse ###
-.metadata
-bin/
-tmp/
-*.tmp
-*.bak
-*.swp
-*~.nib
-local.properties
-.loadpath
-.recommenders/
-.settings/
-.classpath
-.project
-.factorypath
-
-### Spring Boot ###
-spring-boot-*.log
-spring-boot-*.log.*
-application-local.yml
-application-local.yaml
-application-dev.yml
-application-dev.yaml
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+docs
 
 ### OS ###
 .DS_Store
 Thumbs.db
-*.swp
-*.swo
-*~
 
 ### Logs ###
 *.log
-logs/
-
-### Secrets ###
-secrets/
-*.p12
-*.jks
-*.pem
-*.key
-*.cert
-*.crt
-
-### Node (si aplica) ###
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-### Build artifacts ###
-build/
-dist/
-target/
-
-### Temporary files ###
-tmp/
-temp/
-*.tmp
-*.temp
-
-docs

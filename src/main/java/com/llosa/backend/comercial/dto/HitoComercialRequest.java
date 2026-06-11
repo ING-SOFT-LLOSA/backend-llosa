@@ -13,13 +13,16 @@ import java.util.UUID;
 @Builder
 public record HitoComercialRequest(
         @NotNull(message = "El UUID del usuario activo es obligatorio")
-        UUID uuidEstapaExpediente,
+    UUID uuidUsuarioActivo,
+
+        @NotNull(message = "La etapa del proceso es obligatoria")
+        EtapaProceso etapaProceso, // SEPARACION , CONTRATO, ENTREGA , SANEAMIENTO PAGOS,
 
         @NotBlank(message = "El nombre del hito es obligatorio")
-        String nombreHito,
+    String nombreHito,
 
         String descripcion,
 
         @NotNull(message = "El orden es obligatorio")
-        Integer orden
+    Integer orden
 ) {}

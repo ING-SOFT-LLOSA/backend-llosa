@@ -1,13 +1,7 @@
 package com.llosa.backend.proyecto.service.impl;
 
-import com.llosa.backend.comercial.entity.EtapaExpediente;
-import com.llosa.backend.proyecto.dto.request.CrearContratoDTO;
-import com.llosa.backend.proyecto.dto.response.UsuarioActivoResponseDTO;
-import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
-import com.llosa.backend.proyecto.factory.FlujoComercialFactory;
-import com.llosa.backend.proyecto.repository.ActivoRepository;
 import com.llosa.backend.seguridad.entity.Usuario;
-import com.llosa.backend.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.seguridad.service.UsuarioService;
 import com.llosa.backend.proyecto.dto.request.AsignarActivoDTO;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
@@ -29,10 +23,8 @@ import java.util.UUID;
 public class UsuarioActivoServiceImpl implements UsuarioActivoService {
 
     private final UsuarioActivoRepository usuarioActivoRepository;
+    private final UsuarioService usuarioService;
     private final ActivoService activoService;
-    private final UsuarioRepository usuarioRepository;
-    private final FlujoComercialFactory flujoComercialFactory;
-    private final ActivoRepository activoRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -52,24 +44,11 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
 
     @Override
     @Transactional
-    public UsuarioActivo crearContratoBase(CrearContratoDTO dto){
-        // Validar que los clientes existan
-        List<Usuario> clientesValidos = dto.idsUsuarios().stream().map(
-                id -> usuarioRepository.findById(id).orElseThrow(
-                        () -> new EntityNotFoundException("Usuario no encontrado: " + id)
-                ))
-                .toList();
-        // Construimos la entidad
-        UsuarioActivo usuarioActivo = UsuarioActivo.builder()
-                .tipoFinanciamiento(dto.tipoFinanciamiento())
-                .fechaAdquisicion(dto.fechaAdquisicion())
-                .clientes(clientesValidos)
-                .activos(new ArrayList<>())
-                .build();
-        List<EtapaExpediente> etapasGeneradas = flujoComercialFactory.generarEtapasPorDefecto(usuarioActivo);
-        usuarioActivo.setEtapas(etapasGeneradas);
-        return usuarioActivoRepository.save(usuarioActivo);
-
+    public UsuarioActivo updateCustomerJourney(UUID id, String faseComercial, String estadoTramiteLegal) {
+        UsuarioActivo existente = findById(id);
+        if (faseComercial != null) existente.setFaseComercial(faseComercial);
+        if (estadoTramiteLegal != null) existente.setEstadoTramiteLegal(estadoTramiteLegal);
+        return usuarioActivoRepository.save(existente);
     }
 
     @Override
@@ -80,58 +59,39 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
 
     /**
      * Crea el proceso comercial activo y vincula la lista de copropietarios recibida en el DTO.
-     *
      */
     @Override
     @Transactional
-    public UsuarioActivoResponseDTO asignarActivo(AsignarActivoDTO dto) {
-        // Encontrar el contrato y validar su existencia
-        UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(dto.uuidUsuarioActivo()).orElseThrow(
-                ()-> new EntityNotFoundException("Usuario no encontrado: " + dto.uuidUsuarioActivo())
-        );
-        List<Activo> activos = dto.idsActivo().stream().map(
-                activoService::findById
-        ).toList();
-        for (Activo activo : activos) {
-            if (!activo.getUsuarioActivo().equals(usuarioActivo) && activo.getEstadoComercial() == EstadoComercialActivo.DISPONIBLE) {
-                activo.setUsuarioActivo(usuarioActivo);
-                activo.setEstadoComercial(EstadoComercialActivo.SEPARADO);
-                activoRepository.save(activo);
-            }
+    public void asignarActivo(AsignarActivoDTO dto) {
+        // Resolver cada copropietario y validar su existencia
+        List<Usuario> clientes = new ArrayList<>();
+        for (Integer idUsuario : dto.idsUsuarios()) {
+            clientes.add(usuarioService.findById(idUsuario));
         }
-        return UsuarioActivoResponseDTO.fromEntity(usuarioActivo);
 
+        Activo activo = activoService.findById(dto.idActivo());
+
+        UsuarioActivo usuarioActivo = UsuarioActivo.builder()
+                .activo(activo)
+                .clientes(clientes)
+                .tipoFinanciamiento(dto.tipoFinanciamiento())
+                .faseComercial(dto.faseComercial())
+                .estadoTramiteLegal(dto.estadoTramiteLegal())
+                .fechaAdquisicion(dto.fechaAdquisicion())
+                .build();
+
+        usuarioActivoRepository.save(usuarioActivo);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<UsuarioActivo> findByActivo(UUID activoId) {
-        return usuarioActivoRepository.findByActivos_Id(activoId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Activo> findByUsuarioId(Integer usuarioId){
-        return usuarioActivoRepository.findByUsuarioId(usuarioId);
+        return usuarioActivoRepository.findByActivo_Id(activoId);
     }
 
     @Override
     @Transactional
     public void deleteById(UUID id) {
         usuarioActivoRepository.deleteById(id);
-    }
-
-    @Override
-    @Transactional
-    public void eliminarContrato(UUID usuarioActivoId){
-        UsuarioActivo usuarioActivo = findById(usuarioActivoId);
-        List<Activo> activos = usuarioActivo.getActivos();
-        for (Activo activo : activos) {
-            activo.setUsuarioActivo(null);
-            activo.setEstadoComercial(EstadoComercialActivo.DISPONIBLE);
-            activoRepository.save(activo);
-        }
-        usuarioActivo.setActivos(new ArrayList<>());
-        usuarioActivo.setVigente(false);
     }
 }

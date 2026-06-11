@@ -1,6 +1,5 @@
 package com.llosa.backend.proyecto.entity;
 
-import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.seguridad.entity.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,6 +29,12 @@ public class UsuarioActivo {
     @Column(name = "tipo_financiamiento")
     private String tipoFinanciamiento; // 'Crédito Directo', 'Crédito Hipotecario'
 
+    @Column(name = "fase_comercial")
+    private String faseComercial; // 'Separación', 'Contrato', 'Pagos', etc.
+
+    @Column(name = "estado_tramite_legal")
+    private String estadoTramiteLegal; // 'Minuta Pendiente', 'Escritura Firmada', 'Partida registral SUNARP'
+
     @Column(name = "fecha_adquisicion")
     private LocalDateTime fechaAdquisicion;
 
@@ -37,20 +42,16 @@ public class UsuarioActivo {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @Builder.Default
-    @Column(name = "vigente")
-    private Boolean vigente = true;
-
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt; // Fundamental para auditoría comercial
 
-    // =========================================================================
-    // RELACIONES REFACTORIZADAS
-    // =========================================================================
+    // RELACIONES CON OTRAS TABLAS
 
     /**
-     * Múltiples propietarios/compradores (esposos, socios, hermanos).
+     * Lista de copropietarios del proceso comercial.
+     * Un proceso puede pertenecer a múltiples clientes (ej: esposos, socios).
+     * La tabla intermedia "usuario_activo_clientes" gestiona la relación N:M.
      */
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -61,20 +62,11 @@ public class UsuarioActivo {
     @Builder.Default
     private List<Usuario> clientes = new ArrayList<>();
 
-    /**
-     * ¡REFACTORIZADO!: Múltiples bienes en un solo contrato (1 Dpto + 2 Cocheras).
-     */
-    @OneToMany(mappedBy = "usuarioActivo", fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<Activo> activos = new ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uuid_activo", nullable = false)
+    private Activo activo;
 
-
-    /**
-     * Las fases que este contrato tiene que atravesar obligatoriamente.
-     */
-    @OneToMany(mappedBy = "usuarioActivo", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<EtapaExpediente> etapas = new ArrayList<>();
-
-
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uuid_cochera")
+    private Activo cochera;
 }

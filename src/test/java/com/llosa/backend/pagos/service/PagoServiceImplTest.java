@@ -276,7 +276,7 @@ class PagoServiceImplTest {
 
         when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
         when(documentoService.subirDocumentoPolimorfico(
-                eq(file), eq(TipoDocumento.COMPROBANTE),
+                eq(uuidUa), eq(file), eq(TipoDocumento.COMPROBANTE),
                 eq(uuidPago.toString()), eq("PAGO"), eq(1)))
                 .thenReturn(docResponse);
         when(pagoRepository.save(any())).thenReturn(pago);
@@ -309,7 +309,7 @@ class PagoServiceImplTest {
 
         when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
         when(documentoService.subirDocumentoPolimorfico(
-                eq(file), eq(TipoDocumento.COMPROBANTE),
+                eq(uuidUa), eq(file), eq(TipoDocumento.COMPROBANTE),
                 eq(uuidPago.toString()), eq("PAGO"), eq(1)))
                 .thenReturn(docResponse);
         when(pagoRepository.save(any())).thenReturn(pago);

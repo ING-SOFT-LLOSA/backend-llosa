@@ -3,11 +3,22 @@ package com.llosa.backend.config;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
-import com.llosa.backend.proyecto.dto.request.*;
-import com.llosa.backend.proyecto.entity.*;
-import com.llosa.backend.proyecto.enums.*;
-import com.llosa.backend.proyecto.repository.ActivoRepository;
-import com.llosa.backend.proyecto.service.*;
+import com.llosa.backend.comercial.entity.HitoProcesoCompra;
+import com.llosa.backend.comercial.enums.EstadoHitoComercial;
+import com.llosa.backend.comercial.enums.EtapaProceso;
+import com.llosa.backend.comercial.repository.HitoProcesoCompraRepository;
+import com.llosa.backend.proyecto.entity.Activo;
+import com.llosa.backend.proyecto.entity.Hito;
+import com.llosa.backend.proyecto.entity.Piso;
+import com.llosa.backend.proyecto.entity.Proyecto;
+import com.llosa.backend.proyecto.entity.Torre;
+import com.llosa.backend.proyecto.entity.UsuarioActivo;
+import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
+import com.llosa.backend.proyecto.enums.EstadoHito;
+import com.llosa.backend.proyecto.enums.TipoActivo;
+import com.llosa.backend.proyecto.enums.TipoHito;
+import com.llosa.backend.proyecto.repository.ProyectoRepository;
+import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import com.llosa.backend.seguridad.entity.Rol;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.RolRepository;
@@ -17,12 +28,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Component
 @Profile("demo")
@@ -30,181 +41,244 @@ import java.util.UUID;
 @Slf4j
 public class DemoDataInitializer implements CommandLineRunner {
 
-    private static final String EMPLEADO_EMAIL = "empleado@demo.com";
-    private static final String CLIENTE_EMAIL = "cliente@demo.com";
-    private static final String DEMO_PASSWORD = "Demo123!";
-    private static final String PROYECTO_NOMBRE = "Edificio Los Olivos";
-
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
-    private final ProyectoService proyectoService;
-    private final HitoService hitoService;
-    private final UsuarioActivoService usuarioActivoService;
-    private final ActivoRepository activoRepository;
+    private final ProyectoRepository proyectoRepository;
+    private final UsuarioActivoRepository usuarioActivoRepository;
+    private final HitoProcesoCompraRepository hitoProcesoCompraRepository;
 
     @Override
+    @Transactional
     public void run(String... args) {
-        if (usuarioRepository.existsByEmail(EMPLEADO_EMAIL)) {
-            log.info("Datos demo ya existen, saltando inicialización");
+        if (usuarioRepository.findByEmail("demo.admin@llosa.com").isPresent()) {
+            log.info("Datos demo ya existen, omitiendo inicialización.");
             return;
         }
 
-        log.info("Inicializando datos de demostración...");
+        log.info("=== Inicializando datos demo ===");
 
-        Rol rolAsesor = rolRepository.findByNombre("ASESOR")
-                .orElseThrow(() -> new RuntimeException("Rol ASESOR no encontrado"));
-        Rol rolCliente = rolRepository.findByNombre("CLIENTE")
-                .orElseThrow(() -> new RuntimeException("Rol CLIENTE no encontrado"));
-
-        Integer idEmpleado = createDemoUser("Carlos", "García", EMPLEADO_EMAIL, "EMPLEADO", rolAsesor);
-        Integer idCliente = createDemoUser("María", "López", CLIENTE_EMAIL, "CLIENTE", rolCliente);
-
-        log.info("Usuarios demo creados: empleado={}, cliente={}", idEmpleado, idCliente);
-
-        Proyecto proyecto = createDemoProject();
-        log.info("Proyecto demo creado: {}", proyecto.getId());
-
-        createDemoStructure(proyecto);
-        log.info("Estructura física del proyecto creada");
-
-        createDemoHitos(proyecto);
-        log.info("Hitos del proyecto creados");
-
-        createDemoContract(idCliente, proyecto.getId());
-        log.info("Contrato demo creado para el cliente");
-
-        log.info("Datos de demostración creados exitosamente");
-    }
-
-    private Integer createDemoUser(String nombre, String apellidos, String email,
-                                   String tipoUsuario, Rol rol) {
-        String firebaseUid;
-        try {
-            UserRecord.CreateRequest request = new UserRecord.CreateRequest()
-                    .setEmail(email)
-                    .setPassword(DEMO_PASSWORD)
-                    .setDisplayName(nombre + " " + apellidos);
-            UserRecord record = FirebaseAuth.getInstance().createUser(request);
-            firebaseUid = record.getUid();
-            log.info("Usuario creado en Firebase: {}", email);
-        } catch (FirebaseAuthException e) {
-            log.warn("No se pudo crear usuario en Firebase ({}), usando UUID local", e.getMessage());
-            firebaseUid = "demo-" + UUID.randomUUID();
+        var admin = crearUsuarioDemo("demo.admin@llosa.com", "Demo123!", "ADMIN", "EMPLEADO", "Admin", "Sistema");
+        var asesor = crearUsuarioDemo("demo.asesor@llosa.com", "Demo123!", "ASESOR", "EMPLEADO", "Carlos", "Asesor");
+        var cliente = crearUsuarioDemo("demo.cliente@llosa.com", "Demo123!", "CLIENTE", "CLIENTE", "María", "Cliente");
+        if (admin == null || asesor == null || cliente == null) {
+            log.warn("No se pudieron crear los usuarios demo, abortando.");
+            return;
         }
 
-        Usuario usuario = new Usuario();
+        var proyecto = crearProyectoDemo();
+        proyectoRepository.save(proyecto);
+
+        var depto301 = proyecto.getTorres().getFirst().getPisos().get(2).getActivos().getFirst();
+        var usuarioActivo = asignarActivoACliente(cliente, depto301);
+        crearHitosProcesoCompra(usuarioActivo);
+
+        log.info("=== Datos demo inicializados correctamente ===");
+        log.info("Usuario admin:   demo.admin@llosa.com / Demo123!  (rol=ADMIN)");
+        log.info("Usuario asesor:  demo.asesor@llosa.com / Demo123!  (rol=ASESOR)");
+        log.info("Usuario cliente: demo.cliente@llosa.com / Demo123! (rol=CLIENTE)");
+        log.info("Activo asignado al cliente: {} (id={})", depto301.getNro(), depto301.getId());
+        log.info("UUID UsuarioActivo (uuidUsuarioActivo): {}", usuarioActivo.getUuidUsuarioActivo());
+    }
+
+    private Usuario crearUsuarioDemo(String email, String password, String rolNombre,
+                                     String tipoUsuario, String nombre, String apellidos) {
+        String firebaseUid;
+        try {
+            var request = new UserRecord.CreateRequest()
+                    .setEmail(email)
+                    .setPassword(password)
+                    .setDisplayName(nombre + " " + apellidos);
+            var record = FirebaseAuth.getInstance().createUser(request);
+            firebaseUid = record.getUid();
+            log.info("Usuario Firebase creado: {}", email);
+        } catch (FirebaseAuthException e) {
+            if (e.getMessage() != null && e.getMessage().contains("EMAIL_EXISTS")) {
+                try {
+                    var existing = FirebaseAuth.getInstance().getUserByEmail(email);
+                    firebaseUid = existing.getUid();
+                    log.info("Usuario Firebase ya existe: {}", email);
+                } catch (FirebaseAuthException ex) {
+                    log.error("Error al obtener usuario Firebase existente: {}", ex.getMessage());
+                    return null;
+                }
+            } else {
+                log.warn("Error al crear usuario Firebase: {} - {}", email, e.getMessage());
+                return null;
+            }
+        }
+
+        var rol = rolRepository.findByNombre(rolNombre)
+                .orElseThrow(() -> new RuntimeException("Rol " + rolNombre + " no encontrado"));
+
+        var usuario = new Usuario();
         usuario.setFirebaseUuid(firebaseUid);
         usuario.setEmail(email);
         usuario.setNombre(nombre);
         usuario.setApellidos(apellidos);
         usuario.setTipoUsuario(tipoUsuario);
         usuario.setRol(rol);
+        usuario.setActivo(true);
+        usuario.setCreatedAt(LocalDateTime.now());
         usuarioRepository.save(usuario);
-        return usuario.getId();
+        log.info("Usuario BD creado: {} (rol={})", email, rolNombre);
+
+        return usuario;
     }
 
-    private Proyecto createDemoProject() {
-        Proyecto proyecto = Proyecto.builder()
-                .nombre(PROYECTO_NOMBRE)
-                .descripcion("Proyecto de demostración con 1 torre y 3 pisos")
+    private Proyecto crearProyectoDemo() {
+        var proyecto = Proyecto.builder()
+                .nombre("Residencial Los Olivos")
+                .descripcion("Proyecto de vivienda multifamiliar con 2 torres y 21 unidades")
                 .precertificacionEdgeLeed(true)
                 .departamento("Lima")
-                .distrito("San Isidro")
-                .direccion("Av. Conquistadores 789")
-                .fechaInicio(LocalDate.now())
-                .fechaFin(LocalDate.now().plusYears(2))
+                .distrito("Los Olivos")
+                .direccion("Av. Universitaria 1234")
+                .fechaInicio(LocalDate.of(2025, 1, 15))
+                .fechaFin(LocalDate.of(2026, 12, 30))
                 .build();
-        return proyectoService.save(proyecto);
-    }
 
-    private void createDemoStructure(Proyecto proyecto) {
-        ProyectoCargaDTO carga = new ProyectoCargaDTO(List.of(
-                new TorreRequestDTO("Torre A", List.of(
-                        new PisoRequestDTO(1, List.of(
-                                new ActivoRequestDTO("101", TipoActivo.DEPARTAMENTO,
-                                        BigDecimal.valueOf(85.5), EstadoComercialActivo.DISPONIBLE,
-                                        BigDecimal.valueOf(250000), "Departamento 101 - 3 dormitorios"),
-                                new ActivoRequestDTO("102", TipoActivo.DEPARTAMENTO,
-                                        BigDecimal.valueOf(70.0), EstadoComercialActivo.DISPONIBLE,
-                                        BigDecimal.valueOf(210000), "Departamento 102 - 2 dormitorios")
-                        )),
-                        new PisoRequestDTO(2, List.of(
-                                new ActivoRequestDTO("201", TipoActivo.DEPARTAMENTO,
-                                        BigDecimal.valueOf(85.5), EstadoComercialActivo.DISPONIBLE,
-                                        BigDecimal.valueOf(260000), "Departamento 201 - 3 dormitorios"),
-                                new ActivoRequestDTO("202", TipoActivo.DEPARTAMENTO,
-                                        BigDecimal.valueOf(70.0), EstadoComercialActivo.DISPONIBLE,
-                                        BigDecimal.valueOf(220000), "Departamento 202 - 2 dormitorios")
-                        )),
-                        new PisoRequestDTO(3, List.of(
-                                new ActivoRequestDTO("301", TipoActivo.DEPARTAMENTO,
-                                        BigDecimal.valueOf(100.0), EstadoComercialActivo.DISPONIBLE,
-                                        BigDecimal.valueOf(300000), "Departamento 301 - 3 dormitorios + terraza"),
-                                new ActivoRequestDTO("302", TipoActivo.DEPARTAMENTO,
-                                        BigDecimal.valueOf(70.0), EstadoComercialActivo.DISPONIBLE,
-                                        BigDecimal.valueOf(230000), "Departamento 302 - 2 dormitorios")
-                        ))
-                ))
+        var torreA = Torre.builder().nombre("Torre A").proyecto(proyecto).build();
+
+        var pisoAm1 = Piso.builder().nroPiso(-1).torre(torreA).build();
+        pisoAm1.setActivos(List.of(
+                activo("COCHERA 1", TipoActivo.COCHERA, "12.5", "5000", pisoAm1),
+                activo("COCHERA 2", TipoActivo.COCHERA, "12.5", "5000", pisoAm1),
+                activo("DEPOSITO 101", TipoActivo.DEPOSITO, "8.0", "3000", pisoAm1)
         ));
-        proyectoService.cargarProyecto(proyecto.getId(), carga);
+
+        var pisoA1 = Piso.builder().nroPiso(1).torre(torreA).build();
+        pisoA1.setActivos(List.of(
+                activo("DEPARTAMENTO 201", TipoActivo.DEPARTAMENTO, "80.0", "80000", pisoA1),
+                activo("DEPARTAMENTO 202", TipoActivo.DEPARTAMENTO, "85.0", "85000", pisoA1)
+        ));
+
+        var pisoA2 = Piso.builder().nroPiso(2).torre(torreA).build();
+        pisoA2.setActivos(List.of(
+                activo("DEPARTAMENTO 301", TipoActivo.DEPARTAMENTO, "80.0", "82000", pisoA2),
+                activo("DEPARTAMENTO 302", TipoActivo.DEPARTAMENTO, "85.0", "87000", pisoA2)
+        ));
+
+        var pisoA3 = Piso.builder().nroPiso(3).torre(torreA).build();
+        pisoA3.setActivos(List.of(
+                activo("DEPARTAMENTO 401", TipoActivo.DEPARTAMENTO, "90.0", "92000", pisoA3),
+                activo("DEPARTAMENTO 402", TipoActivo.DEPARTAMENTO, "95.0", "97000", pisoA3)
+        ));
+
+        var pisoA4 = Piso.builder().nroPiso(4).torre(torreA).build();
+        pisoA4.setActivos(List.of(
+                activo("DEPARTAMENTO 501", TipoActivo.DEPARTAMENTO, "100.0", "100000", pisoA4),
+                activo("DEPARTAMENTO 502", TipoActivo.DEPARTAMENTO, "105.0", "105000", pisoA4)
+        ));
+
+        torreA.setPisos(List.of(pisoAm1, pisoA1, pisoA2, pisoA3, pisoA4));
+
+        var torreB = Torre.builder().nombre("Torre B").proyecto(proyecto).build();
+
+        var pisoBm1 = Piso.builder().nroPiso(-1).torre(torreB).build();
+        pisoBm1.setActivos(List.of(
+                activo("COCHERA 3", TipoActivo.COCHERA, "12.5", "5000", pisoBm1),
+                activo("COCHERA 4", TipoActivo.COCHERA, "12.5", "5000", pisoBm1),
+                activo("COCHERA 5", TipoActivo.COCHERA, "12.5", "5000", pisoBm1),
+                activo("DEPOSITO 102", TipoActivo.DEPOSITO, "8.0", "3000", pisoBm1)
+        ));
+
+        var pisoB1 = Piso.builder().nroPiso(1).torre(torreB).build();
+        pisoB1.setActivos(List.of(
+                activo("DEPARTAMENTO 601", TipoActivo.DEPARTAMENTO, "75.0", "75000", pisoB1),
+                activo("DEPARTAMENTO 602", TipoActivo.DEPARTAMENTO, "78.0", "78000", pisoB1)
+        ));
+
+        var pisoB2 = Piso.builder().nroPiso(2).torre(torreB).build();
+        pisoB2.setActivos(List.of(
+                activo("DEPARTAMENTO 701", TipoActivo.DEPARTAMENTO, "82.0", "82000", pisoB2),
+                activo("DEPARTAMENTO 702", TipoActivo.DEPARTAMENTO, "85.0", "85000", pisoB2)
+        ));
+
+        var pisoB3 = Piso.builder().nroPiso(3).torre(torreB).build();
+        pisoB3.setActivos(List.of(
+                activo("DEPARTAMENTO 801", TipoActivo.DEPARTAMENTO, "95.0", "95000", pisoB3),
+                activo("DEPARTAMENTO 802", TipoActivo.DEPARTAMENTO, "100.0", "100000", pisoB3)
+        ));
+
+        torreB.setPisos(List.of(pisoBm1, pisoB1, pisoB2, pisoB3));
+
+        proyecto.setTorres(List.of(torreA, torreB));
+        proyecto.setHitos(List.of(
+                hito(1, "Cimentación", TipoHito.OBRA, EstadoHito.COMPLETADO, LocalDate.of(2025, 3, 15), proyecto),
+                hito(2, "Estructura", TipoHito.OBRA, EstadoHito.COMPLETADO, LocalDate.of(2025, 6, 30), proyecto),
+                hito(3, "Muros y Tabiques", TipoHito.OBRA, EstadoHito.COMPLETADO, LocalDate.of(2025, 9, 15), proyecto),
+                hito(4, "Acabados", TipoHito.OBRA, EstadoHito.EN_PROGRESO, null, proyecto),
+                hito(5, "Instalaciones Eléctricas y Sanitarias", TipoHito.OBRA, EstadoHito.EN_PROGRESO, null, proyecto),
+                hito(6, "Áreas Comunes", TipoHito.OBRA, EstadoHito.PENDIENTE, null, proyecto),
+                hito(7, "Saneamiento Legal", TipoHito.SANEAMIENTO, EstadoHito.PENDIENTE, null, proyecto)
+        ));
+
+        return proyecto;
     }
 
-    private void createDemoHitos(Proyecto proyecto) {
-        Hito hito1 = Hito.builder()
-                .titulo("Cimentación")
-                .orden(1)
-                .tipo(TipoHito.OBRA)
-                .estado(EstadoHito.COMPLETADO)
-                .fechaCompletado(LocalDate.now().minusMonths(3))
+    private Activo activo(String nro, TipoActivo tipo, String areaM2, String precio, Piso piso) {
+        var a = Activo.builder()
+                .nro(nro)
+                .tipo(tipo)
+                .areaM2(new BigDecimal(areaM2))
+                .precio(new BigDecimal(precio))
+                .estadoComercial(EstadoComercialActivo.DISPONIBLE)
+                .descripcion(nro + " - " + areaM2 + " m²")
+                .piso(piso)
                 .build();
-        hitoService.save(proyecto.getId(), hito1);
-
-        Hito hito2 = Hito.builder()
-                .titulo("Estructura")
-                .orden(2)
-                .tipo(TipoHito.OBRA)
-                .estado(EstadoHito.EN_PROGRESO)
-                .build();
-        hitoService.save(proyecto.getId(), hito2);
-
-        Hito hito3 = Hito.builder()
-                .titulo("Acabados")
-                .orden(3)
-                .tipo(TipoHito.OBRA)
-                .estado(EstadoHito.PENDIENTE)
-                .build();
-        hitoService.save(proyecto.getId(), hito3);
-
-        Hito hito4 = Hito.builder()
-                .titulo("Entrega")
-                .orden(4)
-                .tipo(TipoHito.OBRA)
-                .estado(EstadoHito.PENDIENTE)
-                .build();
-        hitoService.save(proyecto.getId(), hito4);
+        return a;
     }
 
-    private void createDemoContract(Integer idCliente, UUID idProyecto) {
-        try {
-            CrearContratoDTO contratoDTO = new CrearContratoDTO(
-                    List.of(idCliente),
-                    "Crédito Hipotecario",
-                    "VENTA",
-                    "PENDIENTE",
-                    LocalDateTime.now()
-            );
-            UsuarioActivo contrato = usuarioActivoService.crearContratoBase(contratoDTO);
+    private Hito hito(Integer orden, String titulo, TipoHito tipo, EstadoHito estado,
+                      LocalDate fechaCompletado, Proyecto proyecto) {
+        return Hito.builder()
+                .orden(orden)
+                .titulo(titulo)
+                .tipo(tipo)
+                .estado(estado)
+                .fechaCompletado(fechaCompletado)
+                .proyecto(proyecto)
+                .build();
+    }
 
-            List<Activo> activos = activoRepository.findByPisoTorreProyectoId(idProyecto);
-            if (!activos.isEmpty()) {
-                AsignarActivoDTO asignacion = new AsignarActivoDTO(
-                        contrato.getUuidUsuarioActivo(),
-                        List.of(activos.getFirst().getId())
-                );
-                usuarioActivoService.asignarActivo(asignacion);
-            }
-        } catch (Exception e) {
-            log.warn("No se pudo crear contrato demo: {}", e.getMessage());
-        }
+    private UsuarioActivo asignarActivoACliente(Usuario cliente, Activo activo) {
+        activo.setEstadoComercial(EstadoComercialActivo.SEPARADO);
+
+        var ua = UsuarioActivo.builder()
+                .activo(activo)
+                .tipoFinanciamiento("Crédito Hipotecario")
+                .faseComercial("Separación")
+                .estadoTramiteLegal("Minuta Pendiente")
+                .fechaAdquisicion(LocalDateTime.now())
+                .build();
+        ua.setClientes(List.of(cliente));
+        usuarioActivoRepository.save(ua);
+        log.info("Activo {} asignado al cliente {}", activo.getNro(), cliente.getEmail());
+        return ua;
+    }
+
+    private void crearHitosProcesoCompra(UsuarioActivo ua) {
+        var hitos = List.of(
+                hitoCompra(ua, EtapaProceso.SEPARACION, 1, "Firma de Separación", EstadoHitoComercial.COMPLETADO),
+                hitoCompra(ua, EtapaProceso.CONTRATO, 2, "Revisión de Contrato", EstadoHitoComercial.EN_PROGRESO),
+                hitoCompra(ua, EtapaProceso.CONTRATO, 3, "Firma de Contrato", EstadoHitoComercial.PENDIENTE),
+                // Etapa PAGO se deja vacía para ser llenada por la Carta de Aprobación
+                hitoCompra(ua, EtapaProceso.ENTREGA, 4, "Coordinación de Entrega", EstadoHitoComercial.PENDIENTE),
+                hitoCompra(ua, EtapaProceso.ENTREGA, 5, "Acta de Entrega", EstadoHitoComercial.PENDIENTE),
+                hitoCompra(ua, EtapaProceso.SANEAMIENTO, 6, "Trámite de Saneamiento", EstadoHitoComercial.PENDIENTE)
+        );
+        hitoProcesoCompraRepository.saveAll(hitos);
+        log.info("{} hitos de proceso de compra creados", hitos.size());
+    }
+
+    private HitoProcesoCompra hitoCompra(UsuarioActivo ua, EtapaProceso etapa, int orden,
+                                         String nombre, EstadoHitoComercial estado) {
+        return HitoProcesoCompra.builder()
+                .usuarioActivo(ua)
+                .etapaProceso(etapa)
+                .orden(orden)
+                .nombreHito(nombre)
+                .estado(estado)
+                .build();
     }
 }

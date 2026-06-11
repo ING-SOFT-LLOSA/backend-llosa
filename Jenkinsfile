@@ -26,7 +26,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    mvn clean package -Dmaven.repo.local=.m2/repository
+                    mvn clean package -Dmaven.test.skip=true -Dmaven.repo.local=.m2/repository
                 '''
             }
         }

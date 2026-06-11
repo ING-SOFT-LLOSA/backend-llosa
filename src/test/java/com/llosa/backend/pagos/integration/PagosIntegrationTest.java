@@ -1,7 +1,6 @@
 package com.llosa.backend.pagos.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.llosa.backend.config.FirebaseConfig;
 import com.llosa.backend.config.PostgresTestContainerConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
@@ -98,7 +97,6 @@ class PagosIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper.registerModule(new JavaTimeModule());
         pagoRepository.deleteAll();
         cronogramaPagoRepository.deleteAll();
         usuarioActivoRepository.deleteAll();
@@ -124,7 +122,8 @@ class PagosIntegrationTest {
 
         expediente = UsuarioActivo.builder()
                 .tipoFinanciamiento("Credito Directo")
-                .activos(List.of(activo))
+                .faseComercial("Pagos")
+                .activo(activo)
                 .build();
         usuarioActivoRepository.save(expediente);
         uuidExpediente = expediente.getUuidUsuarioActivo();
@@ -271,12 +270,7 @@ class PagosIntegrationTest {
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(new FirebaseAuthenticationToken(
                 "test-uid", "test@test.com",
-                List.of(
-                        new SimpleGrantedAuthority("CONTRATO_EDITAR"),
-                        new SimpleGrantedAuthority("CONTRATO_VER"),
-                        new SimpleGrantedAuthority("PAGO_EDITAR"),
-                        new SimpleGrantedAuthority("PAGO_VER")
-                )));
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))));
         return context;
     }
 }

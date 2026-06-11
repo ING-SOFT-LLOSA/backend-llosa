@@ -2,12 +2,10 @@ package com.llosa.backend.comercial.service.impl;
 
 import com.llosa.backend.comercial.dto.StageDocumentResponse;
 import com.llosa.backend.comercial.dto.StageResponse;
-import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.comercial.entity.HitoProcesoCompra;
 import com.llosa.backend.comercial.entity.RequisitoDocumental;
 import com.llosa.backend.comercial.enums.EstadoHitoComercial;
 import com.llosa.backend.comercial.enums.EtapaProceso;
-import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.HitoProcesoCompraRepository;
 import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
 import com.llosa.backend.comercial.service.StageService;
@@ -16,6 +14,8 @@ import com.llosa.backend.documentos.entity.Documento;
 import com.llosa.backend.documentos.repository.DocumentoRepository;
 import com.llosa.backend.documentos.service.DocumentoService;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
+import com.llosa.backend.pagos.entity.CartaAprobacion;
+import com.llosa.backend.pagos.repository.CartaAprobacionRepository;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
@@ -27,10 +27,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -38,13 +40,13 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class StageServiceImpl implements StageService {
 
-    private final EtapaExpedienteRepository etapaExpedienteRepository;
     private final HitoProcesoCompraRepository hitoRepository;
-    private final RequisitoDocumentalRepository requisitoDocumentalRepository;
     private final UsuarioActivoRepository usuarioActivoRepository;
     private final UsuarioRepository usuarioRepository;
     private final DocumentoRepository documentoRepository;
+    private final RequisitoDocumentalRepository requisitoDocumentalRepository;
     private final DocumentoService documentoService;
+    private final CartaAprobacionRepository cartaAprobacionRepository;
 
     private static final String ENTIDAD_REFERENCIA_REQUISITO = "REQUISITO";
     private static final DateTimeFormatter FRONT_DATE_FORMATTER =
@@ -58,13 +60,11 @@ public class StageServiceImpl implements StageService {
 
         UsuarioActivo usuarioActivo = validarAcceso(firebaseUid, uuidUsuarioActivo);
 
-        EtapaExpediente etapa = etapaExpedienteRepository
-                .findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uuidUsuarioActivo, etapaProceso)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "No existe etapa " + etapaProceso + " para el expediente " + uuidUsuarioActivo));
-
         List<HitoProcesoCompra> hitos = hitoRepository
-                .findByEtapaExpediente_UuidEtapaExpedienteOrderByOrdenAsc(etapa.getUuidEtapaExpediente());
+                .findByUsuarioActivo_UuidUsuarioActivoOrderByOrdenAsc(uuidUsuarioActivo)
+                .stream()
+                .filter(h -> h.getEtapaProceso() == etapaProceso)
+                .toList();
 
         int stepIndex = ORDEN_ETAPAS.indexOf(etapaProceso) + 1;
         double progreso = calcularProgreso(hitos);
@@ -87,20 +87,40 @@ public class StageServiceImpl implements StageService {
 
         StageResponse.StageDetails stageDetails = null;
         if (etapaProceso == EtapaProceso.CONTRATO) {
-            List<Activo> activos = usuarioActivo.getActivos();
-            BigDecimal areaTotal = activos.stream()
-                    .map(a -> a.getAreaM2() != null ? a.getAreaM2() : BigDecimal.ZERO)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal precioTotal = activos.stream()
-                    .map(a -> a.getPrecio() != null ? a.getPrecio() : BigDecimal.ZERO)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            Activo activo = usuarioActivo.getActivo();
+
+            String banco = null;
+            String montoAprobado = null;
+            String cartaFechaEmision = null;
+            String cartaFechaVencimiento = null;
+            String cartaFechaDesembolso = null;
+            String cartaComentarios = null;
+
+            Optional<CartaAprobacion> cartaOpt = cartaAprobacionRepository
+                    .findByUsuarioActivo_UuidUsuarioActivo(uuidUsuarioActivo);
+            if (cartaOpt.isPresent()) {
+                CartaAprobacion ca = cartaOpt.get();
+                banco = ca.getBanco();
+                montoAprobado = ca.getMontoAprobado() != null ? "S/. " + formatearPrecio(ca.getMontoAprobado()) : null;
+                cartaFechaEmision = ca.getFechaEmision() != null ? ca.getFechaEmision().toString() : null;
+                cartaFechaVencimiento = ca.getFechaVencimiento() != null ? ca.getFechaVencimiento().toString() : null;
+                cartaFechaDesembolso = ca.getFechaDesembolsoProyectada() != null ? ca.getFechaDesembolsoProyectada().toString() : null;
+                cartaComentarios = ca.getComentarios();
+            }
+
             stageDetails = new StageResponse.StageDetails(
-                    areaTotal.compareTo(BigDecimal.ZERO) > 0 ? areaTotal + " m2" : null,
-                    precioTotal.compareTo(BigDecimal.ZERO) > 0 ? "S/. " + formatearPrecio(precioTotal) : null,
+                    activo.getAreaM2() != null ? activo.getAreaM2() + " m2" : null,
+                    activo.getPrecio() != null ? "S/. " + formatearPrecio(activo.getPrecio()) : null,
                     usuarioActivo.getFechaAdquisicion() != null
                             ? usuarioActivo.getFechaAdquisicion().toLocalDate().toString()
                             : null,
-                    null
+                    null,
+                    banco,
+                    montoAprobado,
+                    cartaFechaEmision,
+                    cartaFechaVencimiento,
+                    cartaFechaDesembolso,
+                    cartaComentarios
             );
         }
 
@@ -111,13 +131,25 @@ public class StageServiceImpl implements StageService {
     public StageDocumentResponse obtenerDocumentosStage(String firebaseUid, UUID uuidUsuarioActivo, EtapaProceso etapaProceso) {
         validarAcceso(firebaseUid, uuidUsuarioActivo);
 
-        EtapaExpediente etapa = etapaExpedienteRepository
-                .findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uuidUsuarioActivo, etapaProceso)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "No existe etapa " + etapaProceso + " para el expediente " + uuidUsuarioActivo));
+        // Obtener todos los hitos de la etapa
+        List<HitoProcesoCompra> hitosDeEtapa = hitoRepository
+                .findByUsuarioActivo_UuidUsuarioActivoOrderByOrdenAsc(uuidUsuarioActivo)
+                .stream()
+                .filter(h -> h.getEtapaProceso() == etapaProceso)
+                .toList();
+
+        if (hitosDeEtapa.isEmpty()) {
+            throw new EntityNotFoundException(
+                    "No existen hitos para la etapa " + etapaProceso + " en el expediente: " + uuidUsuarioActivo);
+        }
+
+        // Recolectar todos los requisitos de todos los hitos de esta etapa
+        List<UUID> uuidHitos = hitosDeEtapa.stream()
+                .map(HitoProcesoCompra::getUuidHitoComercial)
+                .toList();
 
         List<RequisitoDocumental> requisitos = requisitoDocumentalRepository
-                .findByEtapaExpediente_UuidEtapaExpedienteOrderByFechaEmisionDesc(etapa.getUuidEtapaExpediente());
+                .findByHitoComercial_UuidHitoComercialInOrderByFechaEmisionDesc(uuidHitos);
 
         List<StageDocumentResponse.DocumentoItem> items = requisitos.stream()
                 .map(requisito -> {
@@ -138,7 +170,7 @@ public class StageServiceImpl implements StageService {
                     }
 
                     String status = requisito.getEstado() != null
-                            ? requisito.getEstado().name().toLowerCase(Locale.ROOT)
+                            ? requisito.getEstado().toLowerCase(Locale.ROOT)
                             : "pendiente";
 
                     String emissionDate = requisito.getFechaEmision() != null

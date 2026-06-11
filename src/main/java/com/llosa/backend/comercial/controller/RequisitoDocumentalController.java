@@ -1,9 +1,7 @@
 package com.llosa.backend.comercial.controller;
 
 import com.llosa.backend.comercial.dto.RequisitoCreateRequest;
-import com.llosa.backend.comercial.dto.RequisitoResponseDTO;
 import com.llosa.backend.comercial.dto.RequisitoUpdateRequest;
-import com.llosa.backend.comercial.entity.RequisitoDocumental;
 import com.llosa.backend.comercial.service.RequisitoDocumentalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,15 +28,14 @@ public class RequisitoDocumentalController {
      */
     @PreAuthorize("hasAuthority('DOCS_SUBIR')")
     @PostMapping(value = "/{requisitoId}/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<RequisitoResponseDTO> subirArchivoRequisito(
+    public ResponseEntity<Void> subirArchivoRequisito(
             @PathVariable UUID requisitoId,
             @RequestPart("file") MultipartFile file,
             Authentication authentication
     ) {
         String uid = (String) authentication.getPrincipal();
-        RequisitoDocumental resquisitoDocumental =  requisitoService.asociarArchivoARequisito(requisitoId, file, uid);
-        RequisitoResponseDTO requisitoResponseDTO =  RequisitoResponseDTO.fromEntity(resquisitoDocumental);
-        return ResponseEntity.ok(requisitoResponseDTO);
+        requisitoService.asociarArchivoARequisito(requisitoId, file, uid);
+        return ResponseEntity.ok().build();
     }
 
     /**
@@ -61,14 +58,13 @@ public class RequisitoDocumentalController {
      * CREAR REQUISITO: El administrador añade dinámicamente un nuevo requisito
      * (un nuevo ítem de checklist) a un hito de un cliente.
      */
-    @PreAuthorize("hasAuthority('CONTRATO_VER')")
+    @PreAuthorize("hasAuthority('CONTRATO_VER')") // Ajusta la autoridad según tus roles de admin
     @PostMapping
-    public ResponseEntity<RequisitoResponseDTO> crearRequisito(
+    public ResponseEntity<Void> crearRequisito(
             @Valid @RequestBody RequisitoCreateRequest request
     ) {
-        RequisitoDocumental requisitoDocumental = requisitoService.crearRequisito(request);
-        RequisitoResponseDTO requisitoResponseDTO =  RequisitoResponseDTO.fromEntity(requisitoDocumental);
-        return ResponseEntity.status(HttpStatus.CREATED).body(requisitoResponseDTO);
+        requisitoService.crearRequisito(request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     /**
@@ -77,13 +73,12 @@ public class RequisitoDocumentalController {
      */
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @PutMapping("/{id}")
-    public ResponseEntity<RequisitoResponseDTO> actualizarRequisito(
+    public ResponseEntity<Void> actualizarRequisito(
             @PathVariable UUID id,
             @Valid @RequestBody RequisitoUpdateRequest request
     ) {
-        RequisitoDocumental reqisitoDocumental =  requisitoService.actualizarRequisito(id, request);
-        RequisitoResponseDTO requisitoResponseDTO =  RequisitoResponseDTO.fromEntity(reqisitoDocumental);
-        return ResponseEntity.ok(requisitoResponseDTO);
+        requisitoService.actualizarRequisito(id, request);
+        return ResponseEntity.ok().build();
     }
 
     /**

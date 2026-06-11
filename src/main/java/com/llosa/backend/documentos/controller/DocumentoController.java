@@ -28,6 +28,7 @@ public class DocumentoController {
 
     /**
      * POST /api/documentos/{idReferencia}
+     *
      * Sube un documento. El idReferencia es un UUID que puede pertenecer
      * a cualquier entidad del módulo proyecto (Proyecto, Activo, UsuarioActivo,
      * Hito, HitoPiso). El servicio determina automáticamente la entidad.

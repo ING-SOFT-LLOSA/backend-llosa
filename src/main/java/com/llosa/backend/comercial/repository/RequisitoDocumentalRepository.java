@@ -9,5 +9,8 @@ import java.util.UUID;
 
 @Repository
 public interface RequisitoDocumentalRepository extends JpaRepository<RequisitoDocumental, UUID> {
-    List<RequisitoDocumental> findByEtapaExpediente_UuidEtapaExpedienteOrderByFechaEmisionDesc(UUID uuidEtapaExpediente);
+
+    List<RequisitoDocumental> findByHitoComercial_UuidHitoComercialOrderByFechaEmisionDesc(UUID uuidHitoComercial);
+
+    List<RequisitoDocumental> findByHitoComercial_UuidHitoComercialInOrderByFechaEmisionDesc(List<UUID> uuidHitos);
 }

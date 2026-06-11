@@ -11,10 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -23,15 +19,13 @@ import java.util.UUID;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.securityContext;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Import({GlobalExceptionHandler.class, com.llosa.backend.config.SecurityTestConfiguration.class, com.llosa.backend.config.PostgresTestContainerConfig.class})
+@Import(GlobalExceptionHandler.class)
 class MinimalControllerTest {
 
     @Autowired
@@ -48,15 +42,13 @@ class MinimalControllerTest {
 
     @Test
     void testGetWithUuid() throws Exception {
-        mockMvc.perform(get("/api/cronogramas/{uuid}", UUID.randomUUID())
-                        .with(authentication(new FirebaseAuthenticationToken("uid", "e@m.com", List.of(new SimpleGrantedAuthority("CONTRATO_VER"))))))
+        mockMvc.perform(get("/api/cronogramas/{uuid}", UUID.randomUUID()))
                 .andExpect(status().isOk());
     }
 
     @Test
     void testPost() throws Exception {
         mockMvc.perform(post("/api/cronogramas")
-                        .with(authentication(new FirebaseAuthenticationToken("uid", "e@m.com", List.of(new SimpleGrantedAuthority("CONTRATO_EDITAR")))))
                         .with(csrf())
                         .contentType("application/json")
                         .content("{}"))
@@ -66,7 +58,7 @@ class MinimalControllerTest {
     @Test
     void testPostWithAuth() throws Exception {
         mockMvc.perform(post("/api/cronogramas")
-                        .with(authentication(new FirebaseAuthenticationToken("uid", "e@m.com", List.of(new SimpleGrantedAuthority("CONTRATO_EDITAR")))))
+                        .with(authentication(new FirebaseAuthenticationToken("uid", "e@m.com", List.of())))
                         .with(csrf())
                         .contentType("application/json")
                         .content("{}"))
