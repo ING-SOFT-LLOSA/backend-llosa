@@ -26,7 +26,6 @@ import com.llosa.backend.proyecto.repository.TorreRepository;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -126,7 +125,8 @@ class PagosIntegrationTest {
 
         expediente = UsuarioActivo.builder()
                 .tipoFinanciamiento("Credito Directo")
-                .activos(List.of(activo))
+                .faseComercial("Pagos")
+                .activo(activo)
                 .build();
         usuarioActivoRepository.save(expediente);
         uuidExpediente = expediente.getUuidUsuarioActivo();

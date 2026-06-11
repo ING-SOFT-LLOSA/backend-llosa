@@ -16,7 +16,6 @@ import com.llosa.backend.proyecto.enums.TipoActivo;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 public final class TestDataPagos {
@@ -55,7 +54,8 @@ public final class TestDataPagos {
     public static UsuarioActivo usuarioActivo(Activo activo) {
         return UsuarioActivo.builder()
                 .tipoFinanciamiento("Credito Directo")
-                .activos(List.of(activo))
+                .faseComercial("Pagos")
+                .activo(activo)
                 .build();
     }
 

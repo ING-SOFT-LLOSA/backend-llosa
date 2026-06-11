@@ -15,20 +15,22 @@ public interface HitoProcesoCompraRepository extends JpaRepository<HitoProcesoCo
     /**
      * Busca todos los hitos de un UsuarioActivo, ordenados por el campo 'orden' ascendente.
      */
-    List<HitoProcesoCompra> findByEtapaExpediente_UuidEtapaExpedienteOrderByOrdenAsc(UUID uuidUsuarioActivo);
+    List<HitoProcesoCompra> findByUsuarioActivo_UuidUsuarioActivoOrderByOrdenAsc(UUID uuidUsuarioActivo);
 
     /**
      * Verifica si existen hitos para un UsuarioActivo dado.
      */
-    boolean existsByEtapaExpediente_UuidEtapaExpediente(UUID uuidUsuarioActivo);
+    boolean existsByUsuarioActivo_UuidUsuarioActivo(UUID uuidUsuarioActivo);
 
-    Optional<HitoProcesoCompra> findByEtapaExpediente_UuidEtapaExpedienteAndOrden(
+    Optional<HitoProcesoCompra> findByUsuarioActivo_UuidUsuarioActivoAndOrden(
             UUID uuidUsuarioActivo,
             Integer orden
     );
 
-    Optional<HitoProcesoCompra> findByEtapaExpediente_UsuarioActivo_UuidUsuarioActivoAndEtapaExpediente_EtapaProcesoOrderByOrdenAsc(
+    Optional<HitoProcesoCompra> findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(
             UUID uuidUsuarioActivo,
             EtapaProceso etapaProceso
     );
+
+    void deleteByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(UUID uuidUsuarioActivo, EtapaProceso etapaProceso);
 }

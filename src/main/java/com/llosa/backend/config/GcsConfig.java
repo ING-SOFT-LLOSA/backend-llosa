@@ -21,7 +21,7 @@ public class GcsConfig {
     private String bucketName;
 
     @Bean
-    @ConditionalOnMissingBean(Storage.class)
+    @ConditionalOnMissingBean
     public Storage googleCloudStorage() throws IOException {
         GoogleCredentials credentials = GoogleCredentials
                 .fromStream(new FileInputStream(serviceAccountPath))
@@ -34,6 +34,7 @@ public class GcsConfig {
     }
 
     @Bean
+    @ConditionalOnMissingBean(name = "gcsBucketName")
     public String gcsBucketName() {
         return bucketName;
     }

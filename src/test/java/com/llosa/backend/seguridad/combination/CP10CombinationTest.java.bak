@@ -1,0 +1,215 @@
+package com.llosa.backend.seguridad.combination;
+
+import com.llosa.backend.seguridad.entity.Usuario;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.securityContext;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * CP10: Verificar que un cliente con perfil "Inactivo" (desistimiento)
+ * no pueda acceder al portal
+ *
+ * STRATEGY COMBINADO:
+ * LAYER 1: Unit logic - verificar estado inactivo sin BD
+ * LAYER 2: Integration - verificar persistencia en BD
+ * LAYER 3: E2E - validar flujo HTTP: cliente inactivo → acceso denegado
+ */
+class CP10CombinationTest extends CombinationTestBase {
+
+	@BeforeEach
+	void setUp() {
+		limpiarDatos();
+		SecurityContextHolder.clearContext();
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────
+	// LAYER 1: Unit Logic - Verificar lógica sin BD
+	// ─────────────────────────────────────────────────────────────────────────────
+
+	@Test
+	void cp10_layer1_unitLogic_clienteInactivoNoDebeAcceder() {
+		// Escenario unitario: cliente con activo=false debe ser rechazado
+
+		// ARRANGE
+		Usuario clienteInactivo = crearUsuarioEnBD("desistio@test.com", "Cliente Desistimiento", false);
+
+		// ACT & ASSERT
+		assertThat(clienteInactivo.getActivo()).isFalse();
+		assertThat(clienteInactivo.getTipoUsuario()).isEqualTo("CLIENTE");
+
+		// Lógica: Inactivo = No acceso
+		assertThat(clienteInactivo.getActivo()).isFalse();
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────
+	// LAYER 2: Integration - Verificar persistencia en BD
+	// ─────────────────────────────────────────────────────────────────────────────
+
+	@Test
+	void cp10_layer2_integration_clienteInactivoPersistenEnBD() {
+		// Escenario de integración: cliente inactivo persiste en BD
+		// y sus cambios de estado son duraderos
+
+		// ARRANGE: Crear cliente inactivo
+		final String email = "desistimiento@gmail.com";
+		Usuario clienteInactivo = crearUsuarioConRolEnBD(email, "Cliente Desistimiento", "CLIENTE", false);
+		Integer clienteId = clienteInactivo.getId();
+
+		// VERIFY PERSISTENCE
+		Usuario reloaded = usuarioRepository.findById(clienteId).orElseThrow();
+		assertThat(reloaded.getActivo()).isFalse();
+		assertThat(reloaded.getTipoUsuario()).isEqualTo("CLIENTE");
+		assertThat(reloaded.getRol().getNombre()).isEqualTo("CLIENTE");
+
+		// Verificar por email
+		Usuario byEmail = usuarioRepository.findByEmail(email).orElseThrow();
+		assertThat(byEmail.getActivo()).isFalse();
+
+		// ACT: Cambiar a activo
+		reloaded.setActivo(true);
+		usuarioRepository.save(reloaded);
+
+		// ASSERT: Cambio persiste
+		Usuario reactivado = usuarioRepository.findById(clienteId).orElseThrow();
+		assertThat(reactivado.getActivo()).isTrue();
+
+		// ACT: Volver a inactivo
+		reactivado.setActivo(false);
+		usuarioRepository.save(reactivado);
+
+		// ASSERT: Cambio persiste nuevamente
+		Usuario volviendoInactivo = usuarioRepository.findById(clienteId).orElseThrow();
+		assertThat(volviendoInactivo.getActivo()).isFalse();
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────
+	// LAYER 3: E2E - Validar flujo HTTP: cliente inactivo → acceso denegado
+	// ─────────────────────────────────────────────────────────────────────────────
+
+	@Test
+	void cp10_layer3_e2e_clienteInactivoRechazadoAcceso() throws Exception {
+		// Escenario E2E: Cliente inactivo intenta acceder → 403 Forbidden
+
+		final String firebaseUid = "cp10-desistio-uid";
+		final String email = "desistio@gmail.com";
+
+		// SETUP: Crear cliente INACTIVO (desistimiento) en BD
+		Usuario cliente = crearUsuarioConRolEnBD(email, "Cliente Desistimiento", "CLIENTE", false);
+		cliente.setFirebaseUuid(firebaseUid);
+		usuarioRepository.save(cliente);
+
+		// VERIFY IN BD
+		Usuario verified = usuarioRepository.findById(cliente.getId()).orElseThrow();
+		assertThat(verified.getActivo()).isFalse();
+
+		// ACT: Intentar acceder a /api/auth/me
+		// ASSERT: Debe ser rechazado con 403 Forbidden
+		mockMvc.perform(get("/api/auth/me")
+				.with(securityContext(contextWithAuth(createFirebaseToken(firebaseUid, email)))))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.error").value("Cuenta suspendida. Contacte a la inmobiliaria."));
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────
+	// LAYER 3 VARIANT: E2E - Cliente inactivo rechazado en todos endpoints
+	// ─────────────────────────────────────────────────────────────────────────────
+
+	@Test
+	void cp10_layer3_e2e_clienteInactivoRechazadoEnTodosEndpoints() throws Exception {
+		// Escenario E2E: Cliente inactivo no puede acceder a ningún endpoint protegido
+
+		final String firebaseUid = "cp10-inactivo-endpoints-uid";
+		final String email = "inactivo.endpoints@test.com";
+
+		// SETUP: Crear cliente inactivo
+		Usuario cliente = crearUsuarioConRolEnBD(email, "Cliente Inactivo", "CLIENTE", false);
+		cliente.setFirebaseUuid(firebaseUid);
+		usuarioRepository.save(cliente);
+
+		// ACT & ASSERT: /api/auth/me → 403
+		mockMvc.perform(get("/api/auth/me")
+				.with(securityContext(contextWithAuth(createFirebaseToken(firebaseUid, email)))))
+				.andExpect(status().isForbidden());
+
+		// ACT & ASSERT: /api/roles → 403
+		mockMvc.perform(get("/api/roles")
+				.with(securityContext(contextWithAuth(createFirebaseToken(firebaseUid, email)))))
+				.andExpect(status().isForbidden());
+
+		// ACT & ASSERT: /api/users → 403
+		mockMvc.perform(get("/api/users")
+				.with(securityContext(contextWithAuth(createFirebaseToken(firebaseUid, email)))))
+				.andExpect(status().isForbidden());
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────
+	// LAYER 3 VARIANT: E2E - Cambio estado: Activo → Inactivo → acceso bloqueado
+	// ─────────────────────────────────────────────────────────────────────────────
+
+	@Test
+	void cp10_layer3_e2e_cambioEstadoActavoAInactivo() throws Exception {
+		// Escenario E2E: Cliente activo → inactivado por desistimiento →
+		// acceso bloqueado inmediatamente
+
+		final String firebaseUid = "cp10-cambio-estado-uid";
+		final String email = "cambio.estado@test.com";
+
+		// SETUP: Crear cliente ACTIVO
+		Usuario cliente = crearUsuarioConRolEnBD(email, "Cliente Cambio Estado", "CLIENTE", true);
+		cliente.setFirebaseUuid(firebaseUid);
+		usuarioRepository.save(cliente);
+
+		// STEP 1: Verificar acceso con cliente activo → OK
+		mockMvc.perform(get("/api/auth/me")
+				.with(securityContext(contextWithAuth(createFirebaseToken(firebaseUid, email)))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.email").value(email))
+				.andExpect(jsonPath("$.activo").value(true));
+
+		// STEP 2: Desactivar cliente (simular desistimiento)
+		Usuario clienteParaDesactivar = usuarioRepository.findById(cliente.getId()).orElseThrow();
+		clienteParaDesactivar.setActivo(false);
+		usuarioRepository.save(clienteParaDesactivar);
+
+		// Verificar en BD que está inactivo
+		Usuario clienteInactivoVerificado = usuarioRepository.findById(cliente.getId()).orElseThrow();
+		assertThat(clienteInactivoVerificado.getActivo()).isFalse();
+
+		// STEP 3: Intentar acceder con el mismo token → rechazado
+		mockMvc.perform(get("/api/auth/me")
+				.with(securityContext(contextWithAuth(createFirebaseToken(firebaseUid, email)))))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.error").value("Cuenta suspendida. Contacte a la inmobiliaria."));
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────
+	// LAYER 2 VARIANT: Integration - Consulta de clientes inactivos
+	// ─────────────────────────────────────────────────────────────────────────────
+
+	@Test
+	void cp10_layer2_integration_consultaClientesInactivos() {
+		// Escenario de integración: validar que se puede consultar
+		// clientes inactivos y activos correctamente
+
+		// ARRANGE: Crear mezcla de clientes
+		Usuario clienteActivo1 = crearUsuarioConRolEnBD("activo1@test.com", "Activo 1", "CLIENTE", true);
+		Usuario clienteInactivo1 = crearUsuarioConRolEnBD("inactivo1@test.com", "Inactivo 1", "CLIENTE", false);
+		Usuario clienteActivo2 = crearUsuarioConRolEnBD("activo2@test.com", "Activo 2", "CLIENTE", true);
+		Usuario clienteInactivo2 = crearUsuarioConRolEnBD("inactivo2@test.com", "Inactivo 2", "CLIENTE", false);
+
+		// ACT & ASSERT: Todos están en BD
+		assertThat(usuarioRepository.count()).isEqualTo(4);
+
+		// Verificar que podemos recuperarlos por estado
+		Usuario verificarActivo = usuarioRepository.findByEmail("activo1@test.com").orElseThrow();
+		assertThat(verificarActivo.getActivo()).isTrue();
+
+		Usuario verificarInactivo = usuarioRepository.findByEmail("inactivo1@test.com").orElseThrow();
+		assertThat(verificarInactivo.getActivo()).isFalse();
+	}
+}

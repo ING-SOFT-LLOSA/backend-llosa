@@ -1,4 +1,4 @@
-package com.llosa.backend.proyecto.service.impl;
+package com.llosa.backend.proyecto.service;
 
 import com.llosa.backend.documentos.dto.DocumentoResponse;
 import com.llosa.backend.documentos.service.DocumentoService;
@@ -11,7 +11,6 @@ import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.repository.HitoRepository;
 import com.llosa.backend.proyecto.repository.ProyectoRepository;
 import com.llosa.backend.proyecto.repository.ReporteRepository;
-import com.llosa.backend.proyecto.service.ReporteService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

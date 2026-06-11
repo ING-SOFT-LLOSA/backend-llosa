@@ -67,11 +67,4 @@ public class Activo {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_piso", nullable = false)
     private Piso piso;
-
-    // =========================================================================
-    // NUEVA RELACIÓN: El contrato al que pertenece actualmente este activo
-    // =========================================================================
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uuid_usuario_activo") // Es nullable porque en inventario no tiene contrato
-    private UsuarioActivo usuarioActivo;
 }

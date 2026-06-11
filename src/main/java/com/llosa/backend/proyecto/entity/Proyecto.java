@@ -64,4 +64,8 @@ public class Proyecto {
             orphanRemoval = true)
     @Builder.Default
     private List<Hito> hitos = new ArrayList<>();
+
+    @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Documento> documentos = new ArrayList<>();
 }

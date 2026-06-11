@@ -11,7 +11,6 @@ import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.enums.TipoActivo;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
@@ -21,6 +20,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.jupiter.api.Disabled;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -29,7 +29,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
 @Disabled
 @DataJpaTest
 @Testcontainers
@@ -68,7 +67,8 @@ class PagoRepositoryTest {
 
         UsuarioActivo ua = UsuarioActivo.builder()
                 .tipoFinanciamiento("Credito Directo")
-                .activos(List.of(activo))
+                .faseComercial("Pagos")
+                .activo(activo)
                 .build();
         em.persist(ua);
 

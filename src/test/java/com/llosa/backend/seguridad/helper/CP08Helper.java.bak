@@ -1,0 +1,176 @@
+package com.llosa.backend.seguridad.helper;
+
+import com.llosa.backend.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.stereotype.Component;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * Helper para tests de CP08: Desactivación e Invalidación de Tokens
+ *
+ * Proporciona utilidades para:
+ * - Desactivar usuarios y verificar rechazo de tokens
+ * - Crear tokens válidos pero de usuarios inactivos
+ * - Verificar que endpoints rechacen usuarios suspendidos
+ * - Validar reactivación de usuarios
+ *
+ * @author Engineer BDD
+ * @version 1.0
+ */
+@Component
+public class CP08Helper {
+
+    private final UsuarioRepository usuarioRepository;
+
+    public CP08Helper(UsuarioRepository usuarioRepository) {
+        this.usuarioRepository = usuarioRepository;
+    }
+
+    /**
+     * Desactiva un usuario (simula suspensión de cuenta).
+     *
+     * @param usuarioId ID del usuario a desactivar
+     * @return Usuario desactivado
+     * @throws RuntimeException si usuario no existe
+     */
+    public Usuario desactivarUsuario(long usuarioId) {
+        Optional<Usuario> usuario = usuarioRepository.findById(usuarioId);
+        if (usuario.isEmpty()) {
+            throw new RuntimeException("Usuario ID " + usuarioId + " no encontrado");
+        }
+
+        Usuario u = usuario.get();
+        u.setActivo(false);
+        return usuarioRepository.save(u);
+    }
+
+    /**
+     * Reactiva un usuario (restaura acceso).
+     *
+     * @param usuarioId ID del usuario a reactivar
+     * @return Usuario reactivado
+     * @throws RuntimeException si usuario no existe
+     */
+    public Usuario reactivarUsuario(long usuarioId) {
+        Optional<Usuario> usuario = usuarioRepository.findById(usuarioId);
+        if (usuario.isEmpty()) {
+            throw new RuntimeException("Usuario ID " + usuarioId + " no encontrado");
+        }
+
+        Usuario u = usuario.get();
+        u.setActivo(true);
+        return usuarioRepository.save(u);
+    }
+
+    /**
+     * Crea un token de Firebase para un usuario.
+     * Útil para simular tokens válidos de usuarios suspendidos.
+     *
+     * @param firebaseUid UID del usuario en Firebase
+     * @param email Email del usuario
+     * @return Token autenticado
+     */
+    public FirebaseAuthenticationToken crearTokenFirebase(String firebaseUid, String email) {
+        return new FirebaseAuthenticationToken(
+                firebaseUid,
+                email,
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+    }
+
+    /**
+     * Verifica que un usuario está suspendido en BD.
+     *
+     * @param usuarioId ID del usuario a verificar
+     * @return true si usuario tiene activo=false
+     */
+    public boolean estaSuspendido(long usuarioId) {
+        Optional<Usuario> usuario = usuarioRepository.findById(usuarioId);
+        return usuario.isPresent() && !usuario.get().getActivo();
+    }
+
+    /**
+     * Verifica que un usuario está activo en BD.
+     *
+     * @param usuarioId ID del usuario a verificar
+     * @return true si usuario tiene activo=true
+     */
+    public boolean estaActivo(long usuarioId) {
+        Optional<Usuario> usuario = usuarioRepository.findById(usuarioId);
+        return usuario.isPresent() && usuario.get().getActivo();
+    }
+
+    /**
+     * Obtiene el estado actual de activación de un usuario.
+     *
+     * @param usuarioId ID del usuario
+     * @return "ACTIVO", "INACTIVO", o "NO_EXISTE"
+     */
+    public String obtenerEstadoActivacion(long usuarioId) {
+        Optional<Usuario> usuario = usuarioRepository.findById(usuarioId);
+        if (usuario.isEmpty()) {
+            return "NO_EXISTE";
+        }
+        return usuario.get().getActivo() ? "ACTIVO" : "INACTIVO";
+    }
+
+    /**
+     * Verifica que un token de usuario suspendido es rechazado en un endpoint.
+     * Útil para validar que endpoints protegidos rechazan usuarios inactivos.
+     *
+     * @param mockMvc Mock MVC para realizar request
+     * @param endpoint Endpoint a probar (ej: "/api/roles")
+     * @param token Token del usuario suspendido
+     * @throws Exception si la request falla
+     */
+    public void verificarTokenRechazadoEnEndpoint(MockMvc mockMvc, String endpoint,
+                                                   FirebaseAuthenticationToken token)
+            throws Exception {
+        mockMvc.perform(get(endpoint)
+                        .with(request -> {
+                            request.setUserPrincipal(token);
+                            return request;
+                        }))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Ciclo completo: Desactivar → Verificar rechazo → Reactivar → Verificar acceso
+     *
+     * @param usuarioId ID del usuario
+     * @return true si ciclo completo es exitoso
+     */
+    public boolean validarCicloCompleto(long usuarioId) {
+        try {
+            // 1. Desactivar
+            Usuario desactivado = desactivarUsuario(usuarioId);
+            if (desactivado.getActivo()) {
+                return false;
+            }
+
+            // 2. Verificar que está suspendido
+            if (!estaSuspendido(usuarioId)) {
+                return false;
+            }
+
+            // 3. Reactivar
+            Usuario reactivado = reactivarUsuario(usuarioId);
+            if (!reactivado.getActivo()) {
+                return false;
+            }
+
+            // 4. Verificar que está activo
+            return estaActivo(usuarioId);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+}

@@ -6,7 +6,6 @@ import com.llosa.backend.exception.GlobalExceptionHandler;
 import com.llosa.backend.pagos.service.CronogramaPagoService;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -18,7 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
+import org.junit.jupiter.api.Disabled;
 import java.util.List;
 import java.util.UUID;
 
