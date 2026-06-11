@@ -93,10 +93,11 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
                 activoService::findById
         ).toList();
         for (Activo activo : activos) {
-            if (!activo.getUsuarioActivo().equals(usuarioActivo) && activo.getEstadoComercial() == EstadoComercialActivo.DISPONIBLE) {
+            if (!usuarioActivo.equals(activo.getUsuarioActivo()) && activo.getEstadoComercial() == EstadoComercialActivo.DISPONIBLE) {
                 activo.setUsuarioActivo(usuarioActivo);
                 activo.setEstadoComercial(EstadoComercialActivo.SEPARADO);
                 activoRepository.save(activo);
+                usuarioActivo.getActivos().add(activo);
             }
         }
         return UsuarioActivoResponseDTO.fromEntity(usuarioActivo);

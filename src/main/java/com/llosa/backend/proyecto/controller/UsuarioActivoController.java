@@ -27,11 +27,12 @@ public class UsuarioActivoController {
 
     private final UsuarioActivoService usuarioActivoService;
     private final UsuarioService usuarioService;
+    /* Falta endpoint para poder actualizar un contrato*/
 
     /**
      * Retorna los activos del cliente autenticado.
      * Navega la lista de copropietarios para filtrar los procesos pertenecientes al usuario logueado.
-     * Estado: No probado
+     * Estado: FUNCIONAL
      */
     @GetMapping("/mis-activos")
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
@@ -57,7 +58,7 @@ public class UsuarioActivoController {
 
     /**
      * Crea un contrato con los ids de los Usuarios. EL activo por ahora queda en null
-     * Estado: No probado Hecho
+     * Estado: FUNCIONAL
      */
 
     @PostMapping("/crear")
@@ -83,7 +84,7 @@ public class UsuarioActivoController {
 
     /**
      * Retorna el contrato/proceso comercial de un activo con la lista completa de copropietarios.
-     * Estado: Hecho no probado
+     * Estado: FUNCIONAL
      */
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @GetMapping("/{uuidActivo}/contrato")
@@ -96,7 +97,7 @@ public class UsuarioActivoController {
 
     /**
      * Retorna contrato de un usario
-     * Estado: Hecho No probado
+     * Estado: funcional
      */
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @GetMapping("/{id_usuario}")
@@ -110,7 +111,7 @@ public class UsuarioActivoController {
 
     /**
      * Retorna la lista de activos asociados a un usuario específico.
-     * Estado: Hecho no probado. Posible problema de N+1 revisar
+     * Estado: FUncional -> Posible probelma de N+1
      */
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @GetMapping("/usuario/{id_usuario}/activos")
