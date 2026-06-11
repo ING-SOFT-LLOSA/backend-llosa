@@ -2,7 +2,7 @@ package com.llosa.backend.comercial.dto;
 
 import java.util.List;
 
-public record StageDocumentResponse(
+public record StageDocumentsResponse(
         String title,
         int totalCount,
         List<DocumentoItem> documents

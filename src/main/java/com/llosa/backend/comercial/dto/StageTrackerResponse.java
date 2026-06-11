@@ -2,7 +2,7 @@ package com.llosa.backend.comercial.dto;
 
 import java.util.List;
 
-public record StageResponse(
+public record StageTrackerResponse(
         StageInfo stage,
         List<StepperItem> stepper,
         StageDetails stageDetails

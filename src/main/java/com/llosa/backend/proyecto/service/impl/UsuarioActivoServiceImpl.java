@@ -4,7 +4,7 @@ import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.proyecto.dto.request.CrearContratoDTO;
 import com.llosa.backend.proyecto.dto.response.UsuarioActivoResponseDTO;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
-import com.llosa.backend.proyecto.factory.FlujoComercialFactory;
+import com.llosa.backend.factory.FlujoComercialFactory;
 import com.llosa.backend.proyecto.repository.ActivoRepository;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;

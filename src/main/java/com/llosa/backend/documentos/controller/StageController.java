@@ -1,9 +1,11 @@
 package com.llosa.backend.documentos.controller;
 
-import com.llosa.backend.comercial.dto.StageDocumentResponse;
-import com.llosa.backend.comercial.dto.StageResponse;
+import com.llosa.backend.comercial.dto.StageActivosResponse;
+import com.llosa.backend.comercial.dto.StageDocumentsResponse;
+import com.llosa.backend.comercial.dto.StageTrackerResponse;
 import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.service.impl.StageServiceImpl;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,7 +27,7 @@ public class StageController {
      */
     @GetMapping("/{etapaProceso}")
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
-    public ResponseEntity<StageResponse> obtenerStage(
+    public ResponseEntity<StageTrackerResponse> obtenerStage(
             @PathVariable EtapaProceso etapaProceso,
             @RequestParam UUID uuidUsuarioActivo,
             Authentication authentication
@@ -42,7 +44,7 @@ public class StageController {
      */
     @GetMapping("/{etapaProceso}/documents")
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
-    public ResponseEntity<StageDocumentResponse> obtenerDocumentosStage(
+    public ResponseEntity<StageDocumentsResponse> obtenerDocumentosStage(
             @PathVariable EtapaProceso etapaProceso,
             @RequestParam UUID uuidUsuarioActivo,
             Authentication authentication
@@ -51,5 +53,19 @@ public class StageController {
         return ResponseEntity.ok(
                 stageService.obtenerDocumentosStage(uid, uuidUsuarioActivo, etapaProceso)
         );
+    }
+    /**
+     * Endpoint 3 — GET /api/stage/{etapaProceso}/activos?uuidUsuarioActivo=xxx
+     * Devuelve el detalle de los inmuebles (departamento, cochera) comprados (Solo aplica a CONTRATO).
+     */
+    @GetMapping("/{etapaProceso}/activos")
+    @PreAuthorize("hasAuthority('CONTRATO_VER')")
+    public ResponseEntity<StageActivosResponse> obtenerActivosStage(
+            @PathVariable EtapaProceso etapaProceso,
+            @RequestParam UUID uuidUsuarioActivo,
+            Authentication authentication
+    ) {
+        String uid = (String) authentication.getPrincipal();
+        return ResponseEntity.ok(stageService.obtenerActivosEtapa(uid, uuidUsuarioActivo, etapaProceso));
     }
 }

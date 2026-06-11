@@ -2,7 +2,7 @@ package com.llosa.backend.documentos.dto;
 
 import java.util.List;
 
-public record StageResponse(
+public record StageContractDetailsResponse(
     StageDetailsResponse stageDetails
 ) {
     public record StageDetailsResponse(

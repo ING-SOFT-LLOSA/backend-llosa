@@ -1,5 +1,6 @@
 package com.llosa.backend.proyecto.service.impl;
 
+import com.llosa.backend.factory.FlujoConstruccionFactory;
 import com.llosa.backend.proyecto.dto.request.*;
 import com.llosa.backend.proyecto.entity.*;
 import com.llosa.backend.proyecto.enums.EstadoHito;
@@ -26,9 +27,16 @@ public class ProyectoServiceImpl implements ProyectoService {
     private final ActivoService activoService;
     private final PisoService pisoService;
     private final HidratationService hidratacionService;
+    private final FlujoConstruccionFactory flujoConstruccionFactory;
 
     @Override
     public Proyecto save(Proyecto proyecto) {
+        boolean esNuevoProyecto = proyecto.getId() == null;
+        if (esNuevoProyecto) {
+            List<Hito> hitosPorDefecto = flujoConstruccionFactory.generarHitosPorDefecto();
+            hitosPorDefecto.forEach(hito -> hito.setProyecto(proyecto));
+            proyecto.setHitos(hitosPorDefecto);
+        }
         return proyectoRepository.save(proyecto);
     }
 
