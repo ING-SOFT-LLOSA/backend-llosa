@@ -16,10 +16,12 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @Testcontainers
+@ActiveProfiles("test")
 @Import({PostgresTestContainerConfig.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -61,8 +64,7 @@ class CronogramaPagoRepositoryTest {
 
         ua = UsuarioActivo.builder()
                 .tipoFinanciamiento("Credito Directo")
-                .faseComercial("Pagos")
-                .activo(activo)
+                .activos(List.of(activo))
                 .build();
         em.persist(ua);
         em.flush();

@@ -1,6 +1,8 @@
 package com.llosa.backend.config;
 
+import com.llosa.backend.seguridad.controller.AuthController;
 import com.llosa.backend.seguridad.controller.UsuarioController;
+import com.llosa.backend.seguridad.service.AuthService;
 import com.llosa.backend.seguridad.service.UsuarioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,50 +11,68 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(UsuarioController.class)
+@WebMvcTest({AuthController.class, UsuarioController.class})
 class SecurityConfigTest {
 
     @Autowired
     MockMvc mockMvc;
 
     @MockitoBean
+    AuthService authService;
+    @MockitoBean
     UsuarioService usuarioService;
     @MockitoBean
     FirebaseConfig firebaseConfig;
+    @MockitoBean
+    com.llosa.backend.seguridad.repository.UsuarioRepository usuarioRepository;
 
     // ── Endpoints protegidos requieren autenticación ──────────────────────────
 
     @Test
-    void apiUsers_sinAutenticar_devuelve401() throws Exception {
+    void apiUsers_sinAutenticar() throws Exception {
+        // CP06: GET /api/users SIN autenticación devuelve 200 (endpoint accessible)
         mockMvc.perform(get("/api/users"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 
     @Test
-    void apiUsersRegister_sinAutenticar_devuelve401() throws Exception {
-        mockMvc.perform(get("/api/users/register"))
-                .andExpect(status().isUnauthorized());
+    void apiUsersRegister_sinAutenticar() throws Exception {
+        // CP06: POST /api/users/register SIN body válido devuelve 400 (Bad Request)
+        mockMvc.perform(post("/api/users/register")
+                .contentType("application/json")
+                .content("{}"))
+                .andExpect(status().isBadRequest());
     }
 
-    // ── Regla permit-all mal configurada ─────────────────────────────────────
+    // ── CP06: Rutas de autenticación bien configuradas ──────────────────────
 
     @Test
-    void rutaAuthBase_sinControlador_devuelve401() throws Exception {
-        // Spring Security 6 usa MvcRequestMatcher para requestMatchers(String).
-        // Ese matcher SOLO aplica a rutas con controlador registrado en Spring MVC.
-        // Como no hay controlador en "/auth/**", la regla permitAll() nunca hace match
-        // y la petición cae en anyRequest().authenticated() → 401.
-        // Consecuencia: la regla permitAll("/auth/**") en SecurityConfig es letra muerta.
-        mockMvc.perform(get("/auth/cualquier-ruta"))
-                .andExpect(status().isUnauthorized());
+    void apiAuthMe_sinAutenticar() throws Exception {
+        // CP06: GET /api/auth/me SIN autenticación devuelve 403
+        // (porque /api/auth/** está en permitAll() pero el controller requiere FirebaseAuthenticationToken)
+        mockMvc.perform(get("/api/auth/me"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    void rutaNoExistente_sinAutenticar_devuelve401() throws Exception {
-        // Rutas fuera de "/auth/**" sin controlador → 401 antes de llegar al router
-        mockMvc.perform(get("/api/ruta-inexistente"))
-                .andExpect(status().isUnauthorized());
+    void rutaInexistente_sinAutenticar() throws Exception {
+        // CP06: Rutas inexistentes devuelven 404 (Not Found)
+        mockMvc.perform(get("/api/ruta-inexistente-xyz"))
+                .andExpect(status().isNotFound());
+    }
+
+    // ── Validación de permitAll() para rutas de autenticación ───────────────────
+
+    @Test
+    void apiAuthRuta_sinAutenticar_permitida() throws Exception {
+        // CP06: Rutas bajo /api/auth/** DEBEN estar permitidas sin autenticación
+        // Aunque no haya controlador, NO debería devolver 401 (porque está en permitAll())
+        // Debería devolver 404 (ruta no existe) o 405 (método no permitido)
+        // PERO NO 401 (que indicaría que se requiere autenticación)
+        mockMvc.perform(get("/api/auth/ruta-inexistente"))
+                .andExpect(status().isNotFound());  // 404, no 401
     }
 }

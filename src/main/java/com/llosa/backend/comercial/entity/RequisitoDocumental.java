@@ -1,5 +1,6 @@
 package com.llosa.backend.comercial.entity;
 
+import com.llosa.backend.comercial.enums.EtapaRequisitoDocumental;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,7 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = "hitoComercial")
+@ToString(exclude = "etapaExpediente")
 public class RequisitoDocumental {
 
     @Id
@@ -23,8 +24,8 @@ public class RequisitoDocumental {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "uuid_hito_comercial", nullable = false)
-    private HitoProcesoCompra hitoComercial;
+    @JoinColumn(name = "uuid_etapa_expediente", nullable = false)
+    private EtapaExpediente etapaExpediente;
 
     @Column(name = "titulo", nullable = false, length = 200)
     private String titulo;
@@ -36,7 +37,7 @@ public class RequisitoDocumental {
     private String notaCorporativa;
 
     @Column(name = "estado", nullable = false, length = 30)
-    private String estado;
+    private EtapaRequisitoDocumental estado;
 
     @Column(name = "fecha_emision")
     private LocalDate fechaEmision;

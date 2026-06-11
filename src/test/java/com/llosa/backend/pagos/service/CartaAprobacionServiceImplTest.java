@@ -1,5 +1,8 @@
 package com.llosa.backend.pagos.service;
 
+import com.llosa.backend.comercial.entity.EtapaExpediente;
+import com.llosa.backend.comercial.enums.EtapaProceso;
+import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.config.TestDataPagos;
 import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
@@ -16,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,6 +35,9 @@ class CartaAprobacionServiceImplTest {
     @Mock
     UsuarioActivoRepository usuarioActivoRepository;
 
+    @Mock
+    EtapaExpedienteRepository etapaExpedienteRepository;
+
     @InjectMocks
     CartaAprobacionServiceImpl cartaAprobacionService;
 
@@ -43,6 +50,12 @@ class CartaAprobacionServiceImplTest {
                 .thenReturn(false);
         when(usuarioActivoRepository.findById(request.uuidUsuarioActivo()))
                 .thenReturn(Optional.of(ua));
+        when(etapaExpedienteRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(
+                request.uuidUsuarioActivo(), EtapaProceso.PAGO))
+                .thenReturn(Optional.of(EtapaExpediente.builder()
+                        .uuidEtapaExpediente(UUID.randomUUID())
+                        .hitosComerciales(new ArrayList<>())
+                        .build()));
 
         ArgumentCaptor<CartaAprobacion> captor = ArgumentCaptor.forClass(CartaAprobacion.class);
         when(cartaAprobacionRepository.save(captor.capture())).thenAnswer(inv -> {
