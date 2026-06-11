@@ -44,40 +44,56 @@ public class DemoDataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        log.info(">>>> [DEMO] Verificando perfil demo...");
         if (usuarioRepository.existsByEmail(EMPLEADO_EMAIL)) {
-            log.info("Datos demo ya existen, saltando inicialización");
+            log.info(">>>> [DEMO] Datos demo ya existen ({} encontrado), saltando inicialización", EMPLEADO_EMAIL);
             return;
         }
 
-        log.info("Inicializando datos de demostración...");
+        try {
+            log.info(">>>> [DEMO] Iniciando carga de datos demo...");
+            
+            log.info(">>>> [DEMO] Buscando roles...");
+            Rol rolAsesor = rolRepository.findByNombre("ASESOR")
+                    .orElseThrow(() -> new RuntimeException("Rol ASESOR no encontrado"));
+            Rol rolCliente = rolRepository.findByNombre("CLIENTE")
+                    .orElseThrow(() -> new RuntimeException("Rol CLIENTE no encontrado"));
 
-        Rol rolAsesor = rolRepository.findByNombre("ASESOR")
-                .orElseThrow(() -> new RuntimeException("Rol ASESOR no encontrado"));
-        Rol rolCliente = rolRepository.findByNombre("CLIENTE")
-                .orElseThrow(() -> new RuntimeException("Rol CLIENTE no encontrado"));
+            log.info(">>>> [DEMO] Creando usuarios...");
+            Integer idEmpleado = createDemoUser("Carlos", "García", EMPLEADO_EMAIL, "EMPLEADO", rolAsesor);
+            Integer idCliente = createDemoUser("María", "López", CLIENTE_EMAIL, "CLIENTE", rolCliente);
 
-        Integer idEmpleado = createDemoUser("Carlos", "García", EMPLEADO_EMAIL, "EMPLEADO", rolAsesor);
-        Integer idCliente = createDemoUser("María", "López", CLIENTE_EMAIL, "CLIENTE", rolCliente);
+            log.info(">>>> [DEMO] Usuarios demo creados: empleado={}, cliente={}", idEmpleado, idCliente);
 
-        log.info("Usuarios demo creados: empleado={}, cliente={}", idEmpleado, idCliente);
+            log.info(">>>> [DEMO] Creando proyecto...");
+            Proyecto proyecto = createDemoProject();
+            log.info(">>>> [DEMO] Proyecto demo creado: {}", proyecto.getId());
 
-        Proyecto proyecto = createDemoProject();
-        log.info("Proyecto demo creado: {}", proyecto.getId());
+            log.info(">>>> [DEMO] Creando estructura...");
+            createDemoStructure(proyecto);
+            log.info(">>>> [DEMO] Estructura física del proyecto creada");
 
-        createDemoStructure(proyecto);
-        log.info("Estructura física del proyecto creada");
+            log.info(">>>> [DEMO] Creando hitos...");
+            createDemoHitos(proyecto);
+            log.info(">>>> [DEMO] Hitos del proyecto creados");
 
-        createDemoHitos(proyecto);
-        log.info("Hitos del proyecto creados");
+            log.info(">>>> [DEMO] Creando contrato...");
+            createDemoContract(idCliente, proyecto.getId());
+            log.info(">>>> [DEMO] Contrato demo creado para el cliente");
 
-        createDemoContract(idCliente, proyecto.getId());
-        log.info("Contrato demo creado para el cliente");
-
-        log.info("Datos de demostración creados exitosamente");
+            log.info(">>>> [DEMO] Datos de demostración creados exitosamente");
+        } catch (Exception e) {
+            log.error(">>>> [DEMO] ERROR CRÍTICO durante la inicialización demo: {}", e.getMessage(), e);
+        }
     }
 
     private Integer createDemoUser(String nombre, String apellidos, String email,
                                    String tipoUsuario, Rol rol) {
+        if (usuarioRepository.existsByEmail(email)) {
+            log.info("Usuario ya existe en DB: {}, saltando creación", email);
+            return usuarioRepository.findByEmail(email).get().getId();
+        }
+
         String firebaseUid;
         try {
             UserRecord.CreateRequest request = new UserRecord.CreateRequest()
@@ -99,7 +115,9 @@ public class DemoDataInitializer implements CommandLineRunner {
         usuario.setApellidos(apellidos);
         usuario.setTipoUsuario(tipoUsuario);
         usuario.setRol(rol);
+        usuario.setActivo(true);
         usuarioRepository.save(usuario);
+        log.info("Usuario guardado en DB: {} con rol {}", email, rol.getNombre());
         return usuario.getId();
     }
 
