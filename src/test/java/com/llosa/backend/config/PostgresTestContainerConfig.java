@@ -3,6 +3,7 @@ package com.llosa.backend.config;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -11,6 +12,7 @@ public class PostgresTestContainerConfig {
 
     @Bean
     @ServiceConnection
+    @Conditional(DockerAvailableCondition.class)
     PostgreSQLContainer<?> postgresContainer() {
         String postgresVersion = System.getenv().getOrDefault("POSTGRES_VERSION", "16");
         String dbName = System.getenv().getOrDefault("DB_NAME", "testdb");
