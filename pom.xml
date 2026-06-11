@@ -214,6 +214,7 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<argLine>
+						@{argLine}
 						-javaagent:${org.mockito:mockito-core:jar}
 						-XX:+EnableDynamicAgentLoading
 						-Djdk.attach.allowAttachSelf=true
