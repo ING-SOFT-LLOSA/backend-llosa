@@ -27,6 +27,7 @@ import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
