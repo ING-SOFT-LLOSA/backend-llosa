@@ -10,7 +10,7 @@ public class DockerAvailableCondition implements Condition {
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         try {
             return org.testcontainers.DockerClientFactory.instance().isDockerAvailable();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             return false;
         }
     }
