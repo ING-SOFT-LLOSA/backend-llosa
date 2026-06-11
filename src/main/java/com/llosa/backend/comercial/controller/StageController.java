@@ -1,4 +1,4 @@
-package com.llosa.backend.documentos.controller;
+package com.llosa.backend.comercial.controller;
 
 import com.llosa.backend.comercial.dto.StageActivosResponse;
 import com.llosa.backend.comercial.dto.StageDocumentsResponse;
