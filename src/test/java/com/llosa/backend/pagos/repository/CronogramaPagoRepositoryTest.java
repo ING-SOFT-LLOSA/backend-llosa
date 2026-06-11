@@ -21,6 +21,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -63,8 +64,7 @@ class CronogramaPagoRepositoryTest {
 
         ua = UsuarioActivo.builder()
                 .tipoFinanciamiento("Credito Directo")
-                .faseComercial("Pagos")
-                .activo(activo)
+                .activos(List.of(activo))
                 .build();
         em.persist(ua);
         em.flush();

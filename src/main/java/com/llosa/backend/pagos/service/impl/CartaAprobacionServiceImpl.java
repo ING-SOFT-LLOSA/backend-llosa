@@ -1,10 +1,10 @@
 package com.llosa.backend.pagos.service.impl;
 
+import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.comercial.entity.HitoProcesoCompra;
 import com.llosa.backend.comercial.enums.EstadoHitoComercial;
 import com.llosa.backend.comercial.enums.EtapaProceso;
-import com.llosa.backend.comercial.repository.HitoProcesoCompraRepository;
-import com.llosa.backend.comercial.service.HitoComercialService;
+import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.pagos.dto.CartaAprobacionRequest;
@@ -19,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,8 +30,7 @@ public class CartaAprobacionServiceImpl implements CartaAprobacionService {
 
     private final CartaAprobacionRepository cartaAprobacionRepository;
     private final UsuarioActivoRepository usuarioActivoRepository;
-    private final HitoProcesoCompraRepository hitoRepository;
-    private final HitoComercialService hitoComercialService;
+    private final EtapaExpedienteRepository etapaExpedienteRepository;
 
     @Override
     @Transactional
@@ -66,19 +64,12 @@ public class CartaAprobacionServiceImpl implements CartaAprobacionService {
     private void generarHitosHipotecarios(UsuarioActivo ua) {
         log.info("Generando hitos de crédito hipotecario para el expediente: {}", ua.getUuidUsuarioActivo());
 
-        // 1. Obtener todos los hitos actuales para encontrar el orden de inicio de PAGO
-        List<HitoProcesoCompra> todosLosHitos = hitoRepository.findByUsuarioActivo_UuidUsuarioActivoOrderByOrdenAsc(ua.getUuidUsuarioActivo());
+        EtapaExpediente etapaPago = etapaExpedienteRepository
+                .findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(ua.getUuidUsuarioActivo(), EtapaProceso.PAGO)
+                .orElseThrow(() -> new BusinessException("No existe etapa PAGO para el expediente: " + ua.getUuidUsuarioActivo()));
 
-        int ordenInicio = todosLosHitos.stream()
-                .filter(h -> h.getEtapaProceso() == EtapaProceso.PAGO)
-                .map(HitoProcesoCompra::getOrden)
-                .findFirst()
-                .orElse(5); // Fallback
+        etapaPago.getHitosComerciales().clear();
 
-        // 2. Eliminar hitos previos de la etapa PAGO
-        hitoRepository.deleteByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(ua.getUuidUsuarioActivo(), EtapaProceso.PAGO);
-
-        // 3. Definir e insertar los nuevos hitos hipotecarios
         List<String> nombresHitos = List.of(
                 "Pago de Separación",
                 "Pago Inicial",
@@ -90,18 +81,15 @@ public class CartaAprobacionServiceImpl implements CartaAprobacionService {
 
         for (int i = 0; i < nombresHitos.size(); i++) {
             HitoProcesoCompra hito = HitoProcesoCompra.builder()
-                    .usuarioActivo(ua)
-                    .etapaProceso(EtapaProceso.PAGO)
+                    .etapaExpediente(etapaPago)
                     .nombreHito(nombresHitos.get(i))
-                    .orden(ordenInicio + i)
+                    .orden(i + 1)
                     .estado(EstadoHitoComercial.PENDIENTE)
-                    .createdAt(LocalDateTime.now())
                     .build();
-            hitoRepository.save(hito);
+            etapaPago.getHitosComerciales().add(hito);
         }
 
-        // 4. Re-indexar usando el servicio especializado
-        hitoComercialService.reindexarHitos(ua.getUuidUsuarioActivo());
+        etapaExpedienteRepository.save(etapaPago);
     }
 
     @Override

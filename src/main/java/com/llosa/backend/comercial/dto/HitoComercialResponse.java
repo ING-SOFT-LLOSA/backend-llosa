@@ -14,7 +14,7 @@ import java.util.UUID;
 @Builder
 public record HitoComercialResponse(
     UUID uuidHitoComercial,
-    UUID uuidUsuarioActivo,
+    UUID uuidEtapaExpediente,
     EtapaProceso etapaProceso,
     String nombreHito,
     String descripcion,
@@ -29,8 +29,8 @@ public record HitoComercialResponse(
     public static HitoComercialResponse fromEntity(HitoProcesoCompra entity) {
         return HitoComercialResponse.builder()
                 .uuidHitoComercial(entity.getUuidHitoComercial())
-                .uuidUsuarioActivo(entity.getUsuarioActivo().getUuidUsuarioActivo())
-                .etapaProceso(entity.getEtapaProceso())
+                .uuidEtapaExpediente(entity.getEtapaExpediente().getUuidEtapaExpediente())
+                .etapaProceso(entity.getEtapaExpediente().getEtapaProceso())
                 .nombreHito(entity.getNombreHito())
                 .descripcion(entity.getDescripcion())
                 .orden(entity.getOrden())

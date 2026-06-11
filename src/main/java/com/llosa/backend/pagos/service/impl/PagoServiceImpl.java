@@ -131,7 +131,6 @@ public class PagoServiceImpl implements PagoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pago no encontrado: " + uuidPago));
 
         DocumentoResponse doc = documentoService.subirDocumentoPolimorfico(
-                pago.getCronograma().getUsuarioActivo().getUuidUsuarioActivo(),
                 file,
                 TipoDocumento.COMPROBANTE,
                 uuidPago.toString(),

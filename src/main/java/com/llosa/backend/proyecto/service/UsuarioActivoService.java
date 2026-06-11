@@ -1,6 +1,9 @@
 package com.llosa.backend.proyecto.service;
 
 import com.llosa.backend.proyecto.dto.request.AsignarActivoDTO;
+import com.llosa.backend.proyecto.dto.request.CrearContratoDTO;
+import com.llosa.backend.proyecto.dto.response.UsuarioActivoResponseDTO;
+import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 
 import java.util.List;
@@ -12,10 +15,11 @@ public interface UsuarioActivoService {
 
     /** Retorna todos los procesos comerciales en los que participa el usuario como copropietario. */
     List<UsuarioActivo> findByUsuario(Integer usuarioId);
-
+    List<Activo> findByUsuarioId(Integer usuarioId);
     Optional<UsuarioActivo> findByActivo(UUID activoId);
-    UsuarioActivo updateCustomerJourney(UUID id, String faseComercial, String estadoTramiteLegal);
     UsuarioActivo save(UsuarioActivo usuarioActivo);
-    void asignarActivo(AsignarActivoDTO dto);
+    UsuarioActivo crearContratoBase(CrearContratoDTO usuarioActivo);
+    UsuarioActivoResponseDTO asignarActivo(AsignarActivoDTO dto);
     void deleteById(UUID id);
+    void eliminarContrato(UUID usuarioActivoId);
 }

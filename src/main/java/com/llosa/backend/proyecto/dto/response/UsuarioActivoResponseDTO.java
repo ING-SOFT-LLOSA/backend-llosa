@@ -14,13 +14,12 @@ import java.util.UUID;
 public record UsuarioActivoResponseDTO(
     UUID uuidUsuarioActivo,
     String tipoFinanciamiento,
-    String faseComercial,
-    String estadoTramiteLegal,
     LocalDateTime fechaAdquisicion,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
+    Boolean vigente,
     List<ClienteSimpleDTO> clientes,
-    ActivoResponseDTO activo
+    List<ActivoResponseDTO> activos
 ) {
 
     /**
@@ -54,17 +53,16 @@ public record UsuarioActivoResponseDTO(
         List<ClienteSimpleDTO> clientesDTO = a.getClientes().stream()
                 .map(ClienteSimpleDTO::fromEntity)
                 .toList();
-
+        List<ActivoResponseDTO> activos = a.getActivos().stream().map(ActivoResponseDTO::fromEntity).toList();
         return new UsuarioActivoResponseDTO(
                 a.getUuidUsuarioActivo(),
                 a.getTipoFinanciamiento(),
-                a.getFaseComercial(),
-                a.getEstadoTramiteLegal(),
                 a.getFechaAdquisicion(),
                 a.getCreatedAt(),
                 a.getUpdatedAt(),
+                a.getVigente(),
                 clientesDTO,
-                ActivoResponseDTO.fromEntity(a.getActivo())
+                activos
         );
     }
 }

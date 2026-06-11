@@ -22,6 +22,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -64,8 +65,7 @@ class CartaAprobacionRepositoryTest {
 
         ua = UsuarioActivo.builder()
                 .tipoFinanciamiento("Credito Directo")
-                .faseComercial("Pagos")
-                .activo(activo)
+                .activos(List.of(activo))
                 .build();
         em.persist(ua);
         em.flush();

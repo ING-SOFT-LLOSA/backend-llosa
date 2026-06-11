@@ -54,8 +54,4 @@ public class Documento {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    // FIX: Removed @Builder.Default because there is no initialization expression here
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uuid_proyecto", nullable = true)
-    private Proyecto proyecto;
 }

@@ -22,7 +22,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "uuidHitoComercial")
-@ToString(exclude = "usuarioActivo")
+@ToString(exclude = "etapaExpediente")
 public class HitoProcesoCompra {
 
     @Id
@@ -30,16 +30,12 @@ public class HitoProcesoCompra {
     @Column(name = "uuid_hito_comercial", updatable = false, nullable = false)
     private UUID uuidHitoComercial;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uuid_usuario_activo", nullable = false)
-    private UsuarioActivo usuarioActivo;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "etapa_proceso", nullable = false)
-    private EtapaProceso etapaProceso;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "uuid_etapa_expediente", nullable = false)
+    private EtapaExpediente etapaExpediente;
 
     @Column(name = "nombre_hito", nullable = false)
-    private String nombreHito;
+    private String nombreHito; // ej: "Hitos dentro de la etapa"
 
     @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;

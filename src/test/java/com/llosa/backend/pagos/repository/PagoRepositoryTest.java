@@ -66,8 +66,7 @@ class PagoRepositoryTest {
 
         UsuarioActivo ua = UsuarioActivo.builder()
                 .tipoFinanciamiento("Credito Directo")
-                .faseComercial("Pagos")
-                .activo(activo)
+                .activos(List.of(activo))
                 .build();
         em.persist(ua);
 

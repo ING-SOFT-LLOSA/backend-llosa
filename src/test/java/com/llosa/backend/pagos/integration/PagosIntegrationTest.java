@@ -124,8 +124,7 @@ class PagosIntegrationTest {
 
         expediente = UsuarioActivo.builder()
                 .tipoFinanciamiento("Credito Directo")
-                .faseComercial("Pagos")
-                .activo(activo)
+                .activos(List.of(activo))
                 .build();
         usuarioActivoRepository.save(expediente);
         uuidExpediente = expediente.getUuidUsuarioActivo();
