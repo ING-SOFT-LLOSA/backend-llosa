@@ -161,6 +161,17 @@
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.11</version>
+				<configuration>
+					<!-- Clases de bootstrap/infraestructura: no son lógica de negocio
+					     verificable contra los casos de prueba, por lo que se excluyen
+					     de la medición de cobertura. -->
+					<excludes>
+						<exclude>**/config/DemoDataInitializer.*</exclude>
+						<exclude>**/config/FirebaseConfig.*</exclude>
+						<exclude>**/config/GcsConfig.*</exclude>
+						<exclude>**/BackendLlosaApplication.*</exclude>
+					</excludes>
+				</configuration>
 				<executions>
 					<execution>
 						<goals>
