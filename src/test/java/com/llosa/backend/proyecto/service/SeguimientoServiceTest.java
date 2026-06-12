@@ -5,7 +5,6 @@ import com.llosa.backend.proyecto.entity.Hito;
 import com.llosa.backend.proyecto.entity.HitoPiso;
 import com.llosa.backend.proyecto.entity.Piso;
 import com.llosa.backend.proyecto.enums.EstadoHito;
-import com.llosa.backend.proyecto.enums.TipoHito;
 import com.llosa.backend.proyecto.repository.HitoPisoRepository;
 import com.llosa.backend.proyecto.service.impl.SeguimientoServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -33,7 +32,6 @@ class SeguimientoServiceTest {
                 .id(UUID.randomUUID())
                 .titulo(titulo)
                 .orden(orden)
-                .tipo(TipoHito.OBRA)
                 .estado(EstadoHito.PENDIENTE)
                 .build();
     }

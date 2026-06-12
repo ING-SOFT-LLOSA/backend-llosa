@@ -19,7 +19,6 @@ import com.llosa.backend.proyecto.entity.Torre;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.enums.TipoActivo;
-import com.llosa.backend.proyecto.enums.TipoHito;
 import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.HitoPisoService;
 import com.llosa.backend.proyecto.service.SeguimientoService;
@@ -142,7 +141,7 @@ class ActivoControllerTest {
     void getHitos_devuelveLista() throws Exception {
         UUID activoId = UUID.randomUUID();
         Hito hito = Hito.builder().id(UUID.randomUUID()).titulo("H1").orden(1)
-                .tipo(TipoHito.OBRA).estado(EstadoHito.PENDIENTE).build();
+                .estado(EstadoHito.PENDIENTE).build();
         Piso piso = buildPiso();
         HitoPiso hp = HitoPiso.builder().id(UUID.randomUUID()).hito(hito).piso(piso)
                 .estado(EstadoHito.PENDIENTE).build();
@@ -158,7 +157,7 @@ class ActivoControllerTest {
     void getAvances_devuelveLista() throws Exception {
         UUID activoId = UUID.randomUUID();
         AvanceUnidadResponsePorcentajeDTO dto = new AvanceUnidadResponsePorcentajeDTO(
-                UUID.randomUUID(), "H1", 1, TipoHito.OBRA, EstadoHito.PENDIENTE, null, 0);
+                UUID.randomUUID(), "H1", 1, EstadoHito.PENDIENTE, null, 0);
         when(hitoPisoService.obtenerAvancesPorActivo(activoId)).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/activos/" + activoId + "/avances")

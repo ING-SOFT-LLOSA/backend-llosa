@@ -9,7 +9,6 @@ import com.llosa.backend.proyecto.dto.request.HitoCreateDTO;
 import com.llosa.backend.proyecto.entity.Hito;
 import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.enums.EstadoHito;
-import com.llosa.backend.proyecto.enums.TipoHito;
 import com.llosa.backend.proyecto.service.HitoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +42,7 @@ class HitoControllerTest {
         Proyecto proyecto = Proyecto.builder().id(UUID.randomUUID()).nombre("Test").build();
         return Hito.builder()
                 .id(UUID.randomUUID()).titulo("Cimentación").orden(1)
-                .tipo(TipoHito.OBRA).estado(EstadoHito.PENDIENTE).proyecto(proyecto)
+                .estado(EstadoHito.PENDIENTE).proyecto(proyecto)
                 .build();
     }
 
@@ -59,7 +58,7 @@ class HitoControllerTest {
         when(hitoService.findById(hito.getId())).thenReturn(hito);
         when(hitoService.save(hito)).thenReturn(hito);
 
-        HitoCreateDTO dto = new HitoCreateDTO("Cimentación Updated", 1, TipoHito.OBRA, null);
+        HitoCreateDTO dto = new HitoCreateDTO("Cimentación Updated", 1, null);
 
         mockMvc.perform(put("/api/hitos/" + hito.getId())
                         .with(authentication(TestData.proyectoAuthToken()))

@@ -6,7 +6,6 @@ import com.llosa.backend.proyecto.entity.Hito;
 import com.llosa.backend.proyecto.entity.HitoPiso;
 import com.llosa.backend.proyecto.entity.Piso;
 import com.llosa.backend.proyecto.enums.EstadoHito;
-import com.llosa.backend.proyecto.enums.TipoHito;
 import com.llosa.backend.proyecto.repository.HitoPisoRepository;
 import com.llosa.backend.proyecto.service.impl.HitoPisoServiceImpl;
 import jakarta.persistence.EntityNotFoundException;
@@ -36,7 +35,6 @@ class HitoPisoServiceTest {
                 .id(UUID.randomUUID())
                 .titulo("Hito " + orden)
                 .orden(orden)
-                .tipo(TipoHito.OBRA)
                 .estado(EstadoHito.PENDIENTE)
                 .build();
     }
