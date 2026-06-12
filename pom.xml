@@ -86,6 +86,35 @@
 			<version>${lombok.version}</version>
 			<optional>true</optional>
 		</dependency>
+	<!-- Google Cloud Storage -->
+
+		<!-- Google Calendar API -->
+		<dependency>
+			<groupId>com.google.apis</groupId>
+			<artifactId>google-api-services-calendar</artifactId>
+			<version>v3-rev20260225-2.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.auth</groupId>
+			<artifactId>google-auth-library-oauth2-http</artifactId>
+			<version>1.23.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.http-client</groupId>
+			<artifactId>google-http-client-gson</artifactId>
+			<version>1.44.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.auth</groupId>
+			<artifactId>google-auth-library-oauth2-http</artifactId>
+			<version>1.23.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.http-client</groupId>
+			<artifactId>google-http-client-gson</artifactId>
+			<version>1.44.1</version>
+		</dependency>
+
 		<!-- Dotenv - carga variables desde .env -->
 		<dependency>
 			<groupId>me.paulschwarz</groupId>
@@ -161,17 +190,6 @@
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.11</version>
-				<configuration>
-					<!-- Clases de bootstrap/infraestructura: no son lógica de negocio
-					     verificable contra los casos de prueba, por lo que se excluyen
-					     de la medición de cobertura. -->
-					<excludes>
-						<exclude>**/config/DemoDataInitializer.*</exclude>
-						<exclude>**/config/FirebaseConfig.*</exclude>
-						<exclude>**/config/GcsConfig.*</exclude>
-						<exclude>**/BackendLlosaApplication.*</exclude>
-					</excludes>
-				</configuration>
 				<executions>
 					<execution>
 						<goals>
@@ -225,22 +243,6 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<argLine>
-						-javaagent:${org.mockito:mockito-core:jar}
-						-XX:+EnableDynamicAgentLoading
-						-Djdk.attach.allowAttachSelf=true
-					</argLine>
-					<excludedGroups>stress</excludedGroups>
-					<systemPropertyVariables>
-						<api.version>1.41</api.version>
-					</systemPropertyVariables>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
-					<argLine>
-						@{argLine}
 						-javaagent:${org.mockito:mockito-core:jar}
 						-XX:+EnableDynamicAgentLoading
 						-Djdk.attach.allowAttachSelf=true
