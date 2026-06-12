@@ -28,7 +28,6 @@ public class HitoController {
         Hito hitoActualizado = hitoService.findById(uuid);
         hitoActualizado.setTitulo(dto.titulo());
         hitoActualizado.setOrden(dto.orden());
-        hitoActualizado.setTipo(dto.tipo());
         hitoActualizado.setFechaCompletado(dto.fechaCompletado());
         return ResponseEntity.ok(HitoResponseDTO.fromEntity(hitoService.save(hitoActualizado)));
     }

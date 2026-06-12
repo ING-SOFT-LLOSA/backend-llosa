@@ -1,5 +1,6 @@
 package com.llosa.backend.documentos.service;
 
+import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
 import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.proyecto.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class EntidadResolverService {
     private final HitoRepository hitoRepository;
     private final HitoPisoRepository hitoPisoRepository;
     private final ReporteRepository reporteRepository;
+    private final RequisitoDocumentalRepository requisitoDocumentalRepository;
 
     /**
      * Recibe un UUID y determina a qué entidad del paquete proyecto pertenece.
@@ -29,6 +31,7 @@ public class EntidadResolverService {
         if (hitoRepository.existsById(id))           return "HITO";
         if (hitoPisoRepository.existsById(id))       return "HITO_PISO";
         if (reporteRepository.existsById(id))        return "REPORTE";
+        if (requisitoDocumentalRepository.existsById(id)) {return "REQUISITO_DOCUMENTAL";}
 
         throw new BusinessException(
                 "El UUID '" + id + "' no corresponde a ninguna entidad del módulo de proyectos.");

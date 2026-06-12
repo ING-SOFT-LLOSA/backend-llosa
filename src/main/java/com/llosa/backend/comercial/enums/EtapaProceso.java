@@ -5,5 +5,6 @@ public enum EtapaProceso {
     CONTRATO,
     PAGO,
     ENTREGA,
-    SANEAMIENTO
+    SANEAMIENTO,
+    OTRO
 }

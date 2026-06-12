@@ -23,6 +23,7 @@ import java.util.UUID;
 public class RequisitoDocumentalController {
     private final RequisitoDocumentalService requisitoService;
 
+    /* falta el get de cómo obtener todos los requisitos*/
     /**
      * SUBIR ARCHIVO: Sube el documento físico (PDF, imagen, etc.) para cumplir
      * con un requisito específico del checklist.

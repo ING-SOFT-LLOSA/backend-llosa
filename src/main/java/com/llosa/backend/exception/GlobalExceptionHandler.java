@@ -22,15 +22,15 @@ public class GlobalExceptionHandler {
         return Map.of("error", ex.getMessage());
     }
 
-    @ExceptionHandler(BusinessException.class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public Map<String, String> handleBusiness(BusinessException ex) {
-        return Map.of("error", ex.getMessage());
-    }
-
     @ExceptionHandler(AccesoDenegadoException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Map<String, String> handleAccesoDenegado(AccesoDenegadoException ex) {
+        return Map.of("error", ex.getMessage());
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    public Map<String, String> handleBusinessException(BusinessException ex) {
         return Map.of("error", ex.getMessage());
     }
 }

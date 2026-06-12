@@ -23,4 +23,9 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
             String entidadReferencia,
             String idReferencia
     );
+
+    List<Documento> findByEntidadReferenciaAndIdReferenciaInOrderByCreatedAtDesc(
+            String entidadReferencia,
+            List<String> idsReferencia
+    );
 }

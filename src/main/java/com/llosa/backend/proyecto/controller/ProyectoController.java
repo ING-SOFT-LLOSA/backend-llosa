@@ -102,7 +102,6 @@ public class ProyectoController {
         Hito hito = Hito.builder()
                 .titulo(dto.titulo())
                 .orden(dto.orden())
-                .tipo(dto.tipo())
                 .estado(EstadoHito.PENDIENTE)
                 .build();
         return ResponseEntity

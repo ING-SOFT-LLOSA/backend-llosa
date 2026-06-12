@@ -1,9 +1,9 @@
 package com.llosa.backend.documentos.service;
 
 import com.google.cloud.storage.*;
+import com.llosa.backend.comercial.dto.StageDocumentsResponse;
 import com.llosa.backend.documentos.dto.DocumentoResponse;
 import com.llosa.backend.documentos.dto.SignedUrlResponse;
-import com.llosa.backend.documentos.dto.StageDocumentResponse;
 import com.llosa.backend.documentos.dto.SubirDocumentoRequest;
 import com.llosa.backend.documentos.entity.Documento;
 import com.llosa.backend.documentos.entity.TipoDocumentoConfig;
@@ -50,15 +50,15 @@ public class DocumentoService {
     // ─── Stage / Contrato ────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public StageDocumentResponse obtenerDetalleEtapa(EtapaProceso etapaProceso, UUID uuidUsuarioActivo) {
+    public StageDocumentsResponse obtenerDetalleEtapa(EtapaProceso etapaProceso, UUID uuidUsuarioActivo) {
         if (etapaProceso != EtapaProceso.CONTRATO) {
-            return new StageDocumentResponse(null, 0, List.of());
+            return new StageDocumentsResponse(null, 0, List.of());
         }
 
         UsuarioActivo ua = usuarioActivoRepository.findById(uuidUsuarioActivo)
                 .orElseThrow(() -> new EntityNotFoundException("UsuarioActivo no encontrado: " + uuidUsuarioActivo));
 
-        List<StageDocumentResponse.DocumentoItemResponse> unidades = new ArrayList<>();
+        List<StageDocumentsResponse.DocumentoItem> unidades = new ArrayList<>();
         BigDecimal areaTotal = BigDecimal.ZERO;
 
         if (ua.getActivos() != null) {
@@ -83,10 +83,10 @@ public class DocumentoService {
                 ua.getTipoFinanciamiento() != null ? ua.getTipoFinanciamiento() : "-",
                 areaTotal.doubleValue());
 
-        return new StageDocumentResponse(resumen, unidades.size(), unidades);
+        return new StageDocumentsResponse(resumen, unidades.size(), unidades);
     }
 
-    private StageDocumentResponse.DocumentoItemResponse mapActivoToItem(Activo activo) {
+    private StageDocumentsResponse.DocumentoItem mapActivoToItem(Activo activo) {
         String tipo = activo.getTipo() == TipoActivo.DEPARTAMENTO ? "DEPARTAMENTO"
                 : activo.getTipo() == TipoActivo.COCHERA ? "ESTACIONAMIENTO" : "OTRO";
         String nombre = activo.getTipo() == TipoActivo.DEPARTAMENTO
@@ -101,7 +101,7 @@ public class DocumentoService {
         String aporte = "S/." + df.format(activo.getPrecio());
         String area = String.format(Locale.US, "%.2f m²", activo.getAreaM2());
 
-        return new StageDocumentResponse.DocumentoItemResponse(
+        return new StageDocumentsResponse.DocumentoItem(
                 activo.getId().toString(),
                 nombre,
                 tipo + " | " + area,

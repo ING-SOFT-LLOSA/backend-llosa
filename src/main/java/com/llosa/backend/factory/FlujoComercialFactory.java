@@ -1,4 +1,4 @@
-package com.llosa.backend.proyecto.factory;
+package com.llosa.backend.factory;
 
 import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.comercial.entity.HitoProcesoCompra;
