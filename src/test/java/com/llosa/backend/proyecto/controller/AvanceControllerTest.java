@@ -10,7 +10,6 @@ import com.llosa.backend.proyecto.entity.Hito;
 import com.llosa.backend.proyecto.entity.HitoPiso;
 import com.llosa.backend.proyecto.entity.Piso;
 import com.llosa.backend.proyecto.enums.EstadoHito;
-import com.llosa.backend.proyecto.enums.TipoHito;
 import com.llosa.backend.proyecto.service.HitoPisoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +48,7 @@ class AvanceControllerTest {
     void actualizarAvance_completado_devuelve200() throws Exception {
         UUID id = UUID.randomUUID();
         Hito hito = Hito.builder().id(UUID.randomUUID()).titulo("H1").orden(1)
-                .tipo(TipoHito.OBRA).estado(EstadoHito.COMPLETADO).build();
+                .estado(EstadoHito.COMPLETADO).build();
         HitoPiso hitoPiso = HitoPiso.builder().id(id).hito(hito)
                 .piso(Piso.builder().id(1L).nroPiso(1).build())
                 .estado(EstadoHito.COMPLETADO).build();

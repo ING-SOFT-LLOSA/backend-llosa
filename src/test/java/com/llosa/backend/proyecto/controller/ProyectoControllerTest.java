@@ -11,7 +11,6 @@ import com.llosa.backend.proyecto.dto.request.ProyectoCreateDTO;
 import com.llosa.backend.proyecto.entity.Hito;
 import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.enums.EstadoHito;
-import com.llosa.backend.proyecto.enums.TipoHito;
 import com.llosa.backend.proyecto.service.HitoService;
 import com.llosa.backend.proyecto.service.ProyectoService;
 import org.junit.jupiter.api.Test;
@@ -171,13 +170,12 @@ class ProyectoControllerTest {
                 .id(UUID.randomUUID())
                 .titulo("Cimentación")
                 .orden(1)
-                .tipo(TipoHito.OBRA)
                 .estado(EstadoHito.PENDIENTE)
                 .proyecto(proyecto)
                 .build();
         when(hitoService.save(eq(proyectoId), any(Hito.class))).thenReturn(hito);
 
-        HitoCreateDTO dto = new HitoCreateDTO("Cimentación", 1, TipoHito.OBRA, null);
+        HitoCreateDTO dto = new HitoCreateDTO("Cimentación", 1, null);
 
         mockMvc.perform(post("/api/proyectos/" + proyectoId + "/hitos")
                         .with(authentication(TestData.proyectoAuthToken()))
