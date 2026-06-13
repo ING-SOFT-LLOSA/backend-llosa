@@ -60,8 +60,6 @@ public class CartaAprobacionServiceImpl implements CartaAprobacionService {
         return CartaAprobacionResponse.fromEntity(guardada);
     }
 
-
-
     @Override
     public CartaAprobacionResponse obtenerPorUsuarioActivo(UUID uuidUsuarioActivo) {
         CartaAprobacion ca = cartaAprobacionRepository
