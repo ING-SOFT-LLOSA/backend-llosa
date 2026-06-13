@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import com.llosa.backend.config.FirebaseConfig;
+import com.llosa.backend.config.GcsTestConfig;
 import com.llosa.backend.config.PostgresTestContainerConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
@@ -57,12 +58,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * CP10: POST /api/users → (activo=false) → POST /api/auth/login (403 Forbidden)
  * CP11: POST /api/users → POST /api/units/assign (Separado) → GET /api/auth/me (200, modoDespera=true)
  */
-@Disabled
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
-@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class})
+@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class, GcsTestConfig.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Transactional
 class CP09CP10CP11E2ETest {

@@ -3,6 +3,7 @@ package com.llosa.backend.seguridad.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
+import com.llosa.backend.config.GcsTestConfig;
 import com.llosa.backend.config.PostgresTestContainerConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
@@ -52,12 +53,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - Refresco de token
  * - Acceso autorizado a endpoints
  */
-@Disabled
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
-@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class})
+@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class, GcsTestConfig.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Transactional
 class CP07IntegrationTest {
@@ -252,6 +252,10 @@ class CP07IntegrationTest {
     void cp07_crearUsuarioSinRol_puedeAsignarsePosterior() throws Exception {
         CrearUsuarioRequest req = TestData.crearUsuarioRequest();
         req.setEmail("cp07-sinrol@test.com");
+        // EMPLEADO sin idRol => queda sin rol asignado. (Un CLIENTE recibiria el
+        // rol CLIENTE automaticamente, ver UsuarioService.crearUsuario.)
+        req.setTipoUsuario("EMPLEADO");
+        req.setIdRol(null);
         String firebaseUid = "cp07-uid-005";
 
         UserRecord mockRecord = mock(UserRecord.class);

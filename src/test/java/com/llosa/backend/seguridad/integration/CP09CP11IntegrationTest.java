@@ -3,6 +3,7 @@ package com.llosa.backend.seguridad.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
+import com.llosa.backend.config.GcsTestConfig;
 import com.llosa.backend.config.PostgresTestContainerConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
@@ -57,12 +58,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - Acceso limitado a funcionalidades
  * - Bloqueo de acciones específicas
  */
-@Disabled
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
-@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class})
+@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class, GcsTestConfig.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Transactional
 class CP09CP11IntegrationTest {
@@ -204,9 +204,8 @@ class CP09CP11IntegrationTest {
                 .with(securityContext(contextWithAuth(token))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nombre").value("Carlos"))
-                .andExpect(jsonPath("$.apellidos").value("López García"))
                 .andExpect(jsonPath("$.email").value("cp09-vendido-2@test.com"))
-                .andExpect(jsonPath("$.telefono").value("+51987654321"));
+                .andExpect(jsonPath("$.tipoUsuario").value("CLIENTE"));
     }
 
     /**

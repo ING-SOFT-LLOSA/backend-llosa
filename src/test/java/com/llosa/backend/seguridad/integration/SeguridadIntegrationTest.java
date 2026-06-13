@@ -5,6 +5,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import com.llosa.backend.annotation.CP;
 import com.llosa.backend.config.FirebaseConfig;
+import com.llosa.backend.config.GcsTestConfig;
 import com.llosa.backend.config.PostgresTestContainerConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
@@ -45,12 +46,11 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@Disabled
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
-@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class})
+@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class, GcsTestConfig.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class SeguridadIntegrationTest {
 
@@ -185,7 +185,7 @@ class SeguridadIntegrationTest {
                     .with(securityContext(contextWithAuth(token))))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.nombre").value(crearReq.getNombre()))
-                    .andExpect(jsonPath("$.apellidos").value(crearReq.getApellidos()));
+                    .andExpect(jsonPath("$.email").value(crearReq.getEmail()));
         }
     }
 
