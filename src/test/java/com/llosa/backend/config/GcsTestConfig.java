@@ -6,6 +6,7 @@ import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
@@ -45,6 +46,7 @@ public class GcsTestConfig {
     }
 
     @Bean
+    @Primary
     public Storage googleCloudStorage() {
         String endpoint = "http://" + FAKE_GCS.getHost() + ":" + FAKE_GCS.getMappedPort(4443);
         Storage storage = StorageOptions.newBuilder()

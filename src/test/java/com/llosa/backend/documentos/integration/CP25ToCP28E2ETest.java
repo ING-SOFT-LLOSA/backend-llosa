@@ -60,11 +60,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Si el backend no cumple un CP, el test falla (rojo) => defecto para Mantis.
  *
  * Endpoints (modulo documentos):
- *   POST   /api/documentos/usuario-activo/{id}  (multipart: file + data)  DOCS_SUBIR
+ *   POST   /api/documentos/{id}  (multipart: file + data)  DOCS_SUBIR
  *   GET    /api/documentos/{id}/signed-url                                 DOCS_VER
  *   GET    /api/documentos/mis-documentos                                  DOCS_VER
  */
-@SpringBootTest
+// La Boveda Digital necesita un Storage REAL-emulado (fake-gcs-server) para
+// verificar de verdad la subida/descarga de documentos. Por eso este test usa
+// GcsTestConfig (emulador, @Primary) en lugar del mock(Storage) que define
+// SecurityTestConfiguration. Se habilita el override de beans para que el
+// emulador prevalezca sobre el mock.
+@SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
@@ -127,7 +132,7 @@ class CP25ToCP28E2ETest {
         MockMultipartFile data = new MockMultipartFile(
                 "data", "", "application/json", "{\"tipoDocumento\":\"PDF_LEGAL\"}".getBytes());
 
-        mockMvc.perform(multipart("/api/documentos/usuario-activo/{id}", expedienteA.getUuidUsuarioActivo())
+        mockMvc.perform(multipart("/api/documentos/{id}", expedienteA.getUuidUsuarioActivo())
                         .file(file).file(data)
                         .with(securityContext(contextWithAuth(asesorAuth(clienteA.getFirebaseUuid()))))
                         .with(csrf()))
@@ -154,7 +159,7 @@ class CP25ToCP28E2ETest {
 
         boolean rechazado;
         try {
-            int status = mockMvc.perform(multipart("/api/documentos/usuario-activo/{id}", expedienteA.getUuidUsuarioActivo())
+            int status = mockMvc.perform(multipart("/api/documentos/{id}", expedienteA.getUuidUsuarioActivo())
                             .file(file).file(data)
                             .with(securityContext(contextWithAuth(asesorAuth(clienteA.getFirebaseUuid()))))
                             .with(csrf()))
@@ -183,7 +188,7 @@ class CP25ToCP28E2ETest {
 
         boolean rechazado;
         try {
-            int status = mockMvc.perform(multipart("/api/documentos/usuario-activo/{id}", expedienteA.getUuidUsuarioActivo())
+            int status = mockMvc.perform(multipart("/api/documentos/{id}", expedienteA.getUuidUsuarioActivo())
                             .file(file).file(data)
                             .with(securityContext(contextWithAuth(asesorAuth(clienteA.getFirebaseUuid()))))
                             .with(csrf()))
@@ -217,7 +222,7 @@ class CP25ToCP28E2ETest {
         MockMultipartFile data = new MockMultipartFile(
                 "data", "", "application/json", "{\"tipoDocumento\":\"PDF_LEGAL\"}".getBytes());
 
-        mockMvc.perform(multipart("/api/documentos/usuario-activo/{id}", expedienteA.getUuidUsuarioActivo())
+        mockMvc.perform(multipart("/api/documentos/{id}", expedienteA.getUuidUsuarioActivo())
                         .file(file).file(data)
                         .with(securityContext(contextWithAuth(asesorAuth(clienteA.getFirebaseUuid()))))
                         .with(csrf()))
@@ -250,7 +255,7 @@ class CP25ToCP28E2ETest {
         MockMultipartFile data = new MockMultipartFile(
                 "data", "", "application/json", "{\"tipoDocumento\":\"PDF_LEGAL\"}".getBytes());
 
-        mockMvc.perform(multipart("/api/documentos/usuario-activo/{id}", expedienteA.getUuidUsuarioActivo())
+        mockMvc.perform(multipart("/api/documentos/{id}", expedienteA.getUuidUsuarioActivo())
                         .file(file).file(data)
                         .with(securityContext(contextWithAuth(asesorAuth(clienteA.getFirebaseUuid()))))
                         .with(csrf()))
@@ -287,26 +292,22 @@ class CP25ToCP28E2ETest {
         MockMultipartFile data = new MockMultipartFile(
                 "data", "", "application/json", "{\"tipoDocumento\":\"PDF_LEGAL\"}".getBytes());
 
-        mockMvc.perform(multipart("/api/documentos/usuario-activo/{id}", expedienteA.getUuidUsuarioActivo())
+        mockMvc.perform(multipart("/api/documentos/{id}", expedienteA.getUuidUsuarioActivo())
                         .file(file).file(data)
                         .with(securityContext(contextWithAuth(asesorAuth(clienteA.getFirebaseUuid()))))
                         .with(csrf()))
                 .andExpect(status().is2xxSuccessful());
 
         // Listar por usuario-activo
-        mockMvc.perform(get("/api/documentos/usuario-activo/{id}", expedienteA.getUuidUsuarioActivo())
+        mockMvc.perform(get("/api/documentos/{id}", expedienteA.getUuidUsuarioActivo())
                         .with(securityContext(contextWithAuth(asesorAuth(clienteA.getFirebaseUuid())))))
                 .andExpect(status().isOk());
 
         // Listar por usuario-activo filtrando por tipo
-        mockMvc.perform(get("/api/documentos/usuario-activo/{id}", expedienteA.getUuidUsuarioActivo())
+        mockMvc.perform(get("/api/documentos/{id}", expedienteA.getUuidUsuarioActivo())
                         .param("tipoDocumento", "PDF_LEGAL")
                         .with(securityContext(contextWithAuth(asesorAuth(clienteA.getFirebaseUuid())))))
                 .andExpect(status().isOk());
-
-        // mis-documentos (cliente)
-        runQuietly(() -> mockMvc.perform(get("/api/documentos/mis-documentos")
-                .with(securityContext(contextWithAuth(clienteAuth(clienteA.getFirebaseUuid()))))));
 
         // Eliminar el documento
         String documentoId = documentoRepository.findAll().get(0).getId().toString();
@@ -315,13 +316,6 @@ class CP25ToCP28E2ETest {
                         .with(csrf()))
                 .andExpect(status().is2xxSuccessful());
     }
-
-    private void runQuietly(ThrowingRun op) {
-        try { op.run(); } catch (Exception ignored) { /* ejerce el codigo aunque propague */ }
-    }
-
-    @FunctionalInterface
-    private interface ThrowingRun { void run() throws Exception; }
 
     // ── Helpers de datos ────────────────────────────────────────────────────────
 
