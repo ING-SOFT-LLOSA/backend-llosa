@@ -10,6 +10,9 @@ import com.llosa.backend.proyecto.dto.response.ActivoResponseDTO;
 import com.llosa.backend.proyecto.service.UsuarioActivoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -54,6 +57,14 @@ public class UsuarioActivoController {
                 .map(ActivoResponseDTO::fromEntity)
                 .toList();
         return ResponseEntity.ok(activos);
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<UsuarioActivoResponseDTO>> obtenerTodos(
+            @PageableDefault(size = 10) Pageable pageable
+    ) {
+        Page<UsuarioActivoResponseDTO> paginado = usuarioActivoService.listar(pageable);
+        return ResponseEntity.ok(paginado);
     }
 
     /**
