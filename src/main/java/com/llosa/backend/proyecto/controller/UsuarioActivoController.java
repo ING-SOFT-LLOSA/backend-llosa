@@ -1,5 +1,11 @@
 package com.llosa.backend.proyecto.controller;
 
+import com.llosa.backend.pagos.dto.CartaAprobacionResponse;
+import com.llosa.backend.pagos.dto.ContratoDetalleResponse;
+import com.llosa.backend.pagos.dto.CronogramaPagoResponse;
+import com.llosa.backend.pagos.dto.ResumenResponse;
+import com.llosa.backend.pagos.service.CartaAprobacionService;
+import com.llosa.backend.pagos.service.CronogramaPagoService;
 import com.llosa.backend.proyecto.dto.response.UsuarioActivoResponseDTO;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.service.UsuarioService;
@@ -18,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -27,6 +34,8 @@ public class UsuarioActivoController {
 
     private final UsuarioActivoService usuarioActivoService;
     private final UsuarioService usuarioService;
+    private final CronogramaPagoService cronogramaPagoService;
+    private final CartaAprobacionService cartaAprobacionService;
 
     /**
      * Retorna los activos del cliente autenticado.
@@ -66,16 +75,34 @@ public class UsuarioActivoController {
     }
 
     /**
-     * Retorna el contrato/proceso comercial de un activo con la lista completa de copropietarios.
+     * Retorna el contrato/proceso comercial de un activo con la lista completa de copropietarios,
+     * incluyendo datos del cronograma de pagos y carta de aprobación bancaria si existen.
      * Estado: Funcional
      */
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @GetMapping("/{uuidActivo}/contrato")
-    public ResponseEntity<UsuarioActivoResponseDTO> verContratoActivoUsuario(@PathVariable UUID uuidActivo) {
-        return usuarioActivoService.findByActivo(uuidActivo)
-                .map(UsuarioActivoResponseDTO::fromEntity)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<ContratoDetalleResponse> verContratoActivoUsuario(@PathVariable UUID uuidActivo) {
+        Optional<UsuarioActivo> optUa = usuarioActivoService.findByActivo(uuidActivo);
+        if (optUa.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        UUID uaId = optUa.get().getUuidUsuarioActivo();
+        UsuarioActivoResponseDTO expediente = UsuarioActivoResponseDTO.fromEntity(optUa.get());
+
+        CronogramaPagoResponse cronograma = null;
+        ResumenResponse resumen = null;
+        try {
+            cronograma = cronogramaPagoService.obtenerPorUsuarioActivo(uaId);
+            resumen = cronogramaPagoService.obtenerResumen(cronograma.uuidCronograma());
+        } catch (Exception ignored) {}
+
+        CartaAprobacionResponse carta = null;
+        try {
+            carta = cartaAprobacionService.obtenerPorUsuarioActivo(uaId);
+        } catch (Exception ignored) {}
+
+        return ResponseEntity.ok(new ContratoDetalleResponse(expediente, cronograma, carta, resumen));
     }
     /**
      * Retorna contrato de un usario

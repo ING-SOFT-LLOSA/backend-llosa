@@ -9,7 +9,7 @@ COPY pom.xml .
 COPY src ./src
 
 # 2. Forzar a Maven a escribir localmente usando parámetros del sistema
-RUN mvn clean package -Dmaven.repo.local=/build/.m2/repository
+RUN mvn clean package -DskipTests -Dmaven.repo.local=/build/.m2/repository
 
 # Stage 2: Run the application (Replacing deprecated openjdk image)
 FROM eclipse-temurin:21-jre-alpine

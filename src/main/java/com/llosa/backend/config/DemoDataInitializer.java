@@ -64,31 +64,25 @@ public class DemoDataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (usuarioRepository.findByEmail("demo.asesor@llosa.com").isPresent()) {
+        if (usuarioRepository.findByEmail("demo.admin@llosa.com").isPresent()) {
             log.info("Datos demo ya existen, omitiendo inicialización.");
             return;
         }
 
         log.info("=== Inicializando datos demo ===");
 
-        var rolAsesor = rolRepository.findByNombre("ASESOR").orElseThrow();
-        var rolLegal = rolRepository.findByNombre("LEGAL").orElseThrow();
-        var rolesTecnico = rolRepository.findByNombre("TECNICO").orElseThrow();
-        var rolPostventa = rolRepository.findByNombre("POSTVENTA").orElseThrow();
-        var rolCliente = rolRepository.findByNombre("CLIENTE").orElseThrow();
+        var admin = crearUsuarioDemo("demo.admin@llosa.com", "Demo123!", "ADMIN", "EMPLEADO", "Admin", "Sistema");
+        var asesor = crearUsuarioDemo("demo.asesor@llosa.com", "Demo123!", "ASESOR", "EMPLEADO", "Carlos", "Asesor");
+        var cliente = crearUsuarioDemo("demo.cliente@llosa.com", "Demo123!", "CLIENTE", "CLIENTE", "María", "Cliente");
+        
+        var sofia = crearUsuarioDemo("sofia@cliente.com", "Demo123!", "CLIENTE", "CLIENTE", "Sofía", "Pérez");
+        var ricardo = crearUsuarioDemo("ricardo@cliente.com", "Demo123!", "CLIENTE", "CLIENTE", "Ricardo", "Gómez");
+        var carmen = crearUsuarioDemo("carmen@cliente.com", "Demo123!", "CLIENTE", "CLIENTE", "Carmen", "López");
+        var tecnico = crearUsuarioDemo("tecnico@llosa.com", "Demo123!", "ASESOR", "EMPLEADO", "Juan", "Técnico");
+        var rolCliente = carmen.getRol();
 
-        var asesor = crearUsuario("demo.asesor@llosa.com", "Demo123!", "ASESOR", "EMPLEADO", "Carlos", "Asesor", "DNI", "12345678", "999111000", rolAsesor);
-        var legal = crearUsuario("demo.legal@llosa.com", "Demo123!", "LEGAL", "EMPLEADO", "Rosa", "García", "DNI", "87654321", "999222111", rolLegal);
-        var tecnico = crearUsuario("demo.tecnico@llosa.com", "Demo123!", "TECNICO", "EMPLEADO", "Miguel", "Torres", "DNI", "45678912", "999333222", rolesTecnico);
-        var postventa = crearUsuario("demo.postventa@llosa.com", "Demo123!", "POSTVENTA", "EMPLEADO", "Ana", "Rivas", "DNI", "78912345", "999444333", rolPostventa);
-
-        var sofia = crearUsuario("demo.cliente1@llosa.com", "Demo123!", "CLIENTE", "CLIENTE", "Sofía", "Martínez", "DNI", "11122334", "999555444", rolCliente);
-        var ricardo = crearUsuario("demo.cliente2@llosa.com", "Demo123!", "CLIENTE", "CLIENTE", "Ricardo", "Gutiérrez", "CE", "R1234567", "999666555", rolCliente);
-        var carmen = crearUsuario("demo.cliente3@llosa.com", "Demo123!", "CLIENTE", "CLIENTE", "Carmen", "Vega", "DNI", "22334455", "999777666", rolCliente);
-
-        if (asesor == null || legal == null || tecnico == null || postventa == null
-                || sofia == null || ricardo == null || carmen == null) {
-            log.warn("No se pudieron crear todos los usuarios demo, abortando.");
+        if (admin == null || asesor == null || cliente == null || sofia == null || ricardo == null || carmen == null || tecnico == null) {
+            log.warn("No se pudieron crear los usuarios demo, abortando.");
             return;
         }
 
@@ -205,7 +199,28 @@ public class DemoDataInitializer implements CommandLineRunner {
         crearHitosPisoDemo(proyectoSI);
         crearHitosPisoDemo(proyectoLM);
 
+        var depto301 = proyectoLO.getTorres().getFirst().getPisos().get(2).getActivos().get(0);
+        var usuarioActivo = uaRicardo;
+
         log.info("=== Datos demo inicializados correctamente ===");
+        log.info("Usuario admin:   demo.admin@llosa.com / Demo123!  (rol=ADMIN)");
+        log.info("Usuario asesor:  demo.asesor@llosa.com / Demo123!  (rol=ASESOR)");
+        log.info("Usuario cliente: demo.cliente@llosa.com / Demo123! (rol=CLIENTE)");
+        log.info("Activo asignado al cliente: {} (id={})", depto301.getNro(), depto301.getId());
+        log.info("UUID UsuarioActivo (uuidUsuarioActivo): {}", usuarioActivo.getUuidUsuarioActivo());
+    }
+
+    private Usuario crearUsuarioDemo(String email, String password, String rolNombre,
+                                     String tipoUsuario, String nombre, String apellidos) {
+        var rol = rolRepository.findByNombre(rolNombre)
+                .orElseGet(() -> {
+                    var newRol = new Rol();
+                    newRol.setNombre(rolNombre);
+                    return rolRepository.save(newRol);
+                });
+
+        return crearUsuario(email, password, rolNombre, tipoUsuario, nombre, apellidos,
+                "DNI", UUID.randomUUID().toString().substring(0, 8), "999888777", rol);
     }
 
     private Usuario crearUsuario(String email, String password, String rolNombre,
@@ -503,11 +518,28 @@ public class DemoDataInitializer implements CommandLineRunner {
         return ua;
     }
 
-    // ─── HITOS DE COMPRA ────────────────────────────────────────────────────────
+    private void crearHitosProcesoCompra(UsuarioActivo ua) {
+        var hitos = List.of(
+                hitoCompra(ua, EtapaProceso.SEPARACION, 1, "Firma de Separación", EstadoHitoComercial.COMPLETADO),
+                hitoCompra(ua, EtapaProceso.CONTRATO, 2, "Revisión de Contrato", EstadoHitoComercial.EN_PROGRESO),
+                hitoCompra(ua, EtapaProceso.CONTRATO, 3, "Firma de Contrato", EstadoHitoComercial.PENDIENTE),
+                // Etapa PAGO se deja vacía para ser llenada por la Carta de Aprobación
+                hitoCompra(ua, EtapaProceso.ENTREGA, 4, "Coordinación de Entrega", EstadoHitoComercial.PENDIENTE),
+                hitoCompra(ua, EtapaProceso.ENTREGA, 5, "Acta de Entrega", EstadoHitoComercial.PENDIENTE),
+                hitoCompra(ua, EtapaProceso.SANEAMIENTO, 6, "Trámite de Saneamiento", EstadoHitoComercial.PENDIENTE)
+        );
+        hitoProcesoCompraRepository.saveAll(hitos);
+        log.info("{} hitos de compra creados para activo {}", hitos.size(), ua.getActivo().getNro());
+    }
 
     private void crearHitos(UsuarioActivo ua, List<HitoProcesoCompra> hitos) {
         hitoProcesoCompraRepository.saveAll(hitos);
         log.info("{} hitos de compra creados para activo {}", hitos.size(), ua.getActivo().getNro());
+    }
+
+    private HitoProcesoCompra hitoCompra(UsuarioActivo ua, EtapaProceso etapa, int orden,
+                                         String nombre, EstadoHitoComercial estado) {
+        return hitoCompra(ua, etapa, orden, nombre, estado, null);
     }
 
     private HitoProcesoCompra hitoCompra(UsuarioActivo ua, EtapaProceso etapa, int orden,

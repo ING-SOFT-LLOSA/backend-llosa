@@ -31,4 +31,6 @@ public interface HitoProcesoCompraRepository extends JpaRepository<HitoProcesoCo
             UUID uuidUsuarioActivo,
             EtapaProceso etapaProceso
     );
+
+    void deleteByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(UUID uuidUsuarioActivo, EtapaProceso etapaProceso);
 }

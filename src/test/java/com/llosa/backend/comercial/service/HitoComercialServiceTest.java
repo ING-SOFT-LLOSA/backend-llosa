@@ -35,6 +35,8 @@ class HitoComercialServiceTest {
 
     @Mock HitoProcesoCompraRepository hitoRepository;
     @Mock UsuarioActivoRepository usuarioActivoRepository;
+    @Mock com.llosa.backend.pagos.repository.CronogramaPagoRepository cronogramaPagoRepository;
+    @Mock com.llosa.backend.pagos.repository.PagoRepository pagoRepository;
 
     @InjectMocks HitoComercialServiceImpl service;
 

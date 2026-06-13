@@ -52,6 +52,8 @@ class UsuarioActivoControllerTest {
     @MockitoBean UsuarioActivoService usuarioActivoService;
     @MockitoBean ActivoService activoService;
     @MockitoBean UsuarioService usuarioService;
+    @MockitoBean com.llosa.backend.pagos.service.CronogramaPagoService cronogramaPagoService;
+    @MockitoBean com.llosa.backend.pagos.service.CartaAprobacionService cartaAprobacionService;
     @MockitoBean FirebaseConfig firebaseConfig;
     @MockitoBean com.llosa.backend.seguridad.repository.UsuarioRepository usuarioRepository;
 

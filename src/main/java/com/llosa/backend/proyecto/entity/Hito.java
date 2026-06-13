@@ -51,5 +51,6 @@ public class Hito {
     private Proyecto proyecto;
 
     @OneToMany(mappedBy = "hito", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<HitoPiso> hitosPiso = new ArrayList<>();
 }
