@@ -5,6 +5,8 @@ import com.llosa.backend.proyecto.dto.request.CrearContratoDTO;
 import com.llosa.backend.proyecto.dto.response.UsuarioActivoResponseDTO;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,4 +24,5 @@ public interface UsuarioActivoService {
     UsuarioActivoResponseDTO asignarActivo(AsignarActivoDTO dto);
     void deleteById(UUID id);
     void eliminarContrato(UUID usuarioActivoId);
+    Page<UsuarioActivoResponseDTO> listar(Pageable pageable);
 }
