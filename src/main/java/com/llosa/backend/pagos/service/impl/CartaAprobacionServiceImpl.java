@@ -56,41 +56,11 @@ public class CartaAprobacionServiceImpl implements CartaAprobacionService {
         CartaAprobacion guardada = cartaAprobacionRepository.save(carta);
         log.info("Carta de aprobación creada: {} para expediente: {}", guardada.getId(), request.uuidUsuarioActivo());
 
-        generarHitosHipotecarios(ua);
 
         return CartaAprobacionResponse.fromEntity(guardada);
     }
 
-    private void generarHitosHipotecarios(UsuarioActivo ua) {
-        log.info("Generando hitos de crédito hipotecario para el expediente: {}", ua.getUuidUsuarioActivo());
 
-        EtapaExpediente etapaPago = etapaExpedienteRepository
-                .findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(ua.getUuidUsuarioActivo(), EtapaProceso.PAGO)
-                .orElseThrow(() -> new BusinessException("No existe etapa PAGO para el expediente: " + ua.getUuidUsuarioActivo()));
-
-        etapaPago.getHitosComerciales().clear();
-
-        List<String> nombresHitos = List.of(
-                "Pago de Separación",
-                "Pago Inicial",
-                "Inicio de Desembolso",
-                "Minuta en Notaría",
-                "Firma de Escritura Pública",
-                "Desembolso Completado"
-        );
-
-        for (int i = 0; i < nombresHitos.size(); i++) {
-            HitoProcesoCompra hito = HitoProcesoCompra.builder()
-                    .etapaExpediente(etapaPago)
-                    .nombreHito(nombresHitos.get(i))
-                    .orden(i + 1)
-                    .estado(EstadoHitoComercial.PENDIENTE)
-                    .build();
-            etapaPago.getHitosComerciales().add(hito);
-        }
-
-        etapaExpedienteRepository.save(etapaPago);
-    }
 
     @Override
     public CartaAprobacionResponse obtenerPorUsuarioActivo(UUID uuidUsuarioActivo) {
