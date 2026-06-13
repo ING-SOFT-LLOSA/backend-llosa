@@ -25,6 +25,7 @@ import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -69,6 +70,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // GcsTestConfig (emulador, @Primary) en lugar del mock(Storage) que define
 // SecurityTestConfiguration. Se habilita el override de beans para que el
 // emulador prevalezca sobre el mock.
+@Tag("integration")
 @SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
 @AutoConfigureMockMvc
 @Testcontainers

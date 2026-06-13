@@ -247,7 +247,10 @@
 						-XX:+EnableDynamicAgentLoading
 						-Djdk.attach.allowAttachSelf=true
 					</argLine>
-					<excludedGroups>stress</excludedGroups>
+					<!-- 'integration': tests E2E con Testcontainers (Docker). Se excluyen por
+					     defecto porque el agente de CI no levanta contenedores. Correr en local
+					     con: mvn test -Dgroups=integration -->
+					<excludedGroups>stress,integration</excludedGroups>
 					<systemPropertyVariables>
 						<api.version>1.41</api.version>
 					</systemPropertyVariables>

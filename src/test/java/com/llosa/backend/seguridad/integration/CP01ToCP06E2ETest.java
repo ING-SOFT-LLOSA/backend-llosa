@@ -16,6 +16,7 @@ import com.llosa.backend.seguridad.repository.RolRepository;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Dominio corporativo configurado en perfil test (application-test.yml):
  *   app.dominio-corporativo = utec.edu.pe
  */
+@Tag("integration")
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers

@@ -17,6 +17,7 @@ import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - Refresco de token
  * - Acceso autorizado a endpoints
  */
+@Tag("integration")
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers

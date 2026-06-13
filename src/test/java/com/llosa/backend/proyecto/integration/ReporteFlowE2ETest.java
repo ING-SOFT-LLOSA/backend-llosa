@@ -15,6 +15,7 @@ import com.llosa.backend.proyecto.repository.ProyectoRepository;
 import com.llosa.backend.proyecto.repository.ReporteRepository;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,6 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * eliminar) para ejercer ReporteServiceImpl extremo a extremo. Tests de
  * integración (rol QA), no unitarios.
  */
+@Tag("integration")
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers

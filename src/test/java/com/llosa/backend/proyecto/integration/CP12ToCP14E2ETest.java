@@ -11,6 +11,7 @@ import com.llosa.backend.proyecto.repository.ProyectoRepository;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,6 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests FIELES al Plan de Pruebas: afirman lo que el sistema DEBE cumplir.
  * Si el backend no cumple un CP, el test falla (rojo) => defecto para Mantis.
  */
+@Tag("integration")
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
