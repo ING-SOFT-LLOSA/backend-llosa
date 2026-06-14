@@ -1,6 +1,7 @@
 package com.llosa.backend.proyecto.service.impl;
 
 import com.llosa.backend.comercial.entity.EtapaExpediente;
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.proyecto.dto.request.CrearContratoDTO;
 import com.llosa.backend.proyecto.dto.response.UsuarioActivoResponseDTO;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
@@ -91,16 +92,20 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
         UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(dto.uuidUsuarioActivo()).orElseThrow(
                 ()-> new EntityNotFoundException("Usuario no encontrado: " + dto.uuidUsuarioActivo())
         );
-        List<Activo> activos = dto.idsActivo().stream().map(
-                activoService::findById
-        ).toList();
+        List<Activo> activos = activoRepository.findByIdsForUpdate(dto.idsActivo());
+
+        if (activos.size() != dto.idsActivo().size()) {
+            throw new EntityNotFoundException("Uno o más activos solicitados no existen.");
+        }
         for (Activo activo : activos) {
-            if (!usuarioActivo.equals(activo.getUsuarioActivo()) && activo.getEstadoComercial() == EstadoComercialActivo.DISPONIBLE) {
-                activo.setUsuarioActivo(usuarioActivo);
-                activo.setEstadoComercial(EstadoComercialActivo.SEPARADO);
-                activoRepository.save(activo);
-                usuarioActivo.getActivos().add(activo);
+            if (activo.getEstadoComercial() != EstadoComercialActivo.DISPONIBLE) {
+                throw new BusinessException("El activo '" + activo.getNro() + "' ya no está disponible (Estado actual: " + activo.getEstadoComercial() + ").");
             }
+            activo.setUsuarioActivo(usuarioActivo);
+            activo.setEstadoComercial(EstadoComercialActivo.SEPARADO);
+
+            activoRepository.save(activo);
+            usuarioActivo.getActivos().add(activo);
         }
         return UsuarioActivoResponseDTO.fromEntity(usuarioActivo);
 

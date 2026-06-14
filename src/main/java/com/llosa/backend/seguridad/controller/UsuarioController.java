@@ -77,7 +77,7 @@ public class UsuarioController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('USER_GESTIONAR')")
-    public ResponseEntity<UsuarioResponse> modificarInformacionUsuario(@PathVariable Integer id, @RequestBody UpdateUsuarioDTO updateUsuarioDTO){
+    public ResponseEntity<UsuarioResponse> modificarInformacionUsuario(@PathVariable Integer id, @RequestBody @Valid UpdateUsuarioDTO updateUsuarioDTO){
         UsuarioResponse usuarioResponse = usuarioService.actualizarUsuario(id, updateUsuarioDTO);
         return ResponseEntity.ok(usuarioResponse);
     }

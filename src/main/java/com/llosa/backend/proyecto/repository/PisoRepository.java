@@ -15,7 +15,7 @@ public interface PisoRepository extends JpaRepository<Piso, Long> {
     List<Piso> findByTorreId(Long torreId);
 
     @Query("SELECT p FROM Piso p WHERE p.torre.id = :torreId AND " +
-           "CAST(p.nroPiso AS string) LIKE %:search%")
+            "CAST(p.nroPiso AS string) LIKE CONCAT('%', :search, '%') ESCAPE '\\'")
     List<Piso> findByTorreIdAndSearch(@Param("torreId") Long torreId, @Param("search") String search);
 
     List<Piso> findByTorreProyectoId(UUID proyectoId);

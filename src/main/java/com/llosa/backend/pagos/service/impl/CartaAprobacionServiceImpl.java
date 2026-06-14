@@ -1,9 +1,5 @@
 package com.llosa.backend.pagos.service.impl;
 
-import com.llosa.backend.comercial.entity.EtapaExpediente;
-import com.llosa.backend.comercial.entity.HitoProcesoCompra;
-import com.llosa.backend.comercial.enums.EstadoHitoComercial;
-import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
@@ -55,7 +51,6 @@ public class CartaAprobacionServiceImpl implements CartaAprobacionService {
 
         CartaAprobacion guardada = cartaAprobacionRepository.save(carta);
         log.info("Carta de aprobación creada: {} para expediente: {}", guardada.getId(), request.uuidUsuarioActivo());
-
 
         return CartaAprobacionResponse.fromEntity(guardada);
     }

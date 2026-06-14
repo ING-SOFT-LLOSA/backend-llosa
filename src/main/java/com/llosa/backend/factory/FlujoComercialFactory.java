@@ -10,6 +10,7 @@ import com.llosa.backend.comercial.enums.EtapaRequisitoDocumental;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -28,7 +29,7 @@ public class FlujoComercialFactory {
                 : contrato.getTipoFinanciamiento().toUpperCase(Locale.ROOT);
 
         // 1. ETAPA: SEPARACIÓN
-        EtapaExpediente separacion = construirEtapa(contrato, EtapaProceso.SEPARACION, EstadoEtapaExpediente.PENDIENTE);
+        EtapaExpediente separacion = construirEtapa(contrato, EtapaProceso.SEPARACION);
         separacion.getHitosComerciales().add(construirHito(separacion, "Proforma", 1,
                 "Documento preliminar con precio, forma de pago y características de la unidad"));
         separacion.getHitosComerciales().add(construirHito(separacion, "Pago de separación", 2,
@@ -65,7 +66,7 @@ public class FlujoComercialFactory {
         etapas.add(separacion);
 
         // 2. ETAPA: CONTRATO
-        EtapaExpediente contratoEtapa = construirEtapa(contrato, EtapaProceso.CONTRATO, EstadoEtapaExpediente.PENDIENTE);
+        EtapaExpediente contratoEtapa = construirEtapa(contrato, EtapaProceso.CONTRATO);
         contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Revisión del contrato", 1,
                 "El cliente recibe y revisa el borrador del contrato"));
         contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Carta de aprobación del banco", 2,
@@ -104,39 +105,46 @@ public class FlujoComercialFactory {
         etapas.add(contratoEtapa);
 
         // 3. ETAPA: PAGO
-        EtapaExpediente pago = construirEtapa(contrato, EtapaProceso.PAGO, EstadoEtapaExpediente.PENDIENTE);
-        pago.getHitosComerciales().add(construirHito(pago, "Pago de la cuota inicial", 1,
-                "Paso común de inicio del cronograma de pagos"));
+        // 3. ETAPA: PAGO
+        EtapaExpediente pago = construirEtapa(contrato, EtapaProceso.PAGO);
 
         if (tipoFinanciamiento.contains("HIPOT")) {
-            pago.getHitosComerciales().add(construirHito(pago, "Inicio de desembolso", 2,
-                    "El proceso bancario hacia Llosa ha comenzado"));
-            pago.getHitosComerciales().add(construirHito(pago, "Minuta revisión en notaría", 3,
-                    "La minuta fue enviada a notaría para revisión y elevación a escritura pública"));
-            pago.getHitosComerciales().add(construirHito(pago, "Firma de escritura pública", 4,
-                    "El cliente y Llosa firman ante notario"));
-            pago.getHitosComerciales().add(construirHito(pago, "Desembolso completado", 5,
-                    "El banco transfirió el monto aprobado a Llosa"));
-            pago.getHitosComerciales().add(construirHito(pago, "Inmueble cancelado", 6,
-                    "La operación financiera quedó cerrada"));
+
+            HitoProcesoCompra pagoSeparacion =
+                    construirHito(pago, "Pago de Separación", 1,
+                            "Pago de reserva de la unidad inmobiliaria.");
+
+            pagoSeparacion.setEstado(EstadoHitoComercial.COMPLETADO);
+            pagoSeparacion.setFechaCompletado(LocalDateTime.now());
+
+            pago.getHitosComerciales().add(pagoSeparacion);
+            pago.getHitosComerciales().add(construirHito(pago, "Pago Inicial", 2, "Abono inicial requerido para iniciar el proceso de compra."));
+            pago.getHitosComerciales().add(construirHito(pago, "Inicio de Desembolso", 3, "El banco inicia el proceso de desembolso del crédito hipotecario."));
+            pago.getHitosComerciales().add(construirHito(pago, "Minuta en Notaría", 4, "La minuta es revisada y procesada por la notaría."));
+            pago.getHitosComerciales().add(construirHito(pago, "Firma de Escritura Pública", 5, "Las partes firman la escritura pública ante notario."));
+            pago.getHitosComerciales().add(construirHito(pago, "Desembolso Completado", 6, "El banco realiza el desembolso final a la inmobiliaria."));
+
         } else {
-            pago.getHitosComerciales().add(construirHito(pago, "Pago de la cuota 1", 2,
-                    "Crédito directo"));
-            pago.getHitosComerciales().add(construirHito(pago, "Pago de la cuota 2", 3,
-                    "Crédito directo"));
-            pago.getHitosComerciales().add(construirHito(pago, "Pago de la cuota 3", 4,
-                    "Crédito directo"));
-            pago.getHitosComerciales().add(construirHito(pago, "Pago de la cuota 4", 5,
-                    "Crédito directo"));
-            pago.getHitosComerciales().add(construirHito(pago, "Inmueble cancelado", 6,
-                    "La unidad quedó totalmente cancelada"));
+
+            HitoProcesoCompra pagoSeparacion =
+                    construirHito(pago, "Pago de Separación", 1,
+                            "Pago de reserva de la unidad inmobiliaria.");
+
+            pagoSeparacion.setEstado(EstadoHitoComercial.COMPLETADO);
+            pagoSeparacion.setFechaCompletado(LocalDateTime.now());
+
+            pago.getHitosComerciales().add(pagoSeparacion);
+            pago.getHitosComerciales().add(construirHito(pago, "Pago Inicial", 2, "Cuota inicial requerida para formalizar la compra."));
+            pago.getHitosComerciales().add(construirHito(pago, "Pago en Proceso", 3, "El cliente continúa realizando los pagos acordados."));
+            pago.getHitosComerciales().add(construirHito(pago, "Pago Completado", 4, "La totalidad del importe acordado ha sido cancelada."));
         }
+
         etapas.add(pago);
 
 
 
         // 4. ETAPA: ENTREGA
-        EtapaExpediente entrega = construirEtapa(contrato, EtapaProceso.ENTREGA, EstadoEtapaExpediente.PENDIENTE);
+        EtapaExpediente entrega = construirEtapa(contrato, EtapaProceso.ENTREGA);
         entrega.getHitosComerciales().add(construirHito(entrega, "Inmueble terminado", 1,
                 "La obra de la unidad está concluida"));
         entrega.getHitosComerciales().add(construirHito(entrega, "Inmueble cancelado", 2,
@@ -239,7 +247,7 @@ public class FlujoComercialFactory {
         etapas.add(entrega);
 
         // 5. ETAPA: SANEAMIENTO
-        EtapaExpediente saneamiento = construirEtapa(contrato, EtapaProceso.SANEAMIENTO, EstadoEtapaExpediente.PENDIENTE);
+        EtapaExpediente saneamiento = construirEtapa(contrato, EtapaProceso.SANEAMIENTO);
         saneamiento.getHitosComerciales().add(construirHito(saneamiento, "Conformidad de obra", 1,
                 "Resolución municipal que certifica que la obra fue ejecutada conforme"));
         saneamiento.getHitosComerciales().add(construirHito(saneamiento, "Declaratoria de fábrica", 2,
@@ -294,11 +302,11 @@ public class FlujoComercialFactory {
 // MÉTODOS AUXILIARES
 // =========================================================================
 
-    private EtapaExpediente construirEtapa(UsuarioActivo contrato, EtapaProceso proceso, EstadoEtapaExpediente estado) {
+    private EtapaExpediente construirEtapa(UsuarioActivo contrato, EtapaProceso proceso) {
         return EtapaExpediente.builder()
                 .usuarioActivo(contrato)
                 .etapaProceso(proceso)
-                .estado(estado)
+                .estado(EstadoEtapaExpediente.PENDIENTE)
                 .hitosComerciales(new ArrayList<>())
                 .requisitos(new ArrayList<>())
                 .build();

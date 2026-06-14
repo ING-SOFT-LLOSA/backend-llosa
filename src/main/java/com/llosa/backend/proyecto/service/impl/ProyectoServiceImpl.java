@@ -69,7 +69,6 @@ public class ProyectoServiceImpl implements ProyectoService {
     @Transactional
     public void deleteById(UUID id) {
         proyectoRepository.deleteById(id);
-        return;
     }
 
     @Override
