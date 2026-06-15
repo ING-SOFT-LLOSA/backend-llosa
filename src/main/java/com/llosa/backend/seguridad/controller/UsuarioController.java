@@ -81,4 +81,20 @@ public class UsuarioController {
         UsuarioResponse usuarioResponse = usuarioService.actualizarUsuario(id, updateUsuarioDTO);
         return ResponseEntity.ok(usuarioResponse);
     }
+    // ── Activar usuario ────────────────────────────────────────────────────────
+    @PreAuthorize("hasAuthority('USER_GESTIONAR')")
+    @PatchMapping("/{id}/activar")
+    public ResponseEntity<Void> activar(@PathVariable Integer id) throws Exception {
+        usuarioService.cambiarEstado(id, true);
+        return ResponseEntity.ok().build();
+    }
+
+    // ── Modificar funciones del rol del usuario ────────────────────────────────
+    @PreAuthorize("hasAuthority('USER_GESTIONAR')")
+    @PatchMapping("/{id}/funciones")
+    public ResponseEntity<UsuarioResponse> modificarFunciones(
+            @PathVariable Integer id,
+            @Valid @RequestBody ModificarFuncionesRequest req) {
+        return ResponseEntity.ok(usuarioService.modificarFunciones(id, req.getIdFunciones()));
+    }
 }
