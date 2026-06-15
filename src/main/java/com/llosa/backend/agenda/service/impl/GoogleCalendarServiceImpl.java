@@ -19,6 +19,8 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+// Nota: EventAttendee ya no se usa en crearEvento/actualizarEvento.
+// Se mantiene la importación por si se reactiva con OAuth o DWD en el futuro.
 
 /**
  * Implementación real de la integración con Google Calendar API.
@@ -64,18 +66,14 @@ public class GoogleCalendarServiceImpl implements GoogleCalendarService {
 
             Event event = buildEvent(cita);
 
-            // Agregar al cliente como invitado SOLO si tiene Google
-            if (Boolean.TRUE.equals(cita.getClienteUsaGoogle())) {
-                EventAttendee attendee = new EventAttendee()
-                        .setEmail(cita.getCliente().getEmail())
-                        .setDisplayName(cita.getCliente().getNombre()
-                                + " " + cita.getCliente().getApellidos());
-                event.setAttendees(List.of(attendee));
-            }
-
+            // NOTA: Las Service Accounts no tienen permiso para enviar invitaciones
+            // a asistentes externos (requeriría Domain-Wide Delegation en Google Workspace).
+            // El evento se crea solo en el calendario institucional (service account).
+            // La notificación al cliente se gestiona por email desde la propia app.
+            // setSendUpdates("none") evita el 403 "forbiddenForServiceAccounts".
             Event createdEvent = service.events()
                     .insert(CALENDAR_ID, event)
-                    .setSendUpdates("all")   // envía invitación al cliente
+                    .setSendUpdates("none")
                     .execute();
 
             log.info("[Google Calendar] Evento creado. ID={}, Cita={}",
@@ -97,15 +95,11 @@ public class GoogleCalendarServiceImpl implements GoogleCalendarService {
 
             Event event = buildEvent(cita);
 
-            if (Boolean.TRUE.equals(cita.getClienteUsaGoogle())) {
-                EventAttendee attendee = new EventAttendee()
-                        .setEmail(cita.getCliente().getEmail());
-                event.setAttendees(List.of(attendee));
-            }
-
+            // Mismo criterio que crearEvento: la service account no puede
+            // invitar asistentes. setSendUpdates("none") previene el 403.
             service.events()
                     .update(CALENDAR_ID, cita.getGoogleEventId(), event)
-                    .setSendUpdates("all")
+                    .setSendUpdates("none")
                     .execute();
 
             log.info("[Google Calendar] Evento actualizado. ID={}", cita.getGoogleEventId());
