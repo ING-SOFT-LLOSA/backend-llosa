@@ -22,7 +22,11 @@ INSERT INTO funcion (nombre_codigo, descripcion) VALUES
                                                      ('CONTRATO_VER',   'Ver contratos'),
                                                      ('CONTRATO_EDITAR','Editar contratos'),
                                                      ('OBRA_VER',       'Ver avance de obra'),
-                                                     ('OBRA_EDITAR',    'Editar avance de obra')
+                                                     ('OBRA_EDITAR',    'Editar avance de obra'),
+                                                     ('AGENDA_VER',     'Ver citas y agenda'),
+                                                     ('AGENDA_CREAR',   'Crear nuevas citas'),
+                                                     ('AGENDA_EDITAR',  'Editar y cancelar citas'),
+                                                     ('ADMIN_TOTAL',    'Acceso total de administrador')
     ON CONFLICT (nombre_codigo) DO NOTHING;
 
 -- Permisos del ADMIN (todo)
@@ -36,35 +40,38 @@ WHERE r.nombre = 'ADMIN'
 INSERT INTO rol_funcion (id_rol, id_funcion)
 SELECT r.id_rol, f.id_funcion FROM roles r, funcion f
 WHERE r.nombre = 'ASESOR'
-  AND f.nombre_codigo IN ('PROY_VER','USER_GESTIONAR','USER_VER','DOCS_VER','DOCS_SUBIR','PAGOS_VER','CONTRATO_VER')
+  AND f.nombre_codigo IN ('PROY_VER','USER_GESTIONAR','USER_VER','DOCS_VER','DOCS_SUBIR',
+                          'PAGOS_VER','CONTRATO_VER','AGENDA_VER','AGENDA_CREAR','AGENDA_EDITAR')
     ON CONFLICT DO NOTHING;
 
 -- Permisos de LEGAL
 INSERT INTO rol_funcion (id_rol, id_funcion)
 SELECT r.id_rol, f.id_funcion FROM roles r, funcion f
 WHERE r.nombre = 'LEGAL'
-  AND f.nombre_codigo IN ('CONTRATO_VER','CONTRATO_EDITAR','DOCS_VER','USER_VER')
+  AND f.nombre_codigo IN ('CONTRATO_VER','CONTRATO_EDITAR','DOCS_VER','USER_VER','AGENDA_VER')
     ON CONFLICT DO NOTHING;
 
 -- Permisos de TECNICO
 INSERT INTO rol_funcion (id_rol, id_funcion)
 SELECT r.id_rol, f.id_funcion FROM roles r, funcion f
 WHERE r.nombre = 'TECNICO'
-  AND f.nombre_codigo IN ('OBRA_VER','OBRA_EDITAR','PROY_VER')
+  AND f.nombre_codigo IN ('OBRA_VER','OBRA_EDITAR','PROY_VER','AGENDA_VER')
     ON CONFLICT DO NOTHING;
 
 -- Permisos de POSTVENTA
 INSERT INTO rol_funcion (id_rol, id_funcion)
 SELECT r.id_rol, f.id_funcion FROM roles r, funcion f
 WHERE r.nombre = 'POSTVENTA'
-  AND f.nombre_codigo IN ('PROY_VER','DOCS_VER','PAGOS_VER')
+  AND f.nombre_codigo IN ('PROY_VER','DOCS_VER','PAGOS_VER',
+                          'AGENDA_VER','AGENDA_CREAR','AGENDA_EDITAR')
     ON CONFLICT DO NOTHING;
 
 -- Permisos de CLIENTE
 INSERT INTO rol_funcion (id_rol, id_funcion)
 SELECT r.id_rol, f.id_funcion FROM roles r, funcion f
 WHERE r.nombre = 'CLIENTE'
-  AND f.nombre_codigo IN ('PROY_VER','DOCS_VER','PAGOS_VER','OBRA_VER','CONTRATO_VER','USER_VER')
+  AND f.nombre_codigo IN ('PROY_VER','DOCS_VER','PAGOS_VER','OBRA_VER',
+                          'CONTRATO_VER','USER_VER','AGENDA_VER')
     ON CONFLICT DO NOTHING;
 
 -- Creación de índices de forma segura (ignora si ya existen)
@@ -102,8 +109,8 @@ VALUES (
     ON CONFLICT (firebase_uuid) DO NOTHING;
 -- Configuración de tipos de documento (2NF)
 INSERT INTO tipo_documento_config (tipo_documento, descripcion, mime_permitidos, max_size_bytes) VALUES
-                                                                                     ('PDF_LEGAL',   'Documento legal en formato PDF',         'application/pdf',                              20971520),
-                                                                                     ('COMPROBANTE', 'Comprobante de pago (PDF, JPG o PNG)',   'application/pdf,image/jpeg,image/png',         20971520),
-                                                                                     ('FOTO_OBRA',   'Fotografía de avance de obra',           'image/jpeg,image/png,image/tiff',              20971520),
-                                                                                     ('VIDEO_OBRA',  'Video de avance de obra en formato MP4', 'video/mp4',                                    52428800)
+                                                                                                     ('PDF_LEGAL',   'Documento legal en formato PDF',         'application/pdf',                              20971520),
+                                                                                                     ('COMPROBANTE', 'Comprobante de pago (PDF, JPG o PNG)',   'application/pdf,image/jpeg,image/png',         20971520),
+                                                                                                     ('FOTO_OBRA',   'Fotografía de avance de obra',           'image/jpeg,image/png,image/tiff',              20971520),
+                                                                                                     ('VIDEO_OBRA',  'Video de avance de obra en formato MP4', 'video/mp4',                                    52428800)
     ON CONFLICT (tipo_documento) DO NOTHING;

@@ -9,7 +9,6 @@ import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.proyecto.entity.Hito;
 import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.enums.EstadoHito;
-import com.llosa.backend.proyecto.enums.TipoHito;
 import com.llosa.backend.proyecto.repository.HitoRepository;
 import com.llosa.backend.proyecto.repository.ProyectoRepository;
 import com.llosa.backend.proyecto.repository.ReporteRepository;
@@ -79,9 +78,9 @@ class ReporteFlowE2ETest {
         proyecto = proyectoRepository.save(
                 Proyecto.builder().nombre("Proy Reporte " + UUID.randomUUID()).build());
         // Dos hitos: uno completado, uno pendiente => avance 50%.
-        hitoRepository.save(Hito.builder().orden(1).tipo(TipoHito.OBRA).titulo("Cimentacion")
+        hitoRepository.save(Hito.builder().orden(1).titulo("Cimentacion")
                 .estado(EstadoHito.COMPLETADO).proyecto(proyecto).build());
-        hitoRepository.save(Hito.builder().orden(2).tipo(TipoHito.OBRA).titulo("Acabados")
+        hitoRepository.save(Hito.builder().orden(2).titulo("Acabados")
                 .estado(EstadoHito.PENDIENTE).proyecto(proyecto).build());
     }
 

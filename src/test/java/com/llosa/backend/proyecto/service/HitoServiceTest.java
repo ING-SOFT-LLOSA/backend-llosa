@@ -3,7 +3,6 @@ package com.llosa.backend.proyecto.service;
 import com.llosa.backend.proyecto.entity.Hito;
 import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.enums.EstadoHito;
-import com.llosa.backend.proyecto.enums.TipoHito;
 import com.llosa.backend.proyecto.repository.HitoRepository;
 import com.llosa.backend.proyecto.service.impl.HitoServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -40,7 +39,6 @@ class HitoServiceTest {
                 .id(UUID.randomUUID())
                 .titulo("Hito 1")
                 .orden(1)
-                .tipo(TipoHito.OBRA)
                 .estado(EstadoHito.PENDIENTE)
                 .proyecto(proyecto)
                 .build();
@@ -50,7 +48,7 @@ class HitoServiceTest {
     void save_conProyectoId_asignaProyectoYPropaga() {
         Proyecto proyecto = buildProyecto();
         Hito hito = Hito.builder()
-                .titulo("Hito 1").orden(1).tipo(TipoHito.OBRA)
+                .titulo("Hito 1").orden(1)
                 .estado(EstadoHito.PENDIENTE).build();
         Hito saved = buildHito(proyecto);
 

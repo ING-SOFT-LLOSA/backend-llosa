@@ -27,7 +27,6 @@ import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Disabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
@@ -55,7 +54,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@Disabled
 @SpringBootTest
 @AutoConfigureMockMvc
 @ImportAutoConfiguration(JacksonAutoConfiguration.class)
@@ -126,8 +124,7 @@ class PagosIntegrationTest {
 
         expediente = UsuarioActivo.builder()
                 .tipoFinanciamiento("Credito Directo")
-                .faseComercial("Pagos")
-                .activo(activo)
+                .activos(List.of(activo))
                 .build();
         usuarioActivoRepository.save(expediente);
         uuidExpediente = expediente.getUuidUsuarioActivo();
@@ -233,12 +230,12 @@ class PagosIntegrationTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").exists());
     }
 
     @Test
-    void agregarCuotaDuplicada_devuelve409() throws Exception {
+    void agregarCuotaDuplicada_devuelve400() throws Exception {
         var cronogramaRequest = new CronogramaPagoRequest(
                 uuidExpediente, new BigDecimal("100000.00"), null, 4);
 
@@ -266,7 +263,7 @@ class PagosIntegrationTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagoReq)))
-                .andExpect(status().isConflict())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").exists());
     }
 

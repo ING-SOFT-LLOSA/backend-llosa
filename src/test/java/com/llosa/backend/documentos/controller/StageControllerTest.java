@@ -1,7 +1,7 @@
-package com.llosa.backend.documentos.controller;
+package com.llosa.backend.comercial.controller;
 
-import com.llosa.backend.comercial.dto.StageDocumentResponse;
-import com.llosa.backend.comercial.dto.StageResponse;
+import com.llosa.backend.comercial.dto.StageDocumentsResponse;
+import com.llosa.backend.comercial.dto.StageTrackerResponse;
 import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.service.impl.StageServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -36,13 +36,13 @@ class StageControllerTest {
     @Test
     void obtenerStage_devuelve200() {
         UUID uaId = UUID.randomUUID();
-        StageResponse resp = new StageResponse(
-                new StageResponse.StageInfo(uaId.toString(), "Contrato", 2, 5, 50.0),
+        StageTrackerResponse resp = new StageTrackerResponse(
+                new StageTrackerResponse.StageInfo(uaId.toString(), "Contrato", 2, 5, 50.0),
                 List.of(), null);
         when(authentication.getPrincipal()).thenReturn(UID);
         when(stageService.obtenerStage(UID, uaId, EtapaProceso.CONTRATO)).thenReturn(resp);
 
-        ResponseEntity<StageResponse> r =
+        ResponseEntity<StageTrackerResponse> r =
                 controller.obtenerStage(EtapaProceso.CONTRATO, uaId, authentication);
 
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -52,11 +52,11 @@ class StageControllerTest {
     @Test
     void obtenerDocumentosStage_devuelve200() {
         UUID uaId = UUID.randomUUID();
-        StageDocumentResponse resp = new StageDocumentResponse("Documentos del Contrato", 0, List.of());
+        StageDocumentsResponse resp = new StageDocumentsResponse("Documentos del Contrato", 0, List.of());
         when(authentication.getPrincipal()).thenReturn(UID);
         when(stageService.obtenerDocumentosStage(UID, uaId, EtapaProceso.CONTRATO)).thenReturn(resp);
 
-        ResponseEntity<StageDocumentResponse> r =
+        ResponseEntity<StageDocumentsResponse> r =
                 controller.obtenerDocumentosStage(EtapaProceso.CONTRATO, uaId, authentication);
 
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);

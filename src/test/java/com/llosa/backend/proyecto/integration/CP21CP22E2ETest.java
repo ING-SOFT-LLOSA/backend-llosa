@@ -12,7 +12,6 @@ import com.llosa.backend.proyecto.entity.Piso;
 import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.entity.Torre;
 import com.llosa.backend.proyecto.enums.EstadoHito;
-import com.llosa.backend.proyecto.enums.TipoHito;
 import com.llosa.backend.proyecto.repository.HitoPisoRepository;
 import com.llosa.backend.proyecto.repository.HitoRepository;
 import com.llosa.backend.proyecto.repository.PisoRepository;
@@ -174,7 +173,6 @@ class CP21CP22E2ETest {
     private Hito crearHito(int orden, String titulo) {
         return hitoRepository.save(Hito.builder()
                 .orden(orden)
-                .tipo(TipoHito.OBRA)
                 .titulo(titulo)
                 .estado(EstadoHito.PENDIENTE)
                 .proyecto(piso.getTorre().getProyecto())

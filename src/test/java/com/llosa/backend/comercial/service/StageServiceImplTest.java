@@ -1,12 +1,15 @@
 package com.llosa.backend.comercial.service;
 
 import com.llosa.backend.annotation.CP;
-import com.llosa.backend.comercial.dto.StageDocumentResponse;
-import com.llosa.backend.comercial.dto.StageResponse;
+import com.llosa.backend.comercial.dto.StageDocumentsResponse;
+import com.llosa.backend.comercial.dto.StageTrackerResponse;
+import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.comercial.entity.HitoProcesoCompra;
 import com.llosa.backend.comercial.entity.RequisitoDocumental;
 import com.llosa.backend.comercial.enums.EstadoHitoComercial;
 import com.llosa.backend.comercial.enums.EtapaProceso;
+import com.llosa.backend.comercial.enums.EtapaRequisitoDocumental;
+import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.HitoProcesoCompraRepository;
 import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
 import com.llosa.backend.comercial.service.impl.StageServiceImpl;
@@ -15,8 +18,6 @@ import com.llosa.backend.documentos.entity.Documento;
 import com.llosa.backend.documentos.repository.DocumentoRepository;
 import com.llosa.backend.documentos.service.DocumentoService;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
-import com.llosa.backend.pagos.entity.CartaAprobacion;
-import com.llosa.backend.pagos.repository.CartaAprobacionRepository;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
@@ -55,13 +56,13 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class StageServiceImplTest {
 
+    @Mock EtapaExpedienteRepository etapaExpedienteRepository;
     @Mock HitoProcesoCompraRepository hitoRepository;
+    @Mock RequisitoDocumentalRepository requisitoDocumentalRepository;
     @Mock UsuarioActivoRepository usuarioActivoRepository;
     @Mock UsuarioRepository usuarioRepository;
     @Mock DocumentoRepository documentoRepository;
-    @Mock RequisitoDocumentalRepository requisitoDocumentalRepository;
     @Mock DocumentoService documentoService;
-    @Mock CartaAprobacionRepository cartaAprobacionRepository;
 
     @InjectMocks StageServiceImpl service;
 
@@ -85,18 +86,25 @@ class StageServiceImplTest {
     private UsuarioActivo expediente(UUID id, Usuario... copropietarios) {
         return UsuarioActivo.builder()
                 .uuidUsuarioActivo(id)
-                .activo(activo())
+                .activos(List.of(activo()))
                 .tipoFinanciamiento("Crédito Hipotecario")
                 .fechaAdquisicion(LocalDateTime.of(2026, 3, 1, 9, 0))
                 .clientes(new ArrayList<>(List.of(copropietarios)))
                 .build();
     }
 
-    private HitoProcesoCompra hito(UsuarioActivo ua, EtapaProceso etapa, int orden, EstadoHitoComercial estado) {
+    private EtapaExpediente etapa(UsuarioActivo ua, EtapaProceso etapaProceso) {
+        return EtapaExpediente.builder()
+                .uuidEtapaExpediente(UUID.randomUUID())
+                .usuarioActivo(ua)
+                .etapaProceso(etapaProceso)
+                .build();
+    }
+
+    private HitoProcesoCompra hito(EtapaExpediente etapa, int orden, EstadoHitoComercial estado) {
         return HitoProcesoCompra.builder()
                 .uuidHitoComercial(UUID.randomUUID())
-                .usuarioActivo(ua)
-                .etapaProceso(etapa)
+                .etapaExpediente(etapa)
                 .nombreHito("Hito " + orden)
                 .orden(orden)
                 .estado(estado)
@@ -114,75 +122,76 @@ class StageServiceImplTest {
         UUID uaId = UUID.randomUUID();
         Usuario cliente = usuario(7, "CLIENTE");
         UsuarioActivo ua = expediente(uaId, cliente);
+        EtapaExpediente etapaSep = etapa(ua, EtapaProceso.SEPARACION);
 
         when(usuarioRepository.findByFirebaseUuid(FIREBASE_UID)).thenReturn(Optional.of(cliente));
         when(usuarioActivoRepository.findById(uaId)).thenReturn(Optional.of(ua));
-        when(hitoRepository.findByUsuarioActivo_UuidUsuarioActivoOrderByOrdenAsc(uaId))
+        when(etapaExpedienteRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uaId, EtapaProceso.SEPARACION))
+                .thenReturn(Optional.of(etapaSep));
+        when(hitoRepository.findByEtapaExpediente_UuidEtapaExpedienteOrderByOrdenAsc(etapaSep.getUuidEtapaExpediente()))
                 .thenReturn(List.of(
-                        hito(ua, EtapaProceso.SEPARACION, 1, EstadoHitoComercial.COMPLETADO),
-                        hito(ua, EtapaProceso.SEPARACION, 2, EstadoHitoComercial.PENDIENTE),
-                        hito(ua, EtapaProceso.CONTRATO, 3, EstadoHitoComercial.PENDIENTE)));
+                        hito(etapaSep, 1, EstadoHitoComercial.COMPLETADO),
+                        hito(etapaSep, 2, EstadoHitoComercial.PENDIENTE)));
 
-        StageResponse resp = service.obtenerStage(FIREBASE_UID, uaId, EtapaProceso.SEPARACION);
+        StageTrackerResponse resp = service.obtenerStage(FIREBASE_UID, uaId, EtapaProceso.SEPARACION);
 
-        assertThat(resp.stepper()).hasSize(2); // solo los de SEPARACION
+        assertThat(resp.stepper()).hasSize(2);
         assertThat(resp.stage().progressPercentage()).isEqualTo(50.0);
-        assertThat(resp.stage().stepIndex()).isEqualTo(1); // SEPARACION es la primera etapa
+        assertThat(resp.stage().stepIndex()).isEqualTo(1);
         assertThat(resp.stage().totalSteps()).isEqualTo(EtapaProceso.values().length);
-        assertThat(resp.stageDetails()).isNull(); // solo CONTRATO trae detalles
+        assertThat(resp.stageDetails()).isNull();
     }
 
     @Test
-    @CP(value = "CP41", scenario = "Detalle de contrato con carta de aprobación",
-            input = "etapa CONTRATO con CartaAprobacion existente",
-            expected = "stageDetails con datos del activo y de la carta bancaria")
-    void obtenerStage_contratoConCarta_incluyeDetalleBancario() {
+    @CP(value = "CP41", scenario = "Detalle de contrato con activos",
+            input = "etapa CONTRATO con activo asignado",
+            expected = "stageDetails con area y precio total del activo")
+    @DisplayName("obtenerStage contrato incluye detalle de activos")
+    void obtenerStage_contrato_incluyeDetalleActivos() {
         UUID uaId = UUID.randomUUID();
         Usuario cliente = usuario(7, "CLIENTE");
         UsuarioActivo ua = expediente(uaId, cliente);
-
-        CartaAprobacion carta = new CartaAprobacion();
-        carta.setBanco("BCP");
-        carta.setMontoAprobado(new BigDecimal("300000"));
-        carta.setFechaEmision(LocalDate.of(2026, 2, 1));
-        carta.setFechaVencimiento(LocalDate.of(2026, 8, 1));
-        carta.setFechaDesembolsoProyectada(LocalDate.of(2026, 4, 1));
-        carta.setComentarios("Aprobado sujeto a tasación");
+        EtapaExpediente etapaCont = etapa(ua, EtapaProceso.CONTRATO);
 
         when(usuarioRepository.findByFirebaseUuid(FIREBASE_UID)).thenReturn(Optional.of(cliente));
         when(usuarioActivoRepository.findById(uaId)).thenReturn(Optional.of(ua));
-        when(hitoRepository.findByUsuarioActivo_UuidUsuarioActivoOrderByOrdenAsc(uaId))
-                .thenReturn(List.of(hito(ua, EtapaProceso.CONTRATO, 1, EstadoHitoComercial.COMPLETADO)));
-        when(cartaAprobacionRepository.findByUsuarioActivo_UuidUsuarioActivo(uaId))
-                .thenReturn(Optional.of(carta));
+        when(etapaExpedienteRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uaId, EtapaProceso.CONTRATO))
+                .thenReturn(Optional.of(etapaCont));
+        when(hitoRepository.findByEtapaExpediente_UuidEtapaExpedienteOrderByOrdenAsc(etapaCont.getUuidEtapaExpediente()))
+                .thenReturn(List.of(hito(etapaCont, 1, EstadoHitoComercial.COMPLETADO)));
 
-        StageResponse resp = service.obtenerStage(FIREBASE_UID, uaId, EtapaProceso.CONTRATO);
+        StageTrackerResponse resp = service.obtenerStage(FIREBASE_UID, uaId, EtapaProceso.CONTRATO);
 
         assertThat(resp.stageDetails()).isNotNull();
-        assertThat(resp.stageDetails().banco()).isEqualTo("BCP");
-        assertThat(resp.stageDetails().montoAprobado()).contains("300,000");
-        assertThat(resp.stage().stepIndex()).isEqualTo(2); // CONTRATO es la segunda etapa
-    }
-
-    @Test
-    void obtenerStage_contratoSinCarta_detalleSinDatosBancarios() {
-        UUID uaId = UUID.randomUUID();
-        Usuario cliente = usuario(7, "CLIENTE");
-        UsuarioActivo ua = expediente(uaId, cliente);
-
-        when(usuarioRepository.findByFirebaseUuid(FIREBASE_UID)).thenReturn(Optional.of(cliente));
-        when(usuarioActivoRepository.findById(uaId)).thenReturn(Optional.of(ua));
-        when(hitoRepository.findByUsuarioActivo_UuidUsuarioActivoOrderByOrdenAsc(uaId))
-                .thenReturn(List.of());
-        when(cartaAprobacionRepository.findByUsuarioActivo_UuidUsuarioActivo(uaId))
-                .thenReturn(Optional.empty());
-
-        StageResponse resp = service.obtenerStage(FIREBASE_UID, uaId, EtapaProceso.CONTRATO);
-
-        assertThat(resp.stage().progressPercentage()).isZero(); // sin hitos
-        assertThat(resp.stageDetails()).isNotNull();
-        assertThat(resp.stageDetails().banco()).isNull();
         assertThat(resp.stageDetails().totalPrice()).contains("350,000");
+        assertThat(resp.stageDetails().area()).contains("85.50 m2");
+        assertThat(resp.stage().stepIndex()).isEqualTo(2);
+    }
+
+    @Test
+    void obtenerStage_contratoSinActivos_detalleConNulos() {
+        UUID uaId = UUID.randomUUID();
+        Usuario cliente = usuario(7, "CLIENTE");
+        UsuarioActivo ua = UsuarioActivo.builder()
+                .uuidUsuarioActivo(uaId)
+                .tipoFinanciamiento("Crédito Directo")
+                .activos(new ArrayList<>())
+                .clientes(new ArrayList<>(List.of(cliente)))
+                .build();
+        EtapaExpediente etapaCont = etapa(ua, EtapaProceso.CONTRATO);
+
+        when(usuarioRepository.findByFirebaseUuid(FIREBASE_UID)).thenReturn(Optional.of(cliente));
+        when(usuarioActivoRepository.findById(uaId)).thenReturn(Optional.of(ua));
+        when(etapaExpedienteRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uaId, EtapaProceso.CONTRATO))
+                .thenReturn(Optional.of(etapaCont));
+        when(hitoRepository.findByEtapaExpediente_UuidEtapaExpedienteOrderByOrdenAsc(etapaCont.getUuidEtapaExpediente()))
+                .thenReturn(List.of());
+
+        StageTrackerResponse resp = service.obtenerStage(FIREBASE_UID, uaId, EtapaProceso.CONTRATO);
+
+        assertThat(resp.stage().progressPercentage()).isZero();
+        assertThat(resp.stageDetails()).isNotNull();
+        assertThat(resp.stageDetails().area()).isNull();
     }
 
     // ─── CP28: Segregación de accesos ─────────────────────────────────────────────
@@ -197,14 +206,14 @@ class StageServiceImplTest {
         Usuario intruso = usuario(99, "CLIENTE");
         Usuario propietario = usuario(7, "CLIENTE");
         propietario.setId(7);
-        UsuarioActivo ua = expediente(uaId, propietario); // intruso (99) no está
+        UsuarioActivo ua = expediente(uaId, propietario);
 
         when(usuarioRepository.findByFirebaseUuid(FIREBASE_UID)).thenReturn(Optional.of(intruso));
         when(usuarioActivoRepository.findById(uaId)).thenReturn(Optional.of(ua));
 
         assertThatThrownBy(() -> service.obtenerStage(FIREBASE_UID, uaId, EtapaProceso.SEPARACION))
                 .isInstanceOf(AccessDeniedException.class);
-        verify(hitoRepository, never()).findByUsuarioActivo_UuidUsuarioActivoOrderByOrdenAsc(any());
+        verify(hitoRepository, never()).findByEtapaExpediente_UuidEtapaExpedienteOrderByOrdenAsc(any());
     }
 
     @Test
@@ -215,13 +224,16 @@ class StageServiceImplTest {
         UUID uaId = UUID.randomUUID();
         Usuario asesor = usuario(50, "ASESOR");
         UsuarioActivo ua = expediente(uaId, usuario(7, "CLIENTE"));
+        EtapaExpediente etapaSep = etapa(ua, EtapaProceso.SEPARACION);
 
         when(usuarioRepository.findByFirebaseUuid(FIREBASE_UID)).thenReturn(Optional.of(asesor));
         when(usuarioActivoRepository.findById(uaId)).thenReturn(Optional.of(ua));
-        when(hitoRepository.findByUsuarioActivo_UuidUsuarioActivoOrderByOrdenAsc(uaId))
+        when(etapaExpedienteRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uaId, EtapaProceso.SEPARACION))
+                .thenReturn(Optional.of(etapaSep));
+        when(hitoRepository.findByEtapaExpediente_UuidEtapaExpedienteOrderByOrdenAsc(etapaSep.getUuidEtapaExpediente()))
                 .thenReturn(List.of());
 
-        StageResponse resp = service.obtenerStage(FIREBASE_UID, uaId, EtapaProceso.SEPARACION);
+        StageTrackerResponse resp = service.obtenerStage(FIREBASE_UID, uaId, EtapaProceso.SEPARACION);
 
         assertThat(resp).isNotNull();
     }
@@ -249,39 +261,39 @@ class StageServiceImplTest {
 
     @Test
     @CP(value = "CP25", scenario = "Documentos de etapa con archivo descargable",
-            input = "requisito COMPLETADA con documento físico",
+            input = "requisito COMPLETADO con documento físico",
             expected = "Item con hasDownload=true y Signed URL")
     void obtenerDocumentosStage_requisitoConArchivo_generaUrlFirmada() {
         UUID uaId = UUID.randomUUID();
         Usuario cliente = usuario(7, "CLIENTE");
         UsuarioActivo ua = expediente(uaId, cliente);
-        HitoProcesoCompra hito = hito(ua, EtapaProceso.CONTRATO, 1, EstadoHitoComercial.EN_PROGRESO);
+        EtapaExpediente etapaCont = etapa(ua, EtapaProceso.CONTRATO);
 
         UUID reqId = UUID.randomUUID();
         RequisitoDocumental req = RequisitoDocumental.builder()
-                .id(reqId).hitoComercial(hito).titulo("Minuta")
-                .estado("COMPLETADA").fechaEmision(LocalDate.of(2026, 3, 5)).build();
+                .id(reqId).etapaExpediente(etapaCont).titulo("Minuta")
+                .estado(EtapaRequisitoDocumental.COMPLETADO).fechaEmision(LocalDate.of(2026, 3, 5)).build();
         UUID docId = UUID.randomUUID();
-        Documento doc = Documento.builder().id(docId).build();
+        Documento doc = Documento.builder().id(docId).idReferencia(reqId.toString()).build();
 
         when(usuarioRepository.findByFirebaseUuid(FIREBASE_UID)).thenReturn(Optional.of(cliente));
         when(usuarioActivoRepository.findById(uaId)).thenReturn(Optional.of(ua));
-        when(hitoRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uaId, EtapaProceso.CONTRATO))
-                .thenReturn(Optional.of(hito));
+        when(etapaExpedienteRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uaId, EtapaProceso.CONTRATO))
+                .thenReturn(Optional.of(etapaCont));
         when(requisitoDocumentalRepository
-                .findByHitoComercial_UuidHitoComercialOrderByFechaEmisionDesc(hito.getUuidHitoComercial()))
+                .findByEtapaExpediente_UuidEtapaExpedienteOrderByFechaEmisionDesc(etapaCont.getUuidEtapaExpediente()))
                 .thenReturn(List.of(req));
-        when(documentoRepository.findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc(
-                "REQUISITO", reqId.toString())).thenReturn(Optional.of(doc));
+        when(documentoRepository.findByEntidadReferenciaAndIdReferenciaInOrderByCreatedAtDesc(
+                "REQUISITO", List.of(reqId.toString()))).thenReturn(List.of(doc));
         when(documentoService.generarSignedUrl(docId))
                 .thenReturn(new SignedUrlResponse("https://signed-url", Instant.now()));
 
-        StageDocumentResponse resp = service.obtenerDocumentosStage(FIREBASE_UID, uaId, EtapaProceso.CONTRATO);
+        StageDocumentsResponse resp = service.obtenerDocumentosStage(FIREBASE_UID, uaId, EtapaProceso.CONTRATO);
 
         assertThat(resp.documents()).hasSize(1);
         assertThat(resp.documents().get(0).hasDownload()).isTrue();
         assertThat(resp.documents().get(0).downloadUrl()).isEqualTo("https://signed-url");
-        assertThat(resp.documents().get(0).status()).isEqualTo("completada");
+        assertThat(resp.documents().get(0).status()).isEqualTo("completado");
     }
 
     @Test
@@ -289,23 +301,22 @@ class StageServiceImplTest {
         UUID uaId = UUID.randomUUID();
         Usuario cliente = usuario(7, "CLIENTE");
         UsuarioActivo ua = expediente(uaId, cliente);
-        HitoProcesoCompra hito = hito(ua, EtapaProceso.CONTRATO, 1, EstadoHitoComercial.PENDIENTE);
+        EtapaExpediente etapaCont = etapa(ua, EtapaProceso.CONTRATO);
 
         UUID reqId = UUID.randomUUID();
         RequisitoDocumental req = RequisitoDocumental.builder()
-                .id(reqId).hitoComercial(hito).titulo("Escritura").estado("PENDIENTE").build();
+                .id(reqId).etapaExpediente(etapaCont).titulo("Escritura")
+                .estado(EtapaRequisitoDocumental.PENDIENTE).build();
 
         when(usuarioRepository.findByFirebaseUuid(FIREBASE_UID)).thenReturn(Optional.of(cliente));
         when(usuarioActivoRepository.findById(uaId)).thenReturn(Optional.of(ua));
-        when(hitoRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uaId, EtapaProceso.CONTRATO))
-                .thenReturn(Optional.of(hito));
+        when(etapaExpedienteRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uaId, EtapaProceso.CONTRATO))
+                .thenReturn(Optional.of(etapaCont));
         when(requisitoDocumentalRepository
-                .findByHitoComercial_UuidHitoComercialOrderByFechaEmisionDesc(hito.getUuidHitoComercial()))
+                .findByEtapaExpediente_UuidEtapaExpedienteOrderByFechaEmisionDesc(etapaCont.getUuidEtapaExpediente()))
                 .thenReturn(List.of(req));
-        when(documentoRepository.findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc(
-                "REQUISITO", reqId.toString())).thenReturn(Optional.empty());
 
-        StageDocumentResponse resp = service.obtenerDocumentosStage(FIREBASE_UID, uaId, EtapaProceso.CONTRATO);
+        StageDocumentsResponse resp = service.obtenerDocumentosStage(FIREBASE_UID, uaId, EtapaProceso.CONTRATO);
 
         assertThat(resp.documents().get(0).hasDownload()).isFalse();
         assertThat(resp.documents().get(0).downloadUrl()).isNull();
@@ -313,14 +324,14 @@ class StageServiceImplTest {
     }
 
     @Test
-    void obtenerDocumentosStage_sinHitoComercial_lanzaNotFound() {
+    void obtenerDocumentosStage_sinEtapa_lanzaNotFound() {
         UUID uaId = UUID.randomUUID();
         Usuario cliente = usuario(7, "CLIENTE");
         UsuarioActivo ua = expediente(uaId, cliente);
 
         when(usuarioRepository.findByFirebaseUuid(FIREBASE_UID)).thenReturn(Optional.of(cliente));
         when(usuarioActivoRepository.findById(uaId)).thenReturn(Optional.of(ua));
-        when(hitoRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uaId, EtapaProceso.CONTRATO))
+        when(etapaExpedienteRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uaId, EtapaProceso.CONTRATO))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.obtenerDocumentosStage(FIREBASE_UID, uaId, EtapaProceso.CONTRATO))

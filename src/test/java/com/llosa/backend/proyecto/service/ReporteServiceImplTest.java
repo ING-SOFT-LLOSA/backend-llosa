@@ -12,6 +12,7 @@ import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.repository.HitoRepository;
 import com.llosa.backend.proyecto.repository.ProyectoRepository;
 import com.llosa.backend.proyecto.repository.ReporteRepository;
+import com.llosa.backend.proyecto.service.impl.ReporteServiceImpl;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

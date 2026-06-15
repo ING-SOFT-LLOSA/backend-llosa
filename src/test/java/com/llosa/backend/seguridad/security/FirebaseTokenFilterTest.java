@@ -2,6 +2,7 @@ package com.llosa.backend.seguridad.security;
  
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
+import org.springframework.security.authentication.BadCredentialsException;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.entity.Rol;
 import com.llosa.backend.seguridad.entity.Funcion;
@@ -74,24 +75,25 @@ class FirebaseTokenFilterTest {
     // ── Token inválido ────────────────────────────────────────────────────────
  
     @Test
-    void tokenFirebaseInvalido_limpiaContextoYContinua() throws Exception {
+    void tokenFirebaseInvalido_limpiaContextoYRetorna401() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer token-invalido");
- 
+
         FirebaseAuth mockAuth = mock(FirebaseAuth.class);
         when(mockAuth.verifyIdToken("token-invalido"))
-                .thenThrow(new RuntimeException("Token expirado"));
- 
+                .thenThrow(new BadCredentialsException("Token expirado"));
+
         try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
             ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
- 
+
             filter.doFilterInternal(request, response, filterChain);
         }
- 
-        verify(filterChain).doFilter(request, response);
+
+        verifyNoInteractions(filterChain);
+        assertThat(response.getStatus()).isEqualTo(401);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
- 
+
     // ── Token válido ──────────────────────────────────────────────────────────
  
     @Test
@@ -163,22 +165,23 @@ class FirebaseTokenFilterTest {
     // ── "Bearer " sin token — pasa el startsWith pero token es vacío ─────────
  
     @Test
-    void bearerConTokenVacio_limpiaContextoYContinua() throws Exception {
+    void bearerConTokenVacio_limpiaContextoYRetorna401() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer ");
- 
+
         FirebaseAuth mockAuth = mock(FirebaseAuth.class);
-        when(mockAuth.verifyIdToken("")).thenThrow(new RuntimeException("Token vacío inválido"));
- 
+        when(mockAuth.verifyIdToken("")).thenThrow(new BadCredentialsException("Token vacío inválido"));
+
         try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
             ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
             filter.doFilterInternal(request, response, filterChain);
         }
- 
-        verify(filterChain).doFilter(request, response);
+
+        verifyNoInteractions(filterChain);
+        assertThat(response.getStatus()).isEqualTo(401);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
- 
+
     // ── Token válido sobreescribe autenticación preexistente ─────────────────
  
     @Test

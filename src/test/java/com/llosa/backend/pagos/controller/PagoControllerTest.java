@@ -108,7 +108,7 @@ class PagoControllerTest {
     }
 
     @Test
-    void agregarCuota_cuotaDuplicada_devuelve409() throws Exception {
+    void agregarCuota_cuotaDuplicada_devuelve400() throws Exception {
         UUID uuidCp = UUID.randomUUID();
         when(pagoService.agregarCuota(eq(uuidCp), any(PagoRequest.class)))
                 .thenThrow(new BusinessException("Ya existe una cuota con el número 1"));
@@ -116,7 +116,7 @@ class PagoControllerTest {
         mockMvc.perform(post("/api/cronogramas/{uuidCronograma}/pagos", uuidCp)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(TestDataPagos.crearPagoRequest(1))))
-                .andExpect(status().isConflict());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -173,7 +173,7 @@ class PagoControllerTest {
     }
 
     @Test
-    void cambiarEstado_estadoInvalido_devuelve409() throws Exception {
+    void cambiarEstado_estadoInvalido_devuelve400() throws Exception {
         UUID uuidPago = UUID.randomUUID();
         var usuario = new Usuario();
         usuario.setId(1);
@@ -186,7 +186,7 @@ class PagoControllerTest {
         mockMvc.perform(patch("/api/pagos/{uuidPago}/estado", uuidPago)
                         .param("estado", "INVALIDO")
                         .with(withAuth()))
-                .andExpect(status().isConflict());
+                .andExpect(status().isBadRequest());
     }
 
     @Test

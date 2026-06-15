@@ -19,13 +19,14 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.junit.jupiter.api.Disabled;
+
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-@Disabled
+
 @DataJpaTest
 @Testcontainers
 @ActiveProfiles("test")
@@ -63,8 +64,7 @@ class CronogramaPagoRepositoryTest {
 
         ua = UsuarioActivo.builder()
                 .tipoFinanciamiento("Credito Directo")
-                .faseComercial("Pagos")
-                .activo(activo)
+                .activos(List.of(activo))
                 .build();
         em.persist(ua);
         em.flush();

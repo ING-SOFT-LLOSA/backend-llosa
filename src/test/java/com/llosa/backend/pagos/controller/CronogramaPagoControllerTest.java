@@ -71,14 +71,14 @@ class CronogramaPagoControllerTest {
     }
 
     @Test
-    void crear_expedienteDuplicado_devuelve409() throws Exception {
+    void crear_expedienteDuplicado_devuelve400() throws Exception {
         when(cronogramaPagoService.crear(any(CronogramaPagoRequest.class)))
                 .thenThrow(new BusinessException("El expediente ya tiene un cronograma de pagos activo"));
 
         mockMvc.perform(post("/api/cronogramas")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(TestDataPagos.crearCronogramaRequest())))
-                .andExpect(status().isConflict())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("El expediente ya tiene un cronograma de pagos activo"));
     }
 
