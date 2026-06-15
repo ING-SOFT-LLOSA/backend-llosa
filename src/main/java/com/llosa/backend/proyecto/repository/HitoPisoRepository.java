@@ -26,5 +26,7 @@ public interface HitoPisoRepository extends JpaRepository<HitoPiso, UUID> {
 
     boolean existsByPisoId(Long pisoId);
 
+    boolean existsByHitoId(UUID hitoId);
+
     boolean existsByPisoIdAndHitoId(Long pisoId, UUID hitoId);
 }

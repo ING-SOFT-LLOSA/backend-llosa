@@ -10,6 +10,10 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
+    @Query("SELECT u FROM Usuario u " +
+            "LEFT JOIN FETCH u.rol r " +
+            "LEFT JOIN FETCH r.funciones " +
+            "WHERE u.firebaseUuid = :firebaseUuid")
     Optional<Usuario> findByFirebaseUuid(String firebaseUuid);
     Optional<Usuario> findByEmail(String email);
     boolean existsByEmail(String email);

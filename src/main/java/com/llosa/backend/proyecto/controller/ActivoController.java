@@ -8,6 +8,7 @@ import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.HitoPisoService;
 import com.llosa.backend.proyecto.service.SeguimientoService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,7 @@ public class ActivoController {
     private final HitoPisoService hitoPisoService;
     private final ActivoService activoService;
     private final SeguimientoService seguimientoService;
+
     /*
     Endpoint Obtener los activos por piso_id
     Estado: Funcional
@@ -47,7 +49,7 @@ public class ActivoController {
      */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PostMapping("/{id}/pisos")
-    public ResponseEntity<ActivoResponseDTO> crearActivo(@PathVariable Long id, @RequestBody ActivoRequestDTO activoDTO) {
+    public ResponseEntity<ActivoResponseDTO> crearActivo(@PathVariable Long id, @RequestBody @Valid ActivoRequestDTO activoDTO) {
         Activo activo = Activo.builder()
                 .nro(activoDTO.nro())
                 .tipo(activoDTO.tipo())
@@ -64,7 +66,7 @@ public class ActivoController {
      */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PutMapping("/{id}")
-    public ResponseEntity<ActivoResponseDTO> actualizarActivo(@PathVariable UUID id, @RequestBody ActivoRequestDTO activoDTO) {
+    public ResponseEntity<ActivoResponseDTO> actualizarActivo(@PathVariable UUID id, @RequestBody @Valid ActivoRequestDTO activoDTO) {
         Activo activoExistente = activoService.findById(id);
 
         activoExistente.setNro(activoDTO.nro());

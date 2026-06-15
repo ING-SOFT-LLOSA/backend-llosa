@@ -2,7 +2,7 @@ package com.llosa.backend.comercial.dto;
 
 import java.util.List;
 
-public record StageResponse(
+public record StageTrackerResponse(
         StageInfo stage,
         List<StepperItem> stepper,
         StageDetails stageDetails
@@ -25,12 +25,6 @@ public record StageResponse(
             String area,
             String totalPrice,
             String deliveryDate,
-            String disbursementDate,
-            String banco,
-            String montoAprobado,
-            String cartaFechaEmision,
-            String cartaFechaVencimiento,
-            String cartaFechaDesembolso,
-            String cartaComentarios
+            String disbursementDate
     ) {}
 }

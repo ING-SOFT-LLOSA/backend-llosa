@@ -44,6 +44,16 @@ public class PisoServiceImpl implements PisoService {
         if (search == null || search.isBlank()) {
             return pisoRepository.findByTorreId(torreId);
         }
-        return pisoRepository.findByTorreIdAndSearch(torreId, search);
+        String safeSearch = sanitizeForLike(search);
+        return pisoRepository.findByTorreIdAndSearch(torreId, safeSearch);
+    }
+    public String sanitizeForLike(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return "";
+        }
+
+        return input.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
     }
 }

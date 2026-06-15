@@ -1,10 +1,15 @@
 package com.llosa.backend.comercial.dto;
 
+import com.llosa.backend.comercial.enums.EtapaRequisitoDocumental;
 import jakarta.validation.constraints.NotBlank;
+
+import java.time.LocalDate;
 
 public record RequisitoUpdateRequest(
         @NotBlank String titulo,
         String descripcion,
         String notaCorporativa,
-        String estado // "PENDIENTE", "COMPLETADA", "RECHAZADO"
+        EtapaRequisitoDocumental estado, // "PENDIENTE", "COMPLETADA", "RECHAZADO"
+        LocalDate fechaEmision,
+        String icono
 ) {}

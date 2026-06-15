@@ -1,7 +1,6 @@
 package com.llosa.backend.proyecto.entity;
 
 import com.llosa.backend.proyecto.enums.EstadoHito;
-import com.llosa.backend.proyecto.enums.TipoHito;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,10 +30,6 @@ public class Hito {
     @Column(nullable = false)
     private Integer orden;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TipoHito tipo;
-
     private String titulo;
 
     @Enumerated(EnumType.STRING)
@@ -51,6 +46,5 @@ public class Hito {
     private Proyecto proyecto;
 
     @OneToMany(mappedBy = "hito", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     private List<HitoPiso> hitosPiso = new ArrayList<>();
 }

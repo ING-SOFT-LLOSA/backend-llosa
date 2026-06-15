@@ -1,9 +1,9 @@
 package com.llosa.backend.documentos.service;
 
 import com.google.cloud.storage.*;
+import com.llosa.backend.comercial.dto.StageDocumentsResponse;
 import com.llosa.backend.documentos.dto.DocumentoResponse;
 import com.llosa.backend.documentos.dto.SignedUrlResponse;
-import com.llosa.backend.documentos.dto.StageDocumentResponse;
 import com.llosa.backend.documentos.dto.SubirDocumentoRequest;
 import com.llosa.backend.documentos.entity.Documento;
 import com.llosa.backend.documentos.entity.TipoDocumentoConfig;
@@ -11,6 +11,7 @@ import com.llosa.backend.documentos.enums.TipoDocumento;
 import com.llosa.backend.documentos.repository.DocumentoRepository;
 import com.llosa.backend.documentos.repository.TipoDocumentoConfigRepository;
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.enums.TipoActivo;
@@ -49,21 +50,26 @@ public class DocumentoService {
     // ─── Stage / Contrato ────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public StageDocumentResponse obtenerDetalleEtapa(String etapaProceso, UUID uuidUsuarioActivo) {
-        if (!"contrato".equalsIgnoreCase(etapaProceso)) {
-            return new StageDocumentResponse(null, 0, List.of());
+    public StageDocumentsResponse obtenerDetalleEtapa(EtapaProceso etapaProceso, UUID uuidUsuarioActivo) {
+        if (etapaProceso != EtapaProceso.CONTRATO) {
+            return new StageDocumentsResponse(null, 0, List.of());
         }
 
         UsuarioActivo ua = usuarioActivoRepository.findById(uuidUsuarioActivo)
                 .orElseThrow(() -> new EntityNotFoundException("UsuarioActivo no encontrado: " + uuidUsuarioActivo));
 
-        List<StageDocumentResponse.DocumentoItemResponse> unidades = new ArrayList<>();
+        List<StageDocumentsResponse.DocumentoItem> unidades = new ArrayList<>();
         BigDecimal areaTotal = BigDecimal.ZERO;
 
-        Activo principal = ua.getActivo();
-        if (principal != null) {
-            unidades.add(mapActivoToItem(principal));
-            areaTotal = areaTotal.add(principal.getAreaM2());
+        if (ua.getActivos() != null) {
+            for (Activo activo : ua.getActivos()) {
+                if (activo != null) {
+                    unidades.add(mapActivoToItem(activo));
+                    if (activo.getAreaM2() != null) {
+                        areaTotal = areaTotal.add(activo.getAreaM2());
+                    }
+                }
+            }
         }
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d/M/yyyy");
@@ -75,12 +81,12 @@ public class DocumentoService {
                 "Contrato firmado: %s | Financiamiento: %s | Área total: %.2f m²",
                 firmaContrato != null ? firmaContrato : "Pendiente",
                 ua.getTipoFinanciamiento() != null ? ua.getTipoFinanciamiento() : "-",
-                areaTotal);
+                areaTotal.doubleValue());
 
-        return new StageDocumentResponse(resumen, unidades.size(), unidades);
+        return new StageDocumentsResponse(resumen, unidades.size(), unidades);
     }
 
-    private StageDocumentResponse.DocumentoItemResponse mapActivoToItem(Activo activo) {
+    private StageDocumentsResponse.DocumentoItem mapActivoToItem(Activo activo) {
         String tipo = activo.getTipo() == TipoActivo.DEPARTAMENTO ? "DEPARTAMENTO"
                 : activo.getTipo() == TipoActivo.COCHERA ? "ESTACIONAMIENTO" : "OTRO";
         String nombre = activo.getTipo() == TipoActivo.DEPARTAMENTO
@@ -95,7 +101,7 @@ public class DocumentoService {
         String aporte = "S/." + df.format(activo.getPrecio());
         String area = String.format(Locale.US, "%.2f m²", activo.getAreaM2());
 
-        return new StageDocumentResponse.DocumentoItemResponse(
+        return new StageDocumentsResponse.DocumentoItem(
                 activo.getId().toString(),
                 nombre,
                 tipo + " | " + area,
@@ -119,8 +125,10 @@ public class DocumentoService {
             Integer subidoPor
     ) {
         String entidad = entidadResolver.resolverEntidad(idReferencia);
+
+        // CORRECCIÓN: Llamamos a la versión limpia sin parámetros fantasma
         return subirDocumentoPolimorfico(
-                idReferencia, file, request.tipoDocumento(),
+                file, request.tipoDocumento(),
                 idReferencia.toString(), entidad, subidoPor
         );
     }
@@ -129,7 +137,7 @@ public class DocumentoService {
 
     @Transactional
     public DocumentoResponse subirDocumentoPolimorfico(
-            UUID usuarioActivoId,
+            // CORRECCIÓN: Eliminado el UUID usuarioActivoId que rompía el polimorfismo
             MultipartFile file,
             TipoDocumento tipoDocumento,
             String idReferencia,
@@ -139,8 +147,10 @@ public class DocumentoService {
         validarArchivo(file, tipoDocumento);
 
         String extension = obtenerExtension(file.getOriginalFilename());
+
+        // CORRECCIÓN: La ruta GCS ahora organiza las carpetas dinámicamente según la entidad y su ID real
         String rutaGcs = String.format("proyectos/%s/%s/%s.%s",
-                entidadReferencia.toLowerCase(), usuarioActivoId, UUID.randomUUID(), extension);
+                entidadReferencia.toLowerCase(), idReferencia, UUID.randomUUID(), extension);
 
         try {
             BlobId blobId = BlobId.of(gcsBucketName, rutaGcs);

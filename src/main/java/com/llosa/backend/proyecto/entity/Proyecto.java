@@ -18,7 +18,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = {"torres", "hitos", "documentos"})
+@ToString(exclude = {"torres", "hitos"})
 public class Proyecto {
 
     @Id
@@ -26,7 +26,7 @@ public class Proyecto {
     @Column(name = "uuid_proyecto", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String nombre;
 
     private String descripcion;
@@ -64,8 +64,4 @@ public class Proyecto {
             orphanRemoval = true)
     @Builder.Default
     private List<Hito> hitos = new ArrayList<>();
-
-    @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<Documento> documentos = new ArrayList<>();
 }

@@ -1,0 +1,12 @@
+package com.llosa.backend.agenda.enums;
+
+public enum TipoEvento {
+    CONFIRMACION_FECHA_ENTREGA,
+    ENTREGA_LLAVES,
+    REVISION_OBSERVACIONES,
+    FIRMA_MINUTA,
+    FIRMA_ESCRITURA,
+    INSPECCION_OBRA,
+    JUNTA_PROPIETARIOS,
+    OTRO
+}
