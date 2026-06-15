@@ -72,6 +72,6 @@ public class Activo {
     // NUEVA RELACIÓN: El contrato al que pertenece actualmente este activo
     // =========================================================================
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uuid_usuario_activo") // Es nullable porque en inventario no tiene contrato
+    @JoinColumn(name = "uuid_usuario_activo", unique = true) // Es nullable porque en inventario no tiene contrato
     private UsuarioActivo usuarioActivo;
 }

@@ -26,7 +26,7 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.crearUsuario(req));
     }
 
-    @PreAuthorize("hasAuthority('USER_VER')")
+    @PreAuthorize("hasAuthority('USER_GESTIONAR')")
     @GetMapping
     public ResponseEntity<List<UsuarioResponse>> listar() {
         return ResponseEntity.ok(usuarioService.listarTodos());
@@ -77,8 +77,24 @@ public class UsuarioController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('USER_GESTIONAR')")
-    public ResponseEntity<UsuarioResponse> modificarInformacionUsuario(@PathVariable Integer id, @RequestBody UpdateUsuarioDTO updateUsuarioDTO){
+    public ResponseEntity<UsuarioResponse> modificarInformacionUsuario(@PathVariable Integer id, @RequestBody @Valid UpdateUsuarioDTO updateUsuarioDTO){
         UsuarioResponse usuarioResponse = usuarioService.actualizarUsuario(id, updateUsuarioDTO);
         return ResponseEntity.ok(usuarioResponse);
+    }
+    // ── Activar usuario ────────────────────────────────────────────────────────
+    @PreAuthorize("hasAuthority('USER_GESTIONAR')")
+    @PatchMapping("/{id}/activar")
+    public ResponseEntity<Void> activar(@PathVariable Integer id) throws Exception {
+        usuarioService.cambiarEstado(id, true);
+        return ResponseEntity.ok().build();
+    }
+
+    // ── Modificar funciones del rol del usuario ────────────────────────────────
+    @PreAuthorize("hasAuthority('USER_GESTIONAR')")
+    @PatchMapping("/{id}/funciones")
+    public ResponseEntity<UsuarioResponse> modificarFunciones(
+            @PathVariable Integer id,
+            @Valid @RequestBody ModificarFuncionesRequest req) {
+        return ResponseEntity.ok(usuarioService.modificarFunciones(id, req.getIdFunciones()));
     }
 }

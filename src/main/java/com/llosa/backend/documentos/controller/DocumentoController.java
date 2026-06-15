@@ -14,7 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
+import com.llosa.backend.exception.RecursoNoEncontradoException;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,7 +42,7 @@ public class DocumentoController {
     ) {
         String uid = (String) authentication.getPrincipal();
         Usuario usuario = usuarioRepository.findByFirebaseUuid(uid)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         return ResponseEntity.ok(
                 documentoService.subirDocumento(idReferencia, file, request, usuario.getId())

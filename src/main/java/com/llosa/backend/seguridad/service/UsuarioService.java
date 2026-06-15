@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import com.llosa.backend.seguridad.repository.FuncionRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +32,7 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
+    private final FuncionRepository funcionRepository;
 
     @Transactional
     public UsuarioResponse crearUsuario(CrearUsuarioRequest request) throws Exception {
@@ -165,7 +167,7 @@ public class UsuarioService {
     @Transactional
     public void eliminarCompletamente(Integer usuarioId) throws Exception {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         // Eliminar de Firebase
         FirebaseAuth.getInstance().deleteUser(usuario.getFirebaseUuid());
@@ -177,7 +179,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public Usuario findById(Integer id){
         return usuarioRepository.findById(id).orElseThrow(
-                () -> new RuntimeException("Usuario no encontrado")
+                () -> new RecursoNoEncontradoException("Usuario no encontrado")
         );
     }
 
@@ -191,7 +193,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public Usuario findByFirebaseUuid(String firebaseUuid) {
         return usuarioRepository.findByFirebaseUuid(firebaseUuid)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
     }
 
     @Transactional
@@ -200,7 +202,7 @@ public class UsuarioService {
             UpdateUsuarioDTO request) {
 
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         if (request.getNombre() != null) {
             usuario.setNombre(request.getNombre());
@@ -224,6 +226,28 @@ public class UsuarioService {
             usuario.setTipoUsuario(request.getTipoUsuario());
         }
 
+        usuarioRepository.save(usuario);
+
+        return toResponse(usuario);
+    }
+    @Transactional
+    public UsuarioResponse modificarFunciones(Integer usuarioId, List<Integer> idFunciones) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+
+        Rol rol = usuario.getRol();
+        if (rol == null) {
+            throw new RecursoNoEncontradoException("El usuario no tiene un rol asignado");
+        }
+
+        List<Funcion> nuevasFunciones = funcionRepository.findAllById(idFunciones);
+        if (nuevasFunciones.size() != idFunciones.size()) {
+            throw new RecursoNoEncontradoException("Una o más funciones no existen");
+        }
+
+        rol.setFunciones(nuevasFunciones);
+        // rol ya está managed por JPA, no hace falta llamar save explícito,
+        // pero lo llamamos para ser explícitos
         usuarioRepository.save(usuario);
 
         return toResponse(usuario);

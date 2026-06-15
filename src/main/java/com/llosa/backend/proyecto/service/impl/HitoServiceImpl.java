@@ -50,7 +50,7 @@ public class HitoServiceImpl implements HitoService {
     @Transactional
     public void deleteById(UUID id){
         hitoRepository.deleteById(id);
-        return;
+
     }
 }
 

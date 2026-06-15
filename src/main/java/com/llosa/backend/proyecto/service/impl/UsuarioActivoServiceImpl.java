@@ -1,6 +1,7 @@
 package com.llosa.backend.proyecto.service.impl;
 
 import com.llosa.backend.comercial.entity.EtapaExpediente;
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.proyecto.dto.request.CrearContratoDTO;
 import com.llosa.backend.proyecto.dto.response.UsuarioActivoResponseDTO;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
@@ -91,16 +92,20 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
         UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(dto.uuidUsuarioActivo()).orElseThrow(
                 ()-> new EntityNotFoundException("Usuario no encontrado: " + dto.uuidUsuarioActivo())
         );
-        List<Activo> activos = dto.idsActivo().stream().map(
-                activoService::findById
-        ).toList();
+        List<Activo> activos = activoRepository.findByIdsForUpdate(dto.idsActivo());
+
+        if (activos.size() != dto.idsActivo().size()) {
+            throw new EntityNotFoundException("Uno o más activos solicitados no existen.");
+        }
         for (Activo activo : activos) {
-            if (!usuarioActivo.equals(activo.getUsuarioActivo()) && activo.getEstadoComercial() == EstadoComercialActivo.DISPONIBLE) {
-                activo.setUsuarioActivo(usuarioActivo);
-                activo.setEstadoComercial(EstadoComercialActivo.SEPARADO);
-                activoRepository.save(activo);
-                usuarioActivo.getActivos().add(activo);
+            if (activo.getEstadoComercial() != EstadoComercialActivo.DISPONIBLE) {
+                throw new BusinessException("El activo '" + activo.getNro() + "' ya no está disponible (Estado actual: " + activo.getEstadoComercial() + ").");
             }
+            activo.setUsuarioActivo(usuarioActivo);
+            activo.setEstadoComercial(EstadoComercialActivo.SEPARADO);
+
+            activoRepository.save(activo);
+            usuarioActivo.getActivos().add(activo);
         }
         return UsuarioActivoResponseDTO.fromEntity(usuarioActivo);
 
@@ -121,7 +126,44 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
     @Override
     @Transactional
     public void deleteById(UUID id) {
-        usuarioActivoRepository.deleteById(id);
+        // 1. Buscamos el expediente completo con sus relaciones (clientes y activos)
+        UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Expediente de Usuario-Activo no encontrado: " + id));
+
+        // 2. REGLA DE NEGOCIO 1: Liberar los activos (Volver a DISPONIBLE)
+        if (usuarioActivo.getActivos() != null) {
+            for (Activo activo : usuarioActivo.getActivos()) {
+                activo.setUsuarioActivo(null);
+                activo.setEstadoComercial(EstadoComercialActivo.DISPONIBLE);
+                activoRepository.save(activo); // Persistimos el cambio de estado en el activo
+            }
+            // Limpiamos la lista en memoria para evitar problemas de persistencia en cascada
+            usuarioActivo.getActivos().clear();
+        }
+
+        // 3. REGLA DE NEGOCIO 2: Desactivar a los clientes vinculados si era su única unidad
+        if (usuarioActivo.getClientes() != null) {
+            for (Usuario cliente : usuarioActivo.getClientes()) {
+                // Buscamos si este cliente tiene OTROS contratos vigentes en el sistema
+                List<UsuarioActivo> otrosContratos = usuarioActivoRepository.findByClienteId(cliente.getId());
+
+                // Si el único contrato que tenía era este (o ninguno más está vigente), lo desactivamos
+                // Nota: Filtramos para no contar el contrato actual que estamos destruyendo
+                long contratosActivosRestantes = otrosContratos.stream()
+                        .filter(c -> !c.getUuidUsuarioActivo().equals(id))
+                        .count();
+
+                if (contratosActivosRestantes == 0) {
+                    // Cambiamos el estado del perfil del cliente a Inactivo
+                    // Ajusta 'setActivo(false)' o 'setEstado(...)' según las propiedades reales de tu entidad Usuario
+                    cliente.setActivo(false);
+                    usuarioRepository.save(cliente);
+                }
+            }
+        }
+
+        // 4. Una vez que todo el entorno quedó limpio y actualizado, borramos físicamente el expediente
+        usuarioActivoRepository.delete(usuarioActivo);
     }
 
     @Override

@@ -1,8 +1,10 @@
 package com.llosa.backend.proyecto.controller;
 
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.proyecto.dto.request.HitoCreateDTO;
 import com.llosa.backend.proyecto.dto.response.HitoResponseDTO;
 import com.llosa.backend.proyecto.entity.Hito;
+import com.llosa.backend.proyecto.repository.HitoPisoRepository;
 import com.llosa.backend.proyecto.service.HitoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ import java.util.UUID;
 public class HitoController {
 
     private final HitoService hitoService;
+    private final HitoPisoRepository hitoPisoRepository;
 
     /*
     Endpoint para actualizar un hito(etapa)
@@ -25,6 +28,9 @@ public class HitoController {
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PutMapping("/{id}")
     public ResponseEntity<HitoResponseDTO> actualizarHito(@PathVariable("id") UUID uuid, @RequestBody HitoCreateDTO dto) {
+        if (hitoPisoRepository.existsByHitoId(uuid)) {
+            throw new BusinessException("No se puede modificar este hito porque ya ha sido propagado a los pisos del proyecto. Elimine o desvincule las instancias de HitoPiso antes de editar.");
+        }
         Hito hitoActualizado = hitoService.findById(uuid);
         hitoActualizado.setTitulo(dto.titulo());
         hitoActualizado.setOrden(dto.orden());

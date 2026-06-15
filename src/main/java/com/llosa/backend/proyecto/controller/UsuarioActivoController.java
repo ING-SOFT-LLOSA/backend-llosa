@@ -1,5 +1,6 @@
 package com.llosa.backend.proyecto.controller;
 
+import com.llosa.backend.proyecto.dto.response.MisActivosResponseDTO;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.dto.request.CrearContratoDTO;
 import com.llosa.backend.proyecto.dto.response.UsuarioActivoResponseDTO;
@@ -39,7 +40,7 @@ public class UsuarioActivoController {
      */
     @GetMapping("/mis-activos")
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
-    public ResponseEntity<List<ActivoResponseDTO>> obtenerMisActivos() {
+    public ResponseEntity<List<MisActivosResponseDTO>> obtenerMisActivos() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -52,9 +53,9 @@ public class UsuarioActivoController {
         // Recupera todos los contratos donde el usuario es propietario o copropietario
         List<UsuarioActivo> misExpedientes = usuarioActivoService.findByUsuario(idUsuario);
 
-        List<ActivoResponseDTO> activos = misExpedientes.stream()
+        List<MisActivosResponseDTO> activos = misExpedientes.stream()
                 .flatMap(expediente -> expediente.getActivos().stream())
-                .map(ActivoResponseDTO::fromEntity)
+                .map(MisActivosResponseDTO::fromEntity)
                 .toList();
         return ResponseEntity.ok(activos);
     }

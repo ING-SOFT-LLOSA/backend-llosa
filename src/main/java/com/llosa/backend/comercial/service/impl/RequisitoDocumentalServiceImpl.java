@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import com.llosa.backend.exception.RecursoNoEncontradoException;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -42,7 +43,7 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
                 .orElseThrow(() -> new EntityNotFoundException("Requisito no encontrado"));
 
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         // CORRECCIÓN: Llamamos a la nueva firma de subirDocumentoPolimorfico sin el UUID del contrato
         documentoService.subirDocumentoPolimorfico(
@@ -64,7 +65,7 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
                 .orElseThrow(() -> new EntityNotFoundException("Requisito no encontrado"));
 
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         Documento documento = documentoRepository
                 .findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc("REQUISITO", requisitoId.toString())
@@ -117,7 +118,7 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
                 .orElseThrow(() -> new EntityNotFoundException("Requisito no encontrado"));
 
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         documentoRepository
                 .findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc("REQUISITO", id.toString())
