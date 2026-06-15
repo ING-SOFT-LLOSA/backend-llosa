@@ -26,7 +26,7 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.crearUsuario(req));
     }
 
-    @PreAuthorize("hasAuthority('USER_VER')")
+    @PreAuthorize("hasAuthority('USER_GESTIONAR')")
     @GetMapping
     public ResponseEntity<List<UsuarioResponse>> listar() {
         return ResponseEntity.ok(usuarioService.listarTodos());

@@ -42,7 +42,7 @@ public class DocumentoController {
     ) {
         String uid = (String) authentication.getPrincipal();
         Usuario usuario = usuarioRepository.findByFirebaseUuid(uid)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         return ResponseEntity.ok(
                 documentoService.subirDocumento(idReferencia, file, request, usuario.getId())

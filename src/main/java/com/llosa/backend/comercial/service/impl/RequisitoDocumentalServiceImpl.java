@@ -42,7 +42,7 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
                 .orElseThrow(() -> new EntityNotFoundException("Requisito no encontrado"));
 
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         // CORRECCIÓN: Llamamos a la nueva firma de subirDocumentoPolimorfico sin el UUID del contrato
         documentoService.subirDocumentoPolimorfico(
@@ -64,7 +64,7 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
                 .orElseThrow(() -> new EntityNotFoundException("Requisito no encontrado"));
 
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         Documento documento = documentoRepository
                 .findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc("REQUISITO", requisitoId.toString())
@@ -117,7 +117,7 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
                 .orElseThrow(() -> new EntityNotFoundException("Requisito no encontrado"));
 
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         documentoRepository
                 .findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc("REQUISITO", id.toString())

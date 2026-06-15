@@ -14,4 +14,6 @@ public interface HitoRepository extends JpaRepository<Hito, UUID> {
     long countByProyectoId(UUID proyectoId);
 
     long countByProyectoIdAndEstado(UUID proyectoId, EstadoHito estado);
+
+    boolean existsByHitoId(UUID hitoId);
 }

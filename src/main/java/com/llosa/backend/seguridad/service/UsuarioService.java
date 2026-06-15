@@ -165,7 +165,7 @@ public class UsuarioService {
     @Transactional
     public void eliminarCompletamente(Integer usuarioId) throws Exception {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         // Eliminar de Firebase
         FirebaseAuth.getInstance().deleteUser(usuario.getFirebaseUuid());
@@ -177,7 +177,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public Usuario findById(Integer id){
         return usuarioRepository.findById(id).orElseThrow(
-                () -> new RuntimeException("Usuario no encontrado")
+                () -> new RecursoNoEncontradoException("Usuario no encontrado")
         );
     }
 
@@ -191,7 +191,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public Usuario findByFirebaseUuid(String firebaseUuid) {
         return usuarioRepository.findByFirebaseUuid(firebaseUuid)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
     }
 
     @Transactional
@@ -200,7 +200,7 @@ public class UsuarioService {
             UpdateUsuarioDTO request) {
 
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
         if (request.getNombre() != null) {
             usuario.setNombre(request.getNombre());

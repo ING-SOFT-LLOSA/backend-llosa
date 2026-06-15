@@ -62,7 +62,7 @@ public class PagoController {
             Authentication authentication) {
         String uid = (String) authentication.getPrincipal();
         Usuario usuario = usuarioRepository.findByFirebaseUuid(uid)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
         return ResponseEntity.ok(pagoService.cambiarEstado(uuidPago, estado, usuario.getId()));
     }
 
@@ -74,7 +74,7 @@ public class PagoController {
             Authentication authentication) {
         String uid = (String) authentication.getPrincipal();
         Usuario usuario = usuarioRepository.findByFirebaseUuid(uid)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
         return ResponseEntity.ok(pagoService.subirComprobante(uuidPago, file, usuario.getId()));
     }
 }
