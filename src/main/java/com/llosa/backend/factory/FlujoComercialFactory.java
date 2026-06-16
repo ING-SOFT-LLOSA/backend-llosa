@@ -105,7 +105,6 @@ public class FlujoComercialFactory {
         etapas.add(contratoEtapa);
 
         // 3. ETAPA: PAGO
-        // 3. ETAPA: PAGO
         EtapaExpediente pago = construirEtapa(contrato, EtapaProceso.PAGO);
 
         if (tipoFinanciamiento.contains("HIPOT")) {
@@ -124,6 +123,35 @@ public class FlujoComercialFactory {
             pago.getHitosComerciales().add(construirHito(pago, "Firma de Escritura Pública", 5, "Las partes firman la escritura pública ante notario."));
             pago.getHitosComerciales().add(construirHito(pago, "Desembolso Completado", 6, "El banco realiza el desembolso final a la inmobiliaria."));
 
+            // hacemos los requisitos docuemntales
+            pago.getRequisitos().add(construirRequisito(
+                    pago,
+                    "Inicio De desembolso",
+                    "Docuemnto el cual confirma que el proceso de pago del banco a Llosa ha comenzado",
+                    "bag_of_money",
+                    "No hay nota corporativa"
+            ));
+            pago.getRequisitos().add(construirRequisito(
+                    pago,
+                    "Minuta en Notaría",
+                    "La minuta es revisada y procesada por la notaría.",
+                    "document2",
+                    "No hay nota corporativa"
+            ));
+            pago.getRequisitos().add(construirRequisito(
+                    pago,
+                    "Firma de Escritura Pública",
+                    "Las partes firman la escritura pública ante notario.",
+                    "document",
+                    "No hay nota corporativa"
+            ));
+            pago.getRequisitos().add(construirRequisito(
+                    pago,
+                    "Desembolso Completado",
+                    "El banco realiza el desembolso final a la inmobiliaria.",
+                    "bag_of_money2",
+                    "No hay nota corporativa"
+            ));
         } else {
 
             HitoProcesoCompra pagoSeparacion =
