@@ -32,6 +32,7 @@ public class HitoServiceImpl implements HitoService {
 
         return hitoGuardado;
     }
+
     @Override
     @Transactional
     public Hito save(Hito hito) {

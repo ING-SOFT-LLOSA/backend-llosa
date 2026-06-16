@@ -22,7 +22,6 @@ public class GcsConfig {
     private String bucketName;
 
     @Bean
-    @Profile("!test")
     public Storage googleCloudStorage() throws IOException {
         GoogleCredentials credentials = GoogleCredentials
                 .fromStream(new FileInputStream(serviceAccountPath))
