@@ -50,12 +50,6 @@ class CartaAprobacionServiceImplTest {
                 .thenReturn(false);
         when(usuarioActivoRepository.findById(request.uuidUsuarioActivo()))
                 .thenReturn(Optional.of(ua));
-        when(etapaExpedienteRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(
-                request.uuidUsuarioActivo(), EtapaProceso.PAGO))
-                .thenReturn(Optional.of(EtapaExpediente.builder()
-                        .uuidEtapaExpediente(UUID.randomUUID())
-                        .hitosComerciales(new ArrayList<>())
-                        .build()));
 
         ArgumentCaptor<CartaAprobacion> captor = ArgumentCaptor.forClass(CartaAprobacion.class);
         when(cartaAprobacionRepository.save(captor.capture())).thenAnswer(inv -> {

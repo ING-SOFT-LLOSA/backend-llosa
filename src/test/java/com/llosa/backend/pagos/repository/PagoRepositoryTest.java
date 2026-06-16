@@ -30,9 +30,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@Testcontainers
 @ActiveProfiles("test")
-@Import({PostgresTestContainerConfig.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class PagoRepositoryTest {

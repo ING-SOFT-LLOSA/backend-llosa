@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import({GlobalExceptionHandler.class, com.llosa.backend.config.SecurityTestConfiguration.class, com.llosa.backend.config.PostgresTestContainerConfig.class})
+@Import({GlobalExceptionHandler.class, com.llosa.backend.config.SecurityTestConfiguration.class})
 class MinimalControllerTest {
 
     @Autowired

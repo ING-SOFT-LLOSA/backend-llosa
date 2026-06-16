@@ -34,9 +34,13 @@ class HitoControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
 
+    // --- TUS DEPENDENCIAS FALSAS (MOCKS) ---
     @MockitoBean HitoService hitoService;
-    @MockitoBean FirebaseConfig firebaseConfig;
     @MockitoBean com.llosa.backend.seguridad.repository.UsuarioRepository usuarioRepository;
+
+    // AQUÍ ESTÁ EL QUE FALTABA PARA QUE ARRANQUE:
+    @MockitoBean com.llosa.backend.proyecto.repository.HitoPisoRepository hitoPisoRepository;
+    // ---------------------------------------
 
     private Hito buildHito() {
         Proyecto proyecto = Proyecto.builder().id(UUID.randomUUID()).nombre("Test").build();

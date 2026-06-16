@@ -57,9 +57,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ImportAutoConfiguration(JacksonAutoConfiguration.class)
-@Testcontainers
 @ActiveProfiles("test")
-@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class})
+@Import({SecurityTestConfiguration.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class PagosIntegrationTest {
 
