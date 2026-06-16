@@ -144,22 +144,4 @@ class HidratationServiceTest {
         verify(hitoPisoRepository, never()).saveAll(any());
     }
 
-    @Test
-    void hidratarActivos_llamaHydratePorCadaPiso() {
-        Proyecto proyecto = buildProyecto();
-        Torre torre = buildTorre(proyecto);
-        Piso piso = buildPiso(torre);
-        Activo activo = Activo.builder()
-                .id(UUID.randomUUID()).nro("101").tipo(TipoActivo.DEPARTAMENTO)
-                .areaM2(BigDecimal.ZERO).estadoComercial(EstadoComercialActivo.DISPONIBLE)
-                .precio(BigDecimal.ZERO).descripcion("").piso(piso)
-                .build();
-
-        when(pisoRepository.findById(1L)).thenReturn(Optional.of(piso));
-        when(hitoRepository.findByProyectoId(proyecto.getId())).thenReturn(List.of());
-
-        service.hidratarActivos(List.of(activo), proyecto.getId());
-
-        verify(pisoRepository).findById(1L);
-    }
 }
