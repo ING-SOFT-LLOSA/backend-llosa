@@ -38,7 +38,7 @@ public class HidratationServiceImpl implements HidratationService {
 
         List<HitoPiso> nuevasJunturas = new ArrayList<>();
         for (Hito hito : hitos) {
-            if (hitoPisoRepository.existsByPisoIdAndHitoId(idPiso, hito.getId())) {
+            if (!hitoPisoRepository.existsByPisoIdAndHitoId(idPiso, hito.getId())) {
                 HitoPiso hitoPiso = HitoPiso.builder()
                         .estado(EstadoHito.PENDIENTE)
                         .fechaCompletado(null)
@@ -54,14 +54,6 @@ public class HidratationServiceImpl implements HidratationService {
         }
     }
 
-    @Override
-    @Transactional
-    public void hidratarActivos(List<Activo> activos, UUID idProyecto) {
-        List<Piso> pisosUnicos = activos.stream().map(Activo::getPiso).distinct().toList();
-        for (Piso piso : pisosUnicos) {
-            hydrateFloorMilestones(piso.getId());
-        }
-    }
 
     @Override
     @Transactional
@@ -70,7 +62,7 @@ public class HidratationServiceImpl implements HidratationService {
         List<HitoPiso> nuevasJunturas = new ArrayList<>();
         
         for (Piso piso : todosLosPisos) {
-            if (hitoPisoRepository.existsByPisoIdAndHitoId(piso.getId(), nuevoHito.getId())) {
+            if (!hitoPisoRepository.existsByPisoIdAndHitoId(piso.getId(), nuevoHito.getId())) {
                 nuevasJunturas.add(HitoPiso.builder()
                         .piso(piso)
                         .hito(nuevoHito)
