@@ -2,6 +2,7 @@ package com.llosa.backend.pagos.service.impl;
 
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.pagos.dto.CartaAprobacionRequest;
 import com.llosa.backend.pagos.dto.CartaAprobacionResponse;
@@ -32,7 +33,7 @@ public class CartaAprobacionServiceImpl implements CartaAprobacionService {
     @Transactional
     public CartaAprobacionResponse crear(CartaAprobacionRequest request) {
         if (cartaAprobacionRepository.existsByUsuarioActivo_UuidUsuarioActivo(request.uuidUsuarioActivo())) {
-            throw new BusinessException("El expediente ya tiene una carta de aprobación registrada");
+            throw new EntidadDuplicadaException("El expediente ya tiene una carta de aprobación registrada");
         }
 
         UsuarioActivo ua = usuarioActivoRepository.findById(request.uuidUsuarioActivo())

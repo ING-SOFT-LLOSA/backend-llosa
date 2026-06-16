@@ -4,6 +4,8 @@ import com.llosa.backend.documentos.dto.DocumentoResponse;
 import com.llosa.backend.documentos.enums.TipoDocumento;
 import com.llosa.backend.documentos.service.DocumentoService;
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.exception.EntidadDuplicadaException;
+import com.llosa.backend.exception.EstadoInvalidoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.pagos.dto.PagoRequest;
 import com.llosa.backend.pagos.dto.PagoResponse;
@@ -49,7 +51,7 @@ public class PagoServiceImpl implements PagoService {
                         "Cronograma no encontrado: " + uuidCronograma));
 
         if (pagoRepository.findByCronograma_IdAndNroCuota(uuidCronograma, request.nroCuota()).isPresent()) {
-            throw new BusinessException("Ya existe una cuota con el número " + request.nroCuota());
+            throw new EntidadDuplicadaException("Ya existe una cuota con el número " + request.nroCuota());
         }
 
         Pago pago = Pago.builder()
@@ -74,7 +76,7 @@ public class PagoServiceImpl implements PagoService {
         if (!pago.getNroCuota().equals(request.nroCuota())
                 && pagoRepository.findByCronograma_IdAndNroCuota(
                         pago.getCronograma().getId(), request.nroCuota()).isPresent()) {
-            throw new BusinessException("Ya existe una cuota con el número " + request.nroCuota());
+            throw new EntidadDuplicadaException("Ya existe una cuota con el número " + request.nroCuota());
         }
 
         pago.setNroCuota(request.nroCuota());
@@ -103,7 +105,7 @@ public class PagoServiceImpl implements PagoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pago no encontrado: " + uuidPago));
 
         if (!List.of("PENDIENTE", "PAGADO", "VENCIDO").contains(nuevoEstado)) {
-            throw new BusinessException("Estado inválido: " + nuevoEstado);
+            throw new EstadoInvalidoException("Estado inválido: " + nuevoEstado);
         }
 
         pago.setEstado(nuevoEstado);

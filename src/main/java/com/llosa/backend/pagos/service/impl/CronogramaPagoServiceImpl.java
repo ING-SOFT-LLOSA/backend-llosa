@@ -1,6 +1,7 @@
 package com.llosa.backend.pagos.service.impl;
 
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.pagos.dto.CronogramaPagoRequest;
 import com.llosa.backend.pagos.dto.CronogramaPagoResponse;
@@ -36,7 +37,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     @Transactional
     public CronogramaPagoResponse crear(CronogramaPagoRequest request) {
         if (cronogramaPagoRepository.existsByUsuarioActivo_UuidUsuarioActivo(request.uuidUsuarioActivo())) {
-            throw new BusinessException("El expediente ya tiene un cronograma de pagos activo");
+            throw new EntidadDuplicadaException("El expediente ya tiene un cronograma de pagos activo");
         }
 
         UsuarioActivo ua = usuarioActivoRepository.findById(request.uuidUsuarioActivo())

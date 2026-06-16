@@ -41,4 +41,15 @@ public class GlobalExceptionHandler {
         return Map.of("error", ex.getMessage());
     }
 
+    @ExceptionHandler(EstadoInvalidoException.class)
+    @ResponseStatus(HttpStatus.CONFLICT) // <-- Esto es el código 409
+    public Map<String, String> handleEstadoInvalido(EstadoInvalidoException ex) {
+        return Map.of("error", ex.getMessage());
+    }
+
+    @ExceptionHandler(EntidadDuplicadaException.class)
+    @ResponseStatus(HttpStatus.CONFLICT) // <-- Esto genera el HTTP 409
+    public Map<String, String> handleEntidadDuplicada(EntidadDuplicadaException ex) {
+        return Map.of("error", ex.getMessage());
+    }
 }
