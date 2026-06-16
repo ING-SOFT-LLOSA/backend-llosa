@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.llosa.backend.config.TestDataPagos;
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.GlobalExceptionHandler;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.pagos.dto.CartaAprobacionRequest;
@@ -74,7 +75,7 @@ class CartaAprobacionControllerTest {
     @Test
     void crear_duplicado_devuelve409() throws Exception {
         when(cartaAprobacionService.crear(any(CartaAprobacionRequest.class)))
-                .thenThrow(new BusinessException("El expediente ya tiene una carta de aprobación registrada"));
+                .thenThrow(new EntidadDuplicadaException("El expediente ya tiene una carta de aprobación registrada"));
 
         mockMvc.perform(post("/api/cartas-aprobacion")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -2,6 +2,7 @@ package com.llosa.backend.pagos.service;
 
 import com.llosa.backend.config.TestDataPagos;
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.pagos.dto.CronogramaPagoResponse;
 import com.llosa.backend.pagos.dto.ResumenResponse;
@@ -69,13 +70,13 @@ class CronogramaPagoServiceImplTest {
     }
 
     @Test
-    void crear_duplicado_lanzaBusinessException() {
+    void crear_duplicado_lanzaEntidadDuplicadaException() {
         var request = TestDataPagos.crearCronogramaRequest();
         when(cronogramaPagoRepository.existsByUsuarioActivo_UuidUsuarioActivo(request.uuidUsuarioActivo()))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> cronogramaPagoService.crear(request))
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(EntidadDuplicadaException.class)
                 .hasMessageContaining("ya tiene un cronograma");
 
         verify(usuarioActivoRepository, never()).findById(any());

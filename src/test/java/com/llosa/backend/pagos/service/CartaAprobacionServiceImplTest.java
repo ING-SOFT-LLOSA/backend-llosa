@@ -5,6 +5,7 @@ import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.config.TestDataPagos;
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.pagos.dto.CartaAprobacionResponse;
 import com.llosa.backend.pagos.entity.CartaAprobacion;
@@ -71,7 +72,7 @@ class CartaAprobacionServiceImplTest {
                 .thenReturn(true);
 
         assertThatThrownBy(() -> cartaAprobacionService.crear(request))
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(EntidadDuplicadaException.class)
                 .hasMessageContaining("ya tiene una carta de aprobación");
 
         verify(usuarioActivoRepository, never()).findById(any());

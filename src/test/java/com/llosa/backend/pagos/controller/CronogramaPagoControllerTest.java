@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.llosa.backend.config.TestDataPagos;
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.GlobalExceptionHandler;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.pagos.dto.CronogramaPagoRequest;
@@ -73,7 +74,7 @@ class CronogramaPagoControllerTest {
     @Test
     void crear_expedienteDuplicado_devuelve409() throws Exception {
         when(cronogramaPagoService.crear(any(CronogramaPagoRequest.class)))
-                .thenThrow(new BusinessException("El expediente ya tiene un cronograma de pagos activo"));
+                .thenThrow(new EntidadDuplicadaException("El expediente ya tiene un cronograma de pagos activo"));
 
         mockMvc.perform(post("/api/cronogramas")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -5,6 +5,8 @@ import com.llosa.backend.documentos.dto.DocumentoResponse;
 import com.llosa.backend.documentos.enums.TipoDocumento;
 import com.llosa.backend.documentos.service.DocumentoService;
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.exception.EntidadDuplicadaException;
+import com.llosa.backend.exception.EstadoInvalidoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.pagos.dto.PagoRequest;
 import com.llosa.backend.pagos.dto.PagoResponse;
@@ -104,7 +106,7 @@ class PagoServiceImplTest {
     }
 
     @Test
-    void agregarCuota_nroCuotaDuplicado_lanzaBusinessException() {
+    void agregarCuota_nroCuotaDuplicado_lanzaEntidadDuplicadaException() {
         UUID uuidCp = UUID.randomUUID();
         var cp = CronogramaPago.builder().id(uuidCp).build();
         var request = TestDataPagos.crearPagoRequest(1);
@@ -113,7 +115,7 @@ class PagoServiceImplTest {
         when(pagoRepository.findByCronograma_IdAndNroCuota(uuidCp, 1)).thenReturn(Optional.of(mock(Pago.class)));
 
         assertThatThrownBy(() -> pagoService.agregarCuota(uuidCp, request))
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(EntidadDuplicadaException.class)
                 .hasMessageContaining("Ya existe una cuota con el número 1");
     }
 
@@ -147,7 +149,7 @@ class PagoServiceImplTest {
     }
 
     @Test
-    void actualizarCuota_nroCuotaDuplicado_lanzaBusinessException() {
+    void actualizarCuota_nroCuotaDuplicado_lanzaEstadoEntidadDuplicadaException() {
         UUID uuidPago = UUID.randomUUID();
         UUID uuidCp = UUID.randomUUID();
         var cp = CronogramaPago.builder().id(uuidCp).build();
@@ -160,7 +162,7 @@ class PagoServiceImplTest {
         when(pagoRepository.findByCronograma_IdAndNroCuota(uuidCp, 2)).thenReturn(Optional.of(mock(Pago.class)));
 
         assertThatThrownBy(() -> pagoService.actualizarCuota(uuidPago, request))
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(EntidadDuplicadaException.class)
                 .hasMessageContaining("Ya existe una cuota con el número 2");
     }
 
@@ -246,7 +248,7 @@ class PagoServiceImplTest {
         when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
 
         assertThatThrownBy(() -> pagoService.cambiarEstado(uuidPago, "INVALIDO", 1))
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(EstadoInvalidoException.class)
                 .hasMessageContaining("Estado inválido");
     }
 
