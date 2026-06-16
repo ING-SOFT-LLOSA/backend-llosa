@@ -117,7 +117,9 @@ public final class TestDataPagos {
                 UUID.randomUUID(),
                 new BigDecimal("350000.00"),
                 new BigDecimal("50000.00"),
-                12
+                12,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO
         );
     }
 
