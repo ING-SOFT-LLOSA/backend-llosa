@@ -10,5 +10,7 @@ public record CronogramaPagoRequest(
         @NotNull UUID uuidUsuarioActivo,
         @NotNull @Positive BigDecimal totalPactado,
         BigDecimal cuotaInicial,
-        Integer numeroCuotas
+        Integer numeroCuotas,
+        BigDecimal pagoSeparacion,
+        BigDecimal pagoIncial
 ) {}
