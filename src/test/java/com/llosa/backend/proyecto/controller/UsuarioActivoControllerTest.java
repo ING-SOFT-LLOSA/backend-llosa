@@ -219,4 +219,47 @@ class UsuarioActivoControllerTest {
                         .with(csrf()))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    void asignarAsesor_conPermisos_devuelve200() throws Exception {
+        // 1. Preparar los datos
+        UUID contratoId = UUID.randomUUID();
+        Integer asesorId = 10;
+
+        UsuarioActivo contratoSimulado = new UsuarioActivo();
+        contratoSimulado.setUuidUsuarioActivo(contratoId);
+        // Opcional: configurar más datos al contratoSimulado si tu DTO los exige para no dar error
+
+        // 2. Comportamiento esperado del Mock
+        when(usuarioActivoService.asignarAsesorAContrato(contratoId, asesorId))
+                .thenReturn(contratoSimulado);
+
+        // 3. Ejecutar y Verificar
+        mockMvc.perform(post("/api/usuarioActivo/" + contratoId + "/asesor/" + asesorId) // Asegúrate de que la ruta coincida con tu @RequestMapping de clase
+                        .with(authentication(TestData.proyectoAuthToken())) // Simula un usuario logueado con permisos
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.uuidUsuarioActivo").value(contratoId.toString()));
+    }
+
+    @Test
+    void desvincularAsesor_conPermisos_devuelve200() throws Exception {
+        // 1. Preparar los datos
+        UUID contratoId = UUID.randomUUID();
+        Integer asesorId = 10;
+
+        UsuarioActivo contratoSimulado = new UsuarioActivo();
+        contratoSimulado.setUuidUsuarioActivo(contratoId);
+
+        // 2. Comportamiento esperado del Mock
+        when(usuarioActivoService.desasignarAsesorDelContrato(contratoId, asesorId))
+                .thenReturn(contratoSimulado);
+
+        // 3. Ejecutar y Verificar
+        mockMvc.perform(put("/api/usuarioActivo/" + contratoId + "/asesor/" + asesorId) // Ojo: Este es un PUT
+                        .with(authentication(TestData.proyectoAuthToken()))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.uuidUsuarioActivo").value(contratoId.toString()));
+    }
 }

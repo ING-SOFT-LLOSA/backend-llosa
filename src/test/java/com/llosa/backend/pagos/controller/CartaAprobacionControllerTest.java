@@ -60,7 +60,9 @@ class CartaAprobacionControllerTest {
                 UUID.randomUUID(), request.uuidUsuarioActivo(),
                 request.banco(), request.montoAprobado(),
                 request.fechaEmision(), request.fechaVencimiento(),
-                request.fechaDesembolsoProyectada(), request.comentarios(), null);
+                request.fechaDesembolsoProyectada(),
+                null, null, null,
+                request.comentarios(), null);
 
         when(cartaAprobacionService.crear(any(CartaAprobacionRequest.class))).thenReturn(response);
 
@@ -101,7 +103,9 @@ class CartaAprobacionControllerTest {
                 UUID.randomUUID(), uuidUa,
                 "Banco de Prueba", new BigDecimal("300000.00"),
                 LocalDate.now(), LocalDate.now().plusMonths(6),
-                LocalDate.now().plusMonths(1), "Comentarios", null);
+                LocalDate.now().plusMonths(1),
+                null, null, null,
+                "Comentarios", null);
 
         when(cartaAprobacionService.obtenerPorUsuarioActivo(uuidUa)).thenReturn(response);
 
@@ -129,7 +133,9 @@ class CartaAprobacionControllerTest {
                 uuidCarta, request.uuidUsuarioActivo(),
                 "Banco Actualizado", request.montoAprobado(),
                 request.fechaEmision(), request.fechaVencimiento(),
-                request.fechaDesembolsoProyectada(), request.comentarios(), null);
+                request.fechaDesembolsoProyectada(),
+                null, null, null,
+                request.comentarios(), null);
 
         when(cartaAprobacionService.actualizar(eq(uuidCarta), any(CartaAprobacionRequest.class))).thenReturn(response);
 

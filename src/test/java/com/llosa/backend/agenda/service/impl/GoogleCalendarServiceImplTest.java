@@ -76,7 +76,7 @@ class GoogleCalendarServiceImplTest {
 
     @Test
     void eliminarEvento_googleEventIdNull_retornaFalse() {
-        assertThat(service.eliminarEvento(null)).isFalse();
+        assertThat(service.eliminarEvento((String) null)).isFalse();
     }
 
     @Test
