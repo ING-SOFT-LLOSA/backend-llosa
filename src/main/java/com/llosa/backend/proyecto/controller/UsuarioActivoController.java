@@ -99,6 +99,12 @@ public class UsuarioActivoController {
      * Estado: FUNCIONAL
      */
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
+    @GetMapping("/contrato/{uuidExpediente}")
+    public ResponseEntity<UsuarioActivoResponseDTO> obtenerContratoPorId(@PathVariable UUID uuidExpediente) {
+        return ResponseEntity.ok(UsuarioActivoResponseDTO.fromEntity(usuarioActivoService.findById(uuidExpediente)));
+    }
+
+    @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @GetMapping("/{uuidActivo}/contrato")
     public ResponseEntity<UsuarioActivoResponseDTO> verContratoActivoUsuario(@PathVariable UUID uuidActivo) {
         return usuarioActivoService.findByActivo(uuidActivo)
