@@ -1,8 +1,6 @@
 package com.llosa.backend.comercial.entity;
 
 import com.llosa.backend.comercial.enums.EstadoHitoComercial;
-import com.llosa.backend.comercial.enums.EtapaProceso;
-import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

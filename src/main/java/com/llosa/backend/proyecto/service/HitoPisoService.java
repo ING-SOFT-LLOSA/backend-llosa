@@ -1,6 +1,5 @@
 package com.llosa.backend.proyecto.service;
 
-import com.llosa.backend.proyecto.dto.response.AvanceUnidadResponseDTO;
 import com.llosa.backend.proyecto.dto.response.AvanceUnidadResponsePorcentajeDTO;
 import com.llosa.backend.proyecto.entity.HitoPiso;
 import com.llosa.backend.proyecto.enums.EstadoHito;

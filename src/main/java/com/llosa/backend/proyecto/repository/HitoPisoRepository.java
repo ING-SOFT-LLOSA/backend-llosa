@@ -24,9 +24,7 @@ public interface HitoPisoRepository extends JpaRepository<HitoPiso, UUID> {
     @Query("SELECT COUNT(hp) FROM HitoPiso hp WHERE hp.piso.torre.proyecto.id = :proyectoId")
     long countByProyectoId(@Param("proyectoId") UUID proyectoId);
 
-    boolean existsByPisoId(Long pisoId);
-
     boolean existsByHitoId(UUID hitoId);
 
-    boolean existsByPisoIdAndHitoId(Long pisoId, UUID hitoId);
+    boolean existsByPisoIdAndHitoIdFalse(Long pisoId, UUID hitoId);
 }

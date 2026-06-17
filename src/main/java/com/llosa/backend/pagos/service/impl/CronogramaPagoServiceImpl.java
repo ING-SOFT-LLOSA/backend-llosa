@@ -1,6 +1,5 @@
 package com.llosa.backend.pagos.service.impl;
 
-import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.pagos.dto.CronogramaPagoRequest;

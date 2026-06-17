@@ -3,7 +3,6 @@ package com.llosa.backend.comercial.service.impl;
 import com.llosa.backend.comercial.dto.RequisitoCreateRequest;
 import com.llosa.backend.comercial.dto.RequisitoUpdateRequest;
 import com.llosa.backend.comercial.entity.EtapaExpediente;
-import com.llosa.backend.comercial.entity.HitoProcesoCompra;
 import com.llosa.backend.comercial.entity.RequisitoDocumental;
 import com.llosa.backend.comercial.enums.EtapaRequisitoDocumental;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
@@ -34,23 +33,27 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
     private final DocumentoRepository documentoRepository;
     private final DocumentoService documentoService;
     private final UsuarioRepository usuarioRepository;
-    private final HitoProcesoCompraRepository hitoComercialRepository;
     private final EtapaExpedienteRepository etapaExpedienteRepository;
+    
+    private static final String REQUISITO_NO_ENCONTRADO_MSG = "Requisito no encontrado";
+    private static final String USUARIO_NO_ENCONTRADO_MSG = "Usuario no encontrado";
+    private static final String ENTIDAD_REFERENCIA_REQUSITO = "REQUISITO";
+
 
     @Transactional
     public RequisitoDocumental asociarArchivoARequisito(UUID requisitoId, MultipartFile file, String firebaseUid) {
         RequisitoDocumental requisito = requisitoRepository.findById(requisitoId)
-                .orElseThrow(() -> new EntityNotFoundException("Requisito no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException(REQUISITO_NO_ENCONTRADO_MSG));
 
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(USUARIO_NO_ENCONTRADO_MSG));
 
         // CORRECCIÓN: Llamamos a la nueva firma de subirDocumentoPolimorfico sin el UUID del contrato
         documentoService.subirDocumentoPolimorfico(
                 file,
                 TipoDocumento.PDF_LEGAL, // O el tipo dinámico si lo necesitas
                 requisitoId.toString(),
-                "REQUISITO",
+                ENTIDAD_REFERENCIA_REQUSITO,
                 usuario.getId()
         );
 
@@ -62,13 +65,13 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
     @Transactional
     public void eliminarArchivoDeRequisito(UUID requisitoId, String firebaseUid) {
         RequisitoDocumental requisito = requisitoRepository.findById(requisitoId)
-                .orElseThrow(() -> new EntityNotFoundException("Requisito no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException(REQUISITO_NO_ENCONTRADO_MSG));
 
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(USUARIO_NO_ENCONTRADO_MSG));
 
         Documento documento = documentoRepository
-                .findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc("REQUISITO", requisitoId.toString())
+                .findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc(ENTIDAD_REFERENCIA_REQUSITO, requisitoId.toString())
                 .orElseThrow(() -> new EntityNotFoundException("No hay un archivo físico para este requisito"));
 
         documentoService.eliminarDocumento(documento.getId(), usuario.getId());
@@ -99,7 +102,7 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
     @Transactional
     public RequisitoDocumental actualizarRequisito(UUID id, RequisitoUpdateRequest request) {
         RequisitoDocumental requisito = requisitoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Requisito no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException(REQUISITO_NO_ENCONTRADO_MSG));
 
         requisito.setTitulo(request.titulo());
         requisito.setDescripcion(request.descripcion());
@@ -115,13 +118,13 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
     @Transactional
     public void eliminarRequisitoTotalmente(UUID id, String firebaseUid) {
         RequisitoDocumental requisito = requisitoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Requisito no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException(REQUISITO_NO_ENCONTRADO_MSG));
 
         Usuario usuario = usuarioRepository.findByFirebaseUuid(firebaseUid)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(USUARIO_NO_ENCONTRADO_MSG));
 
         documentoRepository
-                .findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc("REQUISITO", id.toString())
+                .findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc(ENTIDAD_REFERENCIA_REQUSITO, id.toString())
                 .ifPresent(doc -> documentoService.eliminarDocumento(doc.getId(), usuario.getId()));
 
         requisitoRepository.delete(requisito);

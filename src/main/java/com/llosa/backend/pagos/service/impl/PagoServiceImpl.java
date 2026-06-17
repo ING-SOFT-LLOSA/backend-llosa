@@ -3,7 +3,6 @@ package com.llosa.backend.pagos.service.impl;
 import com.llosa.backend.documentos.dto.DocumentoResponse;
 import com.llosa.backend.documentos.enums.TipoDocumento;
 import com.llosa.backend.documentos.service.DocumentoService;
-import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.EstadoInvalidoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
