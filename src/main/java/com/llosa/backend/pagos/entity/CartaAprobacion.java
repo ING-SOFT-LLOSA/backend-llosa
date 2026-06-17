@@ -45,6 +45,17 @@ public class CartaAprobacion {
     @Column(name = "fecha_desembolso_proyectada")
     private LocalDate fechaDesembolsoProyectada;
 
+    // pago de separacion, y cuota inicial
+    @Column(name = "pago_separacion", precision = 12, scale = 2)
+    private BigDecimal pagoSeparacion;
+
+    @Column(name = "pago_inicial", precision = 12, scale = 2)
+    private BigDecimal pagoInicial;
+
+    // booleano de pago completo o pago imcompleto
+    @Column(name = "pago_completo")
+    private Boolean pagoCompleto;
+
     @Column(columnDefinition = "TEXT")
     private String comentarios;
 
