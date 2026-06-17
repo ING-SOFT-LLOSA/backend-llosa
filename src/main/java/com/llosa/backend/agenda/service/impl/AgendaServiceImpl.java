@@ -11,6 +11,7 @@ import com.llosa.backend.agenda.repository.CitaRepository;
 import com.llosa.backend.agenda.repository.DisponibilidadCitaRepository;
 import com.llosa.backend.agenda.service.AgendaService;
 import com.llosa.backend.agenda.service.GoogleCalendarService;
+import com.llosa.backend.agenda.service.impl.GoogleCalendarServiceImpl;
 import com.llosa.backend.exception.AccesoDenegadoException;
 import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
@@ -154,7 +155,11 @@ public class AgendaServiceImpl implements AgendaService {
 
         // Eliminar de Google Calendar si existía evento
         if (cita.getGoogleEventId() != null) {
-            googleCalendarService.eliminarEvento(cita.getGoogleEventId());
+            // NOTA: usamos el overload que recibe la Cita completa, porque
+            // necesitamos el gestor (dueño del token OAuth) para autenticar
+            // la llamada a Google. El método de la interfaz que solo recibe
+            // el String quedó como stub por compatibilidad.
+            ((GoogleCalendarServiceImpl) googleCalendarService).eliminarEvento(cita);
             cita.setGoogleEventId(null);
             cita.setEstadoSincronizacion(EstadoSincronizacion.NO_APLICA);
         }
@@ -218,8 +223,8 @@ public class AgendaServiceImpl implements AgendaService {
     @Override
     @Transactional(readOnly = true)
     public List<CitaResponse> listarCitasGestor(String gestorFirebaseUid,
-                                                 LocalDateTime inicio,
-                                                 LocalDateTime fin) {
+                                                LocalDateTime inicio,
+                                                LocalDateTime fin) {
         Usuario gestor = resolverPorFirebaseUid(gestorFirebaseUid);
         return citaRepository.findByGestorAndRango(gestor.getId(), inicio, fin).stream()
                 .map(CitaResponse::fromEntity)
@@ -278,7 +283,12 @@ public class AgendaServiceImpl implements AgendaService {
 
         // Actualizar RSVP en Google Calendar si aplica
         if (cita.getGoogleEventId() != null && Boolean.TRUE.equals(cita.getClienteUsaGoogle())) {
-            googleCalendarService.actualizarRsvpInvitado(
+            // NOTA: usamos el overload que recibe el gestor (Usuario), porque
+            // necesitamos su token OAuth para autenticar la llamada a Google.
+            // El método de la interfaz que solo recibe el String quedó como
+            // stub por compatibilidad.
+            ((GoogleCalendarServiceImpl) googleCalendarService).actualizarRsvpInvitado(
+                    cita.getGestor(),
                     cita.getGoogleEventId(),
                     cliente.getEmail(),
                     req.confirmado()

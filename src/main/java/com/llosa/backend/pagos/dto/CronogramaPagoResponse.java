@@ -13,6 +13,8 @@ public record CronogramaPagoResponse(
         BigDecimal cuotaInicial,
         Integer numeroCuotas,
         String estado,
+        BigDecimal pagoSeparacion,
+        BigDecimal pagoInicial,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -24,6 +26,8 @@ public record CronogramaPagoResponse(
                 cp.getCuotaInicial(),
                 cp.getNumeroCuotas(),
                 cp.getEstado(),
+                cp.getPagoSeparacion(),
+                cp.getPagoInicial(),
                 cp.getCreatedAt(),
                 cp.getUpdatedAt()
         );

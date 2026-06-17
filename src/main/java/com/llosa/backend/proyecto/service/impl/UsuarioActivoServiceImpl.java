@@ -185,4 +185,33 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
     public Page<UsuarioActivoResponseDTO> listar(Pageable pageable){
         return usuarioActivoRepository.findAll(pageable).map(UsuarioActivoResponseDTO::fromEntity);
     }
+
+    @Override
+    @Transactional
+    public UsuarioActivo asignarAsesorAContrato(UUID idUsuarioActivo, Integer idUsuario){
+        UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(idUsuarioActivo).orElseThrow(
+                () -> new EntityNotFoundException("Usuario no encontrado: " + idUsuarioActivo)
+        );
+        Usuario usuario = usuarioRepository.findById(idUsuario).orElseThrow(
+                () -> new EntityNotFoundException("Usuario no encontrado: " + idUsuario)
+        );
+        usuarioActivo.setAsesor(usuario);
+
+        return usuarioActivoRepository.save(usuarioActivo);
+    }
+
+    @Override
+    @Transactional
+    public UsuarioActivo desasignarAsesorDelContrato(UUID idUsuarioActivo,Integer idUsuario){
+        UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(idUsuarioActivo).orElseThrow(
+                () -> new EntityNotFoundException("Usuario no encontrado: " + idUsuarioActivo)
+        );
+        Usuario usuario = usuarioRepository.findById(idUsuario).orElseThrow(
+                () -> new EntityNotFoundException("Usuario no encontrado: " + idUsuario)
+        );
+        usuarioActivo.setAsesor(null);
+
+        return usuarioActivoRepository.save(usuarioActivo);
+    }
+
 }

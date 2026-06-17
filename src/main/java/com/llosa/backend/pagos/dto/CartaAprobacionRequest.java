@@ -15,5 +15,8 @@ public record CartaAprobacionRequest(
         LocalDate fechaEmision,
         LocalDate fechaVencimiento,
         LocalDate fechaDesembolsoProyectada,
+        BigDecimal pagoSeparacion,
+        BigDecimal pagoInicial,
+        Boolean pagoCompleto,
         String comentarios
 ) {}
