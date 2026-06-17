@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.llosa.backend.config.TestDataPagos;
-import com.llosa.backend.exception.BusinessException;
-import com.llosa.backend.exception.GlobalExceptionHandler;
-import com.llosa.backend.exception.RecursoNoEncontradoException;
+import com.llosa.backend.exception.*;
 import com.llosa.backend.pagos.dto.PagoRequest;
 import com.llosa.backend.pagos.dto.PagoResponse;
 import com.llosa.backend.pagos.service.PagoService;
@@ -111,7 +109,7 @@ class PagoControllerTest {
     void agregarCuota_cuotaDuplicada_devuelve400() throws Exception {
         UUID uuidCp = UUID.randomUUID();
         when(pagoService.agregarCuota(eq(uuidCp), any(PagoRequest.class)))
-                .thenThrow(new BusinessException("Ya existe una cuota con el número 1"));
+                .thenThrow(new EntidadDuplicadaException("Ya existe una cuota con el número 1"));
 
         mockMvc.perform(post("/api/cronogramas/{uuidCronograma}/pagos", uuidCp)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -181,7 +179,7 @@ class PagoControllerTest {
         when(authentication.getPrincipal()).thenReturn("test-uid");
         when(usuarioRepository.findByFirebaseUuid("test-uid")).thenReturn(Optional.of(usuario));
         when(pagoService.cambiarEstado(uuidPago, "INVALIDO", 1))
-                .thenThrow(new BusinessException("Estado inválido: INVALIDO"));
+                .thenThrow(new EstadoInvalidoException("Estado inválido: INVALIDO"));
 
         mockMvc.perform(patch("/api/pagos/{uuidPago}/estado", uuidPago)
                         .param("estado", "INVALIDO")

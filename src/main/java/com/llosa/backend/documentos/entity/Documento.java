@@ -9,7 +9,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "documento")
+@Table(name = "documento", indexes = {
+        @Index(name = "idx_documento_polimorfico", columnList = "entidad_referencia, id_referencia")})
 @Getter
 @Setter
 @Builder

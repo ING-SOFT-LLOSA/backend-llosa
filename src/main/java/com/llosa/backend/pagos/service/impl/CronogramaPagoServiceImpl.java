@@ -1,6 +1,7 @@
 package com.llosa.backend.pagos.service.impl;
 
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.pagos.dto.CronogramaPagoRequest;
 import com.llosa.backend.pagos.dto.CronogramaPagoResponse;
@@ -36,7 +37,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     @Transactional
     public CronogramaPagoResponse crear(CronogramaPagoRequest request) {
         if (cronogramaPagoRepository.existsByUsuarioActivo_UuidUsuarioActivo(request.uuidUsuarioActivo())) {
-            throw new BusinessException("El expediente ya tiene un cronograma de pagos activo");
+            throw new EntidadDuplicadaException("El expediente ya tiene un cronograma de pagos activo");
         }
 
         UsuarioActivo ua = usuarioActivoRepository.findById(request.uuidUsuarioActivo())
@@ -48,6 +49,8 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
                 .totalPactado(request.totalPactado())
                 .cuotaInicial(request.cuotaInicial() != null ? request.cuotaInicial() : BigDecimal.ZERO)
                 .numeroCuotas(request.numeroCuotas())
+                .pagoInicial(request.pagoIncial() != null ? request.pagoIncial() : BigDecimal.ZERO)
+                .pagoSeparacion(request.pagoSeparacion() != null ? request.pagoSeparacion() : BigDecimal.ZERO)
                 .estado("ACTIVO")
                 .build();
 
@@ -75,6 +78,8 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
         cp.setTotalPactado(request.totalPactado());
         cp.setCuotaInicial(request.cuotaInicial() != null ? request.cuotaInicial() : BigDecimal.ZERO);
         cp.setNumeroCuotas(request.numeroCuotas());
+        cp.setPagoInicial(request.pagoIncial() != null ? request.pagoIncial() : BigDecimal.ZERO);
+        cp.setPagoSeparacion(request.pagoSeparacion() != null ? request.pagoSeparacion() : BigDecimal.ZERO);
 
         CronogramaPago guardado = cronogramaPagoRepository.save(cp);
         log.info("Cronograma actualizado: {}", uuidCronograma);

@@ -5,8 +5,6 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import com.llosa.backend.annotation.CP;
 import com.llosa.backend.config.FirebaseConfig;
-import com.llosa.backend.config.GcsTestConfig;
-import com.llosa.backend.config.GcsBucketNameTestConfig;
 import com.llosa.backend.config.PostgresTestContainerConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
@@ -53,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
-@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class, GcsBucketNameTestConfig.class})
+@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class, })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class SeguridadIntegrationTest {
 

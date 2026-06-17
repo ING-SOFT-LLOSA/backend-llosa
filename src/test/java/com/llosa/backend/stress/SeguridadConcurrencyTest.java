@@ -1,7 +1,8 @@
 package com.llosa.backend.stress;
 
-import com.llosa.backend.config.FirebaseConfig;
-import com.llosa.backend.config.PostgresTestContainerConfig;
+import com.google.api.services.storage.Storage;
+import com.google.firebase.FirebaseApp;
+import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
 import com.llosa.backend.seguridad.entity.Rol;
 import com.llosa.backend.seguridad.entity.Usuario;
@@ -11,14 +12,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.annotation.DirtiesContext;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,14 +33,10 @@ import static org.assertj.core.api.Assertions.*;
 
 @Tag("stress")
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("test")
-@Import(PostgresTestContainerConfig.class)
+@Import(SecurityTestConfiguration.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class SeguridadConcurrencyTest {
-
-    @MockitoBean
-    FirebaseConfig firebaseConfig;
 
     @Autowired
     UsuarioRepository usuarioRepository;
@@ -110,6 +109,15 @@ public class SeguridadConcurrencyTest {
      */
     @Test
     void asignacionConcurrenteDeRol_dbConsistente() throws InterruptedException {
+        Rol crearRolA = new Rol();
+        crearRolA.setNombre("CLIENTE");
+        // crearRolA.setDescripcion("..."); // Descomenta si tu BD exige descripción obligatoria
+        rolRepository.save(crearRolA);
+
+        Rol crearRolB = new Rol();
+        crearRolB.setNombre("ASESOR");
+        rolRepository.save(crearRolB);
+
         Rol rolA = rolRepository.findByNombre("CLIENTE").orElseThrow();
         Rol rolB = rolRepository.findByNombre("ASESOR").orElseThrow();
 

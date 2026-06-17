@@ -37,6 +37,13 @@ public class CronogramaPago {
     @Column(name = "cuota_inicial", precision = 12, scale = 2)
     private BigDecimal cuotaInicial = BigDecimal.ZERO;
 
+    // PUede ser mejorado porque esto genera nulls en las tablas, por eficincia se deja así.
+    @Column(name = "pago_separacion", precision = 12, scale = 2)
+    private BigDecimal pagoSeparacion;
+
+    @Column(name = "pago_inicial", precision = 12, scale = 2)
+    private BigDecimal pagoInicial;
+
     @Column(name = "numero_cuotas")
     private Integer numeroCuotas;
 

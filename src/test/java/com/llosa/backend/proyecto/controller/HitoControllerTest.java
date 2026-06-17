@@ -9,7 +9,6 @@ import com.llosa.backend.proyecto.dto.request.HitoCreateDTO;
 import com.llosa.backend.proyecto.entity.Hito;
 import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.enums.EstadoHito;
-import com.llosa.backend.proyecto.repository.HitoPisoRepository;
 import com.llosa.backend.proyecto.service.HitoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,10 +34,13 @@ class HitoControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
 
+    // --- TUS DEPENDENCIAS FALSAS (MOCKS) ---
     @MockitoBean HitoService hitoService;
-    @MockitoBean HitoPisoRepository hitoPisoRepository;
-    @MockitoBean FirebaseConfig firebaseConfig;
     @MockitoBean com.llosa.backend.seguridad.repository.UsuarioRepository usuarioRepository;
+
+    // AQUÍ ESTÁ EL QUE FALTABA PARA QUE ARRANQUE:
+    @MockitoBean com.llosa.backend.proyecto.repository.HitoPisoRepository hitoPisoRepository;
+    // ---------------------------------------
 
     private Hito buildHito() {
         Proyecto proyecto = Proyecto.builder().id(UUID.randomUUID()).nombre("Test").build();

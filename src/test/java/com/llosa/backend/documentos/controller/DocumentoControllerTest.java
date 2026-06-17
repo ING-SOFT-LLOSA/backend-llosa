@@ -1,131 +1,175 @@
 package com.llosa.backend.documentos.controller;
 
-import com.llosa.backend.annotation.CP;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.llosa.backend.config.FirebaseConfig;
+import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.documentos.dto.DocumentoResponse;
 import com.llosa.backend.documentos.dto.SignedUrlResponse;
 import com.llosa.backend.documentos.dto.SubirDocumentoRequest;
 import com.llosa.backend.documentos.enums.TipoDocumento;
 import com.llosa.backend.documentos.service.DocumentoService;
+import com.llosa.backend.exception.GlobalExceptionHandler;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Pruebas unitarias del controlador REST de la Bóveda Digital (CP25, CP27, CP28).
- * Verifica el contrato HTTP y la resolución del usuario autenticado a partir del
- * UID de Firebase del token.
- */
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(DocumentoController.class)
+@Import({com.llosa.backend.config.SecurityConfig.class, SecurityTestConfiguration.class, GlobalExceptionHandler.class})
 class DocumentoControllerTest {
 
-    @Mock DocumentoService documentoService;
-    @Mock UsuarioRepository usuarioRepository;
-    @Mock Authentication authentication;
+    @Autowired MockMvc mockMvc;
+    @Autowired ObjectMapper objectMapper;
 
-    @InjectMocks DocumentoController controller;
+    @MockitoBean DocumentoService documentoService;
+    @MockitoBean UsuarioRepository usuarioRepository;
+    @MockitoBean FirebaseConfig firebaseConfig;
 
-    private static final String UID = "firebase-uid";
-
-    private Usuario usuario() {
-        Usuario u = new Usuario();
-        u.setId(7);
-        u.setFirebaseUuid(UID);
-        return u;
-    }
-
-    private DocumentoResponse dummy() {
-        return new DocumentoResponse(UUID.randomUUID(), "minuta.pdf",
-                TipoDocumento.PDF_LEGAL, "application/pdf", "ref", "REQUISITO", null, null);
+    private static FirebaseAuthenticationToken docsAuthToken() {
+        return new FirebaseAuthenticationToken("test-uid", "test@test.com",
+                List.of(
+                        new SimpleGrantedAuthority("DOCS_SUBIR"),
+                        new SimpleGrantedAuthority("DOCS_VER")
+                ));
     }
 
     @Test
-    @CP(value = "CP25", scenario = "Subida vía endpoint REST",
-            input = "multipart file + uid autenticado",
-            expected = "200 OK y resuelve el usuario por firebaseUuid")
-    void subirDocumento_resuelveUsuarioYDelegaServicio() {
-        UUID refId = UUID.randomUUID();
-        MultipartFile file = new MockMultipartFile(
-                "file", "minuta.pdf", "application/pdf", new byte[]{1});
-        SubirDocumentoRequest request = new SubirDocumentoRequest(TipoDocumento.PDF_LEGAL);
+    void subirDocumento_sinAutenticar_devuelve403() throws Exception {
+        var file = new MockMultipartFile("file", "doc.pdf", "application/pdf", new byte[]{1});
+        var requestPart = new MockMultipartFile("data", "", "application/json",
+                objectMapper.writeValueAsBytes(new SubirDocumentoRequest(TipoDocumento.PDF_LEGAL)));
 
-        when(authentication.getPrincipal()).thenReturn(UID);
-        when(usuarioRepository.findByFirebaseUuid(UID)).thenReturn(Optional.of(usuario()));
-        when(documentoService.subirDocumento(refId, file, request, 7)).thenReturn(dummy());
-
-        ResponseEntity<DocumentoResponse> r =
-                controller.subirDocumento(refId, file, request, authentication);
-
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(documentoService).subirDocumento(refId, file, request, 7);
+        mockMvc.perform(multipart("/api/documentos/{idReferencia}", UUID.randomUUID())
+                        .file(file)
+                        .file(requestPart)
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    void subirDocumento_usuarioNoEncontrado_lanzaException() {
-        UUID refId = UUID.randomUUID();
-        MultipartFile file = new MockMultipartFile("file", new byte[]{1});
-        SubirDocumentoRequest request = new SubirDocumentoRequest(TipoDocumento.PDF_LEGAL);
+    void subirDocumento_autenticado_devuelve200() throws Exception {
+        UUID idRef = UUID.randomUUID();
+        Usuario usuario = new Usuario();
+        usuario.setId(1);
+        when(usuarioRepository.findByFirebaseUuid("test-uid")).thenReturn(Optional.of(usuario));
 
-        when(authentication.getPrincipal()).thenReturn(UID);
-        when(usuarioRepository.findByFirebaseUuid(UID)).thenReturn(Optional.empty());
+        var response = new DocumentoResponse(UUID.randomUUID(), "doc.pdf", TipoDocumento.PDF_LEGAL, "application/pdf",
+                idRef.toString(), "PROYECTO", LocalDateTime.now(), null);
+        when(documentoService.subirDocumento(eq(idRef), any(), any(), eq(1))).thenReturn(response);
 
-        assertThatThrownBy(() -> controller.subirDocumento(refId, file, request, authentication))
-                .isInstanceOf(RuntimeException.class);
-        verifyNoInteractions(documentoService);
+        var file = new MockMultipartFile("file", "doc.pdf", "application/pdf", new byte[]{1, 2, 3});
+        var requestPart = new MockMultipartFile("data", "", "application/json",
+                objectMapper.writeValueAsBytes(new SubirDocumentoRequest(TipoDocumento.PDF_LEGAL)));
+
+        mockMvc.perform(multipart("/api/documentos/{idReferencia}", idRef)
+                        .file(file)
+                        .file(requestPart)
+                        .with(authentication(docsAuthToken()))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombreOriginal").value("doc.pdf"));
     }
 
     @Test
-    void listar_devuelve200ConDocumentos() {
-        UUID refId = UUID.randomUUID();
-        when(documentoService.listar(refId, TipoDocumento.PDF_LEGAL))
-                .thenReturn(List.of(dummy()));
+    void subirDocumento_usuarioNoEncontrado_lanzaExcepcion() throws Exception {
+        UUID idRef = UUID.randomUUID();
+        when(usuarioRepository.findByFirebaseUuid("test-uid")).thenReturn(Optional.empty());
 
-        ResponseEntity<List<DocumentoResponse>> r =
-                controller.listar(refId, TipoDocumento.PDF_LEGAL);
+        var file = new MockMultipartFile("file", "doc.pdf", "application/pdf", new byte[]{1, 2, 3});
+        var requestPart = new MockMultipartFile("data", "", "application/json",
+                objectMapper.writeValueAsBytes(new SubirDocumentoRequest(TipoDocumento.PDF_LEGAL)));
 
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(r.getBody()).hasSize(1);
+        mockMvc.perform(multipart("/api/documentos/{idReferencia}", idRef)
+                        .file(file)
+                        .file(requestPart)
+                        .with(authentication(docsAuthToken()))
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
     }
 
     @Test
-    @CP(value = "CP27", scenario = "Signed URL vía endpoint",
-            input = "documentoId",
-            expected = "200 OK con URL firmada")
-    void generarSignedUrl_devuelve200() {
+    void listar_sinAutenticar_devuelve403() throws Exception {
+        mockMvc.perform(get("/api/documentos/{idReferencia}", UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void listar_autenticado_devuelveLista() throws Exception {
+        UUID idRef = UUID.randomUUID();
+        var response = List.of(new DocumentoResponse(UUID.randomUUID(), "doc.pdf", TipoDocumento.PDF_LEGAL, "application/pdf",
+                idRef.toString(), "PROYECTO", LocalDateTime.now(), null));
+        when(documentoService.listar(idRef, null)).thenReturn(response);
+
+        mockMvc.perform(get("/api/documentos/{idReferencia}", idRef)
+                        .with(authentication(docsAuthToken())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nombreOriginal").value("doc.pdf"));
+    }
+
+    @Test
+    void listar_conTipoDocumento_filtra() throws Exception {
+        UUID idRef = UUID.randomUUID();
+        when(documentoService.listar(idRef, TipoDocumento.PDF_LEGAL)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/documentos/{idReferencia}", idRef)
+                        .param("tipoDocumento", "PDF_LEGAL")
+                        .with(authentication(docsAuthToken())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void generarSignedUrl_sinAutenticar_devuelve403() throws Exception {
+        mockMvc.perform(get("/api/documentos/{id}/signed-url", UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void generarSignedUrl_autenticado_devuelveUrl() throws Exception {
         UUID docId = UUID.randomUUID();
-        when(documentoService.generarSignedUrl(docId))
-                .thenReturn(new SignedUrlResponse("https://signed", Instant.now()));
+        var response = new SignedUrlResponse("https://signed.url/doc", Instant.now().plusSeconds(900));
+        when(documentoService.generarSignedUrl(docId)).thenReturn(response);
 
-        ResponseEntity<SignedUrlResponse> r = controller.generarSignedUrl(docId);
-
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(r.getBody().url()).isEqualTo("https://signed");
+        mockMvc.perform(get("/api/documentos/{id}/signed-url", docId)
+                        .with(authentication(docsAuthToken())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value("https://signed.url/doc"));
     }
 
     @Test
-    void eliminarDocumento_devuelve204() {
+    void eliminarDocumento_sinAutenticar_devuelve403() throws Exception {
+        mockMvc.perform(delete("/api/documentos/{id}", UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void eliminarDocumento_autenticado_devuelve204() throws Exception {
         UUID docId = UUID.randomUUID();
+        doNothing().when(documentoService).eliminarDocumento(docId);
 
-        ResponseEntity<Void> r = controller.eliminarDocumento(docId);
-
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        verify(documentoService).eliminarDocumento(docId);
+        mockMvc.perform(delete("/api/documentos/{id}", docId)
+                        .with(authentication(docsAuthToken()))
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
     }
 }

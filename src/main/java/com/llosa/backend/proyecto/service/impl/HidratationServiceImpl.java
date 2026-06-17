@@ -54,14 +54,6 @@ public class HidratationServiceImpl implements HidratationService {
         }
     }
 
-    @Override
-    @Transactional
-    public void hidratarActivos(List<Activo> activos, UUID idProyecto) {
-        List<Piso> pisosUnicos = activos.stream().map(Activo::getPiso).distinct().toList();
-        for (Piso piso : pisosUnicos) {
-            hydrateFloorMilestones(piso.getId());
-        }
-    }
 
     @Override
     @Transactional

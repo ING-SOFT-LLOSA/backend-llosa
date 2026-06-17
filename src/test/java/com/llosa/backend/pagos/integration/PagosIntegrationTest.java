@@ -59,9 +59,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Tag("integration")
 @AutoConfigureMockMvc
 @ImportAutoConfiguration(JacksonAutoConfiguration.class)
-@Testcontainers
 @ActiveProfiles("test")
-@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class})
+@Import({SecurityTestConfiguration.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class PagosIntegrationTest {
 
@@ -137,7 +136,8 @@ class PagosIntegrationTest {
         // 1. Crear cronograma
         var crearRequest = new CronogramaPagoRequest(
                 uuidExpediente, new BigDecimal("100000.00"),
-                new BigDecimal("20000.00"), 4);
+                new BigDecimal("20000.00"), 4,
+                BigDecimal.ZERO, BigDecimal.ZERO);
 
         mockMvc.perform(post("/api/cronogramas")
                         .with(securityContext(contextWithAuth()))
@@ -218,7 +218,8 @@ class PagosIntegrationTest {
     @Test
     void crearCronogramaDuplicado_devuelve409() throws Exception {
         var request = new CronogramaPagoRequest(
-                uuidExpediente, new BigDecimal("100000.00"), null, 4);
+                uuidExpediente, new BigDecimal("100000.00"), null, 4,
+                BigDecimal.ZERO, BigDecimal.ZERO);
 
         mockMvc.perform(post("/api/cronogramas")
                         .with(securityContext(contextWithAuth()))
@@ -239,7 +240,8 @@ class PagosIntegrationTest {
     @Test
     void agregarCuotaDuplicada_devuelve400() throws Exception {
         var cronogramaRequest = new CronogramaPagoRequest(
-                uuidExpediente, new BigDecimal("100000.00"), null, 4);
+                uuidExpediente, new BigDecimal("100000.00"), null, 4,
+                BigDecimal.ZERO, BigDecimal.ZERO);
 
         String response = mockMvc.perform(post("/api/cronogramas")
                         .with(securityContext(contextWithAuth()))

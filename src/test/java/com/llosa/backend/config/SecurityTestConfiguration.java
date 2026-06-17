@@ -29,13 +29,13 @@ import static org.mockito.Mockito.mock;
 @TestConfiguration
 public class SecurityTestConfiguration implements WebMvcConfigurer {
 
-    @Bean
+    @Bean(name = "mockGoogleCloudStorage")
     @Primary
     public Storage googleCloudStorage() {
         return mock(Storage.class);
     }
 
-    @Bean
+    @Bean(name = "mockFirebaseTokenFilter")
     @Primary
     public FirebaseTokenFilter firebaseTokenFilter() {
         return new FirebaseTokenFilter(mock(UsuarioRepository.class)) {
@@ -46,7 +46,12 @@ public class SecurityTestConfiguration implements WebMvcConfigurer {
         };
     }
 
-    @Bean
+    @Bean(name = "gcsBucketName")
+    public String gcsBucketName() {
+        return "bucket-falso-de-prueba";
+    }
+
+    @Bean(name = "mockFirebaseConfig")
     @Primary
     public FirebaseConfig firebaseConfig() {
         return mock(FirebaseConfig.class);

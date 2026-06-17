@@ -1,5 +1,10 @@
 package com.llosa.backend.proyecto.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.llosa.backend.config.FirebaseConfig;
+import com.llosa.backend.config.SecurityTestConfiguration;
+import com.llosa.backend.config.TestData;
+import com.llosa.backend.exception.GlobalExceptionHandler;
 import com.llosa.backend.proyecto.dto.request.ReporteCreateRequest;
 import com.llosa.backend.proyecto.dto.request.ReporteUpdateRequest;
 import com.llosa.backend.proyecto.dto.response.ReporteResponse;
@@ -10,115 +15,156 @@ import com.llosa.backend.proyecto.entity.Torre;
 import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.ReporteService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Pruebas unitarias del controlador REST de Reportes (CU006 / CP21). Verifica
- * el contrato HTTP: códigos de estado y delegación correcta al servicio.
- */
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(ReporteController.class)
+@Import({com.llosa.backend.config.SecurityConfig.class, SecurityTestConfiguration.class, GlobalExceptionHandler.class})
 class ReporteControllerTest {
 
-    @Mock ReporteService reporteService;
-    @Mock ActivoService activoService;
+    @Autowired MockMvc mockMvc;
+    @Autowired ObjectMapper objectMapper;
 
-    @InjectMocks ReporteController controller;
+    @MockitoBean ReporteService reporteService;
+    @MockitoBean ActivoService activoService;
+    @MockitoBean FirebaseConfig firebaseConfig;
+    @MockitoBean com.llosa.backend.seguridad.repository.UsuarioRepository usuarioRepository;
 
-    private ReporteResponse dummy(UUID id) {
-        return new ReporteResponse(id, UUID.randomUUID(), "Aurora", "Mayo",
-                null, "desc", List.of(), null, List.of());
+    private Piso buildPiso() {
+        var proyecto = Proyecto.builder().id(UUID.randomUUID()).nombre("Test Proyecto").build();
+        var torre = Torre.builder().id(1L).nombre("Torre A").proyecto(proyecto).build();
+        return Piso.builder().id(1L).nroPiso(1).torre(torre).build();
     }
 
     @Test
-    void crear_devuelve201() {
-        ReporteCreateRequest req = new ReporteCreateRequest(
-                UUID.randomUUID(), "Mayo", null, null, null);
-        ReporteResponse resp = dummy(UUID.randomUUID());
-        when(reporteService.crear(req)).thenReturn(resp);
+    void crear_sinAutenticar_devuelve403() throws Exception {
+        var req = new ReporteCreateRequest(UUID.randomUUID(), "Enero 2026", null, null, null);
 
-        ResponseEntity<ReporteResponse> r = controller.crear(req);
-
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(r.getBody()).isEqualTo(resp);
+        mockMvc.perform(post("/api/reportes")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    void obtenerPorId_devuelve200() {
+    void crear_autenticado_devuelve201() throws Exception {
+        UUID proyectoId = UUID.randomUUID();
+        var req = new ReporteCreateRequest(proyectoId, "Enero 2026", "Desc", null, List.of("Hito1"));
+        var response = new ReporteResponse(UUID.randomUUID(), proyectoId, "Test", "Enero 2026",
+                BigDecimal.ZERO, "Desc", List.of("Hito1"), LocalDateTime.now(), List.of());
+        when(reporteService.crear(any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/reportes")
+                        .with(authentication(TestData.proyectoAuthToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tituloPeriodo").value("Enero 2026"));
+    }
+
+    @Test
+    void crear_sinTitulo_devuelve400() throws Exception {
+        var req = new ReporteCreateRequest(UUID.randomUUID(), "", null, null, null);
+
+        mockMvc.perform(post("/api/reportes")
+                        .with(authentication(TestData.proyectoAuthToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void obtenerPorId_devuelve200() throws Exception {
         UUID id = UUID.randomUUID();
-        when(reporteService.obtenerPorId(id)).thenReturn(dummy(id));
+        var response = new ReporteResponse(id, UUID.randomUUID(), "Test", "Enero 2026",
+                BigDecimal.ZERO, null, List.of(), LocalDateTime.now(), List.of());
+        when(reporteService.obtenerPorId(id)).thenReturn(response);
 
-        ResponseEntity<ReporteResponse> r = controller.obtenerPorId(id);
-
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
+        mockMvc.perform(get("/api/reportes/{id}", id)
+                        .with(authentication(TestData.proyectoAuthToken())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()));
     }
 
     @Test
-    void listarPorProyecto_devuelvePagina() {
-        UUID proyId = UUID.randomUUID();
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<ReporteResponse> page = new PageImpl<>(List.of(dummy(UUID.randomUUID())));
-        when(reporteService.listarPorProyecto(proyId, pageable)).thenReturn(page);
+    void listarPorProyecto_devuelvePaginado() throws Exception {
+        UUID proyectoId = UUID.randomUUID();
+        var response = new ReporteResponse(UUID.randomUUID(), proyectoId, "Test", "Enero 2026",
+                BigDecimal.ZERO, null, List.of(), LocalDateTime.now(), List.of());
+        Page<ReporteResponse> page = new PageImpl<>(List.of(response));
+        when(reporteService.listarPorProyecto(eq(proyectoId), any(Pageable.class))).thenReturn(page);
 
-        ResponseEntity<Page<ReporteResponse>> r = controller.listarPorProyecto(proyId, pageable);
-
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(r.getBody().getTotalElements()).isEqualTo(1);
+        mockMvc.perform(get("/api/reportes/proyecto/{uuidProyecto}", proyectoId)
+                        .with(authentication(TestData.proyectoAuthToken())))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void listarPorActivoProyecto_resuelveProyectoDesdeElActivo() {
+    void listarPorActivoProyecto_devuelvePaginado() throws Exception {
         UUID activoId = UUID.randomUUID();
-        UUID proyId = UUID.randomUUID();
-        Proyecto proyecto = Proyecto.builder().id(proyId).nombre("Aurora").build();
-        Torre torre = Torre.builder().id(1L).proyecto(proyecto).build();
-        Piso piso = Piso.builder().id(1L).nroPiso(5).torre(torre).build();
-        Activo activo = Activo.builder().id(activoId).nro("501").piso(piso).build();
-        Pageable pageable = PageRequest.of(0, 5);
-
+        var piso = buildPiso();
+        var activo = Activo.builder().id(activoId).piso(piso).build();
         when(activoService.findById(activoId)).thenReturn(activo);
-        when(reporteService.listarPorProyecto(proyId, pageable))
-                .thenReturn(new PageImpl<>(List.of()));
 
-        ResponseEntity<Page<ReporteResponse>> r =
-                controller.listarPorActivoProyecto(activoId, pageable);
+        UUID proyectoId = piso.getTorre().getProyecto().getId();
+        var response = new ReporteResponse(UUID.randomUUID(), proyectoId, "Test", "Enero 2026",
+                BigDecimal.ZERO, null, List.of(), LocalDateTime.now(), List.of());
+        Page<ReporteResponse> page = new PageImpl<>(List.of(response));
+        when(reporteService.listarPorProyecto(eq(proyectoId), any(Pageable.class))).thenReturn(page);
 
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(reporteService).listarPorProyecto(proyId, pageable);
+        mockMvc.perform(get("/api/reportes/proyecto/{uuidActivo}/activo", activoId)
+                        .with(authentication(TestData.proyectoAuthToken())))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void actualizar_devuelve200() {
+    void actualizar_devuelve200() throws Exception {
         UUID id = UUID.randomUUID();
-        ReporteUpdateRequest req = new ReporteUpdateRequest("Junio", null, null, null);
-        when(reporteService.actualizar(id, req)).thenReturn(dummy(id));
+        var req = new ReporteUpdateRequest("Febrero 2026", "Actualizado", null, List.of("Hito1"));
+        var response = new ReporteResponse(id, UUID.randomUUID(), "Test", "Febrero 2026",
+                new BigDecimal("50.00"), "Actualizado", List.of("Hito1"), LocalDateTime.now(), List.of());
+        when(reporteService.actualizar(eq(id), any())).thenReturn(response);
 
-        ResponseEntity<ReporteResponse> r = controller.actualizar(id, req);
-
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
+        mockMvc.perform(put("/api/reportes/{id}", id)
+                        .with(authentication(TestData.proyectoAuthToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tituloPeriodo").value("Febrero 2026"));
     }
 
     @Test
-    void eliminar_devuelve204() {
+    void eliminar_devuelve204() throws Exception {
         UUID id = UUID.randomUUID();
+        doNothing().when(reporteService).eliminar(id);
 
-        ResponseEntity<Void> r = controller.eliminar(id);
-
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        verify(reporteService).eliminar(id);
+        mockMvc.perform(delete("/api/reportes/{id}", id)
+                        .with(authentication(TestData.proyectoAuthToken()))
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
     }
 }
