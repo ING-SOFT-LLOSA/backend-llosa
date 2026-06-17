@@ -1,7 +1,6 @@
 package com.llosa.backend.proyecto.service.impl;
 
 import com.llosa.backend.exception.BusinessException;
-import com.llosa.backend.proyecto.dto.response.AvanceUnidadResponseDTO;
 import com.llosa.backend.proyecto.dto.response.AvanceUnidadResponsePorcentajeDTO;
 import com.llosa.backend.proyecto.entity.HitoPiso;
 import com.llosa.backend.proyecto.enums.EstadoHito;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 

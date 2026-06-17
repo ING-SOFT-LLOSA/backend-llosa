@@ -1,6 +1,5 @@
 package com.llosa.backend.proyecto.dto.response;
 
-import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;

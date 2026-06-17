@@ -17,7 +17,6 @@ public interface DocumentoRepository extends JpaRepository<Documento, UUID> {
     List<Documento> findByIdReferenciaAndEntidadReferenciaAndTipoDocumento(
             String idReferencia, String entidadReferencia, TipoDocumento tipoDocumento);
 
-    List<Documento> findBySubidoPor(Integer usuarioId);
 
     Optional<Documento> findFirstByEntidadReferenciaAndIdReferenciaOrderByCreatedAtDesc(
             String entidadReferencia,

@@ -1,6 +1,5 @@
 package com.llosa.backend.proyecto.entity;
 
-import com.llosa.backend.documentos.entity.Documento;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
