@@ -50,6 +50,32 @@ public class DocumentoController {
     }
 
     /**
+     * POST /api/documentos/explicito?entidad=HITO_PROCESO_COMPRA&idReferencia={uuid}
+     * Sube un documento asociado a una entidad que no está registrada en el
+     * EntidadResolverService (ej: HITO_PROCESO_COMPRA, CARTA_APROBACION).
+     * La entidad se pasa como string explícito.
+     */
+    @PreAuthorize("hasAuthority('DOCS_SUBIR')")
+    @PostMapping(value = "/explicito", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<DocumentoResponse> subirDocumentoExplicito(
+            @RequestParam String entidad,
+            @RequestParam UUID idReferencia,
+            @RequestPart("file") MultipartFile file,
+            @RequestPart("data") SubirDocumentoRequest request,
+            Authentication authentication
+    ) {
+        String uid = (String) authentication.getPrincipal();
+        Usuario usuario = usuarioRepository.findByFirebaseUuid(uid)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+
+        return ResponseEntity.ok(
+                documentoService.subirDocumentoPolimorfico(
+                        file, request.tipoDocumento(),
+                        idReferencia.toString(), entidad, usuario.getId())
+        );
+    }
+
+    /**
      * GET /api/documentos/{idReferencia}?tipoDocumento=PDF_LEGAL
      *
      * Lista documentos de cualquier entidad. El filtro tipoDocumento es opcional.
