@@ -235,7 +235,7 @@ class UsuarioActivoControllerTest {
                 .thenReturn(contratoSimulado);
 
         // 3. Ejecutar y Verificar
-        mockMvc.perform(post("/api/usuarioActivo/" + contratoId + "/asesor/" + asesorId) // Asegúrate de que la ruta coincida con tu @RequestMapping de clase
+        mockMvc.perform(post("/api/expedientes/usuarioActivo/" + contratoId + "/asesor/" + asesorId)
                         .with(authentication(TestData.proyectoAuthToken())) // Simula un usuario logueado con permisos
                         .with(csrf()))
                 .andExpect(status().isOk())
@@ -256,7 +256,7 @@ class UsuarioActivoControllerTest {
                 .thenReturn(contratoSimulado);
 
         // 3. Ejecutar y Verificar
-        mockMvc.perform(put("/api/usuarioActivo/" + contratoId + "/asesor/" + asesorId) // Ojo: Este es un PUT
+        mockMvc.perform(put("/api/expedientes/usuarioActivo/" + contratoId + "/asesor/" + asesorId)
                         .with(authentication(TestData.proyectoAuthToken()))
                         .with(csrf()))
                 .andExpect(status().isOk())

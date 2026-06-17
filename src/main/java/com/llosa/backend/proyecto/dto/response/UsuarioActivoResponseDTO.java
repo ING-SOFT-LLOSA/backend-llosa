@@ -55,7 +55,7 @@ public record UsuarioActivoResponseDTO(
                 .map(ClienteSimpleDTO::fromEntity)
                 .toList();
         List<ActivoResponseDTO> activos = a.getActivos().stream().map(ActivoResponseDTO::fromEntity).toList();
-        ClienteSimpleDTO asesor = ClienteSimpleDTO.fromEntity(a.getAsesor());
+        ClienteSimpleDTO asesor = a.getAsesor() != null ? ClienteSimpleDTO.fromEntity(a.getAsesor()) : null;
         return new UsuarioActivoResponseDTO(
                 a.getUuidUsuarioActivo(),
                 a.getTipoFinanciamiento(),

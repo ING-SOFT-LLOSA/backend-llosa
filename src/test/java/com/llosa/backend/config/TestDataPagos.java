@@ -139,6 +139,9 @@ public final class TestDataPagos {
                 LocalDate.now(),
                 LocalDate.now().plusMonths(6),
                 LocalDate.now().plusMonths(1),
+                null,
+                null,
+                null,
                 "Comentarios de prueba"
         );
     }

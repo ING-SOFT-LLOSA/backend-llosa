@@ -25,7 +25,6 @@ class GoogleCalendarServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new GoogleCalendarServiceImpl();
-        ReflectionTestUtils.setField(service, "serviceAccountPath", "/invalid/path.json");
     }
 
     private Cita buildCita() {
