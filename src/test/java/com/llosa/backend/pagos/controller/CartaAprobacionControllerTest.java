@@ -73,14 +73,14 @@ class CartaAprobacionControllerTest {
     }
 
     @Test
-    void crear_duplicado_devuelve400() throws Exception {
+    void crear_duplicado_devuelve409() throws Exception {
         when(cartaAprobacionService.crear(any(CartaAprobacionRequest.class)))
                 .thenThrow(new EntidadDuplicadaException("El expediente ya tiene una carta de aprobación registrada"));
 
         mockMvc.perform(post("/api/cartas-aprobacion")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(TestDataPagos.crearCartaRequest())))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isConflict());
     }
 
     @Test

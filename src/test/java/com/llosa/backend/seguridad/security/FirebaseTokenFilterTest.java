@@ -75,7 +75,7 @@ class FirebaseTokenFilterTest {
     // ── Token inválido ────────────────────────────────────────────────────────
  
     @Test
-    void tokenFirebaseInvalido_limpiaContextoYRetorna401() throws Exception {
+    void tokenFirebaseInvalido_limpiaContextoYContinuaCadena() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer token-invalido");
 
@@ -89,8 +89,8 @@ class FirebaseTokenFilterTest {
             filter.doFilterInternal(request, response, filterChain);
         }
 
-        verifyNoInteractions(filterChain);
-        assertThat(response.getStatus()).isEqualTo(401);
+        verify(filterChain).doFilter(request, response);
+        assertThat(response.getStatus()).isNotEqualTo(401);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
@@ -165,7 +165,7 @@ class FirebaseTokenFilterTest {
     // ── "Bearer " sin token — pasa el startsWith pero token es vacío ─────────
  
     @Test
-    void bearerConTokenVacio_limpiaContextoYRetorna401() throws Exception {
+    void bearerConTokenVacio_limpiaContextoYContinuaCadena() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer ");
 
@@ -177,8 +177,8 @@ class FirebaseTokenFilterTest {
             filter.doFilterInternal(request, response, filterChain);
         }
 
-        verifyNoInteractions(filterChain);
-        assertThat(response.getStatus()).isEqualTo(401);
+        verify(filterChain).doFilter(request, response);
+        assertThat(response.getStatus()).isNotEqualTo(401);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
