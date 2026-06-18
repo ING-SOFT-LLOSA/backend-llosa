@@ -20,16 +20,14 @@ public class PagoFlujoFactory {
         boolean esHipotecario = tipoFinanciamiento != null
                 && tipoFinanciamiento.toUpperCase().contains("HIPOT");
 
-        // Pago de separación
-        if (cronograma.getPagoSeparacion() != null
-                && cronograma.getPagoSeparacion().compareTo(BigDecimal.ZERO) > 0) {
+        // Pago de separación (siempre se crea el registro)
+        if (cronograma.getPagoSeparacion() != null) {
             pagos.add(construirPago(cronograma, -1, cronograma.getPagoSeparacion(),
                     ConceptoPago.SEPARACION));
         }
 
-        // Pago inicial
-        if (cronograma.getPagoInicial() != null
-                && cronograma.getPagoInicial().compareTo(BigDecimal.ZERO) > 0) {
+        // Pago inicial (siempre se crea el registro)
+        if (cronograma.getPagoInicial() != null) {
             pagos.add(construirPago(cronograma, 0, cronograma.getPagoInicial(),
                     ConceptoPago.INICIAL));
         }

@@ -6,6 +6,7 @@ import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
 import com.llosa.backend.exception.EntidadDuplicadaException;
+import com.llosa.backend.pagos.ConceptoPago;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.factory.PagoFlujoFactory;
 import com.llosa.backend.pagos.EstadoGlobalPago;
@@ -123,6 +124,13 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
         cp.setPagoSeparacion(request.pagoSeparacion() != null ? request.pagoSeparacion() : BigDecimal.ZERO);
 
         CronogramaPago guardado = cronogramaPagoRepository.save(cp);
+
+        // Sincronizar Pagos existentes con los nuevos montos del cronograma
+        pagoRepository.findByCronograma_IdAndConcepto(uuidCronograma, ConceptoPago.SEPARACION)
+                .ifPresent(p -> { p.setMontoProgramado(guardado.getPagoSeparacion()); pagoRepository.save(p); });
+        pagoRepository.findByCronograma_IdAndConcepto(uuidCronograma, ConceptoPago.INICIAL)
+                .ifPresent(p -> { p.setMontoProgramado(guardado.getPagoInicial()); pagoRepository.save(p); });
+
         log.info("Cronograma actualizado: {}", uuidCronograma);
         return CronogramaPagoResponse.fromEntity(guardado);
     }

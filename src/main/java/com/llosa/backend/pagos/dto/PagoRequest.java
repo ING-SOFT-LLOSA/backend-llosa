@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record PagoRequest(
-        @NotNull @Positive Integer nroCuota,
+        @NotNull Integer nroCuota,
         @NotNull @Positive BigDecimal montoProgramado,
         @NotNull LocalDate fechaVencimiento,
         ConceptoPago concepto,

@@ -94,7 +94,7 @@ class ActivoControllerTest {
         when(activoService.saveIndividual(eq(1L), any(Activo.class))).thenReturn(activo);
 
         ActivoRequestDTO dto = new ActivoRequestDTO("DPTO 101", TipoActivo.DEPARTAMENTO,
-                BigDecimal.valueOf(80), EstadoComercialActivo.DISPONIBLE,
+                BigDecimal.valueOf(80), BigDecimal.valueOf(80), EstadoComercialActivo.DISPONIBLE,
                 BigDecimal.valueOf(200000), "Test");
 
         mockMvc.perform(post("/api/activos/1/pisos")
@@ -115,7 +115,7 @@ class ActivoControllerTest {
         when(activoService.save(activo)).thenReturn(activo);
 
         ActivoRequestDTO dto = new ActivoRequestDTO("DPTO 102", TipoActivo.DEPARTAMENTO,
-                BigDecimal.valueOf(90), EstadoComercialActivo.DISPONIBLE,
+                BigDecimal.valueOf(90), BigDecimal.valueOf(90), EstadoComercialActivo.DISPONIBLE,
                 BigDecimal.valueOf(220000), "Actualizado");
 
         mockMvc.perform(put("/api/activos/" + id)

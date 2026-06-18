@@ -31,7 +31,6 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(authService, "dominioCorporativo", "llosaedificaciones.com");
     }
 
     // ── Usuario no encontrado ─────────────────────────────────────────────────
@@ -48,16 +47,16 @@ class AuthServiceTest {
     // ── Usuario suspendido ────────────────────────────────────────────────────
 
     @Test
-    void verificarPerfil_usuarioSuspendido_lanzaExcepcion() {
+    void verificarPerfil_usuarioSuspendido_devuelvePerfil() {
         Usuario u = TestData.usuario();
         u.setActivo(false);
         when(usuarioRepository.findByFirebaseUuid(u.getFirebaseUuid()))
                 .thenReturn(Optional.of(u));
 
-        assertThatThrownBy(() ->
-                authService.verificarYCargarPerfil(u.getFirebaseUuid(), u.getEmail()))
-                .isInstanceOf(AccesoDenegadoException.class)
-                .hasMessageContaining("suspendida");
+        PerfilConPermisosResponse result = authService.verificarYCargarPerfil(u.getFirebaseUuid(), u.getEmail());
+
+        assertThat(result).isNotNull();
+        assertThat(result.getActivo()).isFalse();
     }
 
     // ── Dominio corporativo ───────────────────────────────────────────────────

@@ -1,9 +1,11 @@
 package com.llosa.backend.pagos.service;
 
+import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
+import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
 import com.llosa.backend.config.TestDataPagos;
-import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
+import com.llosa.backend.factory.PagoFlujoFactory;
 import com.llosa.backend.pagos.dto.CronogramaPagoResponse;
 import com.llosa.backend.pagos.dto.ResumenResponse;
 import com.llosa.backend.pagos.entity.CronogramaPago;
@@ -41,6 +43,15 @@ class CronogramaPagoServiceImplTest {
     @Mock
     UsuarioActivoRepository usuarioActivoRepository;
 
+    @Mock
+    PagoFlujoFactory pagoFlujoFactory;
+
+    @Mock
+    EtapaExpedienteRepository etapaExpedienteRepository;
+
+    @Mock
+    RequisitoDocumentalRepository requisitoDocumentalRepository;
+
     @InjectMocks
     CronogramaPagoServiceImpl cronogramaPagoService;
 
@@ -61,10 +72,11 @@ class CronogramaPagoServiceImplTest {
             return cp;
         });
 
+        when(pagoFlujoFactory.generarPagos(any(), any())).thenReturn(List.of());
+
         CronogramaPagoResponse result = cronogramaPagoService.crear(request);
 
         assertThat(result.totalPactado()).isEqualByComparingTo(request.totalPactado());
-        assertThat(result.cuotaInicial()).isEqualByComparingTo(request.cuotaInicial());
         assertThat(result.numeroCuotas()).isEqualTo(request.numeroCuotas());
         assertThat(result.estado()).isEqualTo("ACTIVO");
     }

@@ -1,5 +1,6 @@
 package com.llosa.backend.pagos.repository;
 
+import com.llosa.backend.pagos.ConceptoPago;
 import com.llosa.backend.config.PostgresTestContainerConfig;
 import com.llosa.backend.pagos.entity.CronogramaPago;
 import com.llosa.backend.pagos.entity.Pago;
@@ -83,11 +84,11 @@ class PagoRepositoryTest {
         em.persist(Pago.builder().cronograma(cp).nroCuota(2)
                 .montoProgramado(new BigDecimal("25000.00"))
                 .fechaVencimiento(LocalDate.now().plusMonths(2))
-                .estado("PENDIENTE").build());
+                .estado("PENDIENTE")                .concepto(ConceptoPago.CUOTA).build());
         em.persist(Pago.builder().cronograma(cp).nroCuota(1)
                 .montoProgramado(new BigDecimal("25000.00"))
                 .fechaVencimiento(LocalDate.now().plusMonths(1))
-                .estado("PENDIENTE").build());
+                .estado("PENDIENTE").concepto(ConceptoPago.CUOTA).build());
         em.flush();
 
         List<Pago> pagos = pagoRepository.findByCronograma_IdOrderByNroCuotaAsc(cp.getId());
@@ -109,7 +110,7 @@ class PagoRepositoryTest {
         em.persist(Pago.builder().cronograma(cp).nroCuota(3)
                 .montoProgramado(new BigDecimal("25000.00"))
                 .fechaVencimiento(LocalDate.now().plusMonths(3))
-                .estado("PENDIENTE").build());
+                .estado("PENDIENTE").concepto(ConceptoPago.CUOTA).build());
         em.flush();
 
         Optional<Pago> result = pagoRepository.findByCronograma_IdAndNroCuota(cp.getId(), 3);
@@ -130,15 +131,15 @@ class PagoRepositoryTest {
         em.persist(Pago.builder().cronograma(cp).nroCuota(1)
                 .montoProgramado(new BigDecimal("25000.00"))
                 .fechaVencimiento(LocalDate.now().plusMonths(1))
-                .estado("PAGADO").montoPagado(new BigDecimal("25000.00")).build());
+                .estado("PAGADO").montoPagado(new BigDecimal("25000.00")).concepto(ConceptoPago.CUOTA).build());
         em.persist(Pago.builder().cronograma(cp).nroCuota(2)
                 .montoProgramado(new BigDecimal("25000.00"))
                 .fechaVencimiento(LocalDate.now().plusMonths(2))
-                .estado("PAGADO").montoPagado(new BigDecimal("25000.00")).build());
+                .estado("PAGADO").montoPagado(new BigDecimal("25000.00")).concepto(ConceptoPago.CUOTA).build());
         em.persist(Pago.builder().cronograma(cp).nroCuota(3)
                 .montoProgramado(new BigDecimal("25000.00"))
                 .fechaVencimiento(LocalDate.now().plusMonths(3))
-                .estado("PENDIENTE").build());
+                .estado("PENDIENTE").concepto(ConceptoPago.CUOTA).build());
         em.flush();
 
         BigDecimal totalPagado = pagoRepository.sumMontoPagadoByCronogramaId(cp.getId());
@@ -158,15 +159,15 @@ class PagoRepositoryTest {
         em.persist(Pago.builder().cronograma(cp).nroCuota(1)
                 .montoProgramado(new BigDecimal("25000.00"))
                 .fechaVencimiento(LocalDate.now().plusMonths(1))
-                .estado("PAGADO").montoPagado(new BigDecimal("25000.00")).build());
+                .estado("PAGADO").montoPagado(new BigDecimal("25000.00")).concepto(ConceptoPago.CUOTA).build());
         em.persist(Pago.builder().cronograma(cp).nroCuota(2)
                 .montoProgramado(new BigDecimal("25000.00"))
                 .fechaVencimiento(LocalDate.now().plusMonths(2))
-                .estado("PAGADO").montoPagado(new BigDecimal("25000.00")).build());
+                .estado("PAGADO").montoPagado(new BigDecimal("25000.00")).concepto(ConceptoPago.CUOTA).build());
         em.persist(Pago.builder().cronograma(cp).nroCuota(3)
                 .montoProgramado(new BigDecimal("25000.00"))
                 .fechaVencimiento(LocalDate.now().plusMonths(3))
-                .estado("PENDIENTE").build());
+                .estado("PENDIENTE").concepto(ConceptoPago.CUOTA).build());
         em.flush();
 
         assertThat(pagoRepository.countByCronograma_IdAndEstado(cp.getId(), "PAGADO")).isEqualTo(2);

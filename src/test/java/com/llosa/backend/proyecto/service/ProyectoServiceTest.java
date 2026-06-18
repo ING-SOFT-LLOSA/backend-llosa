@@ -159,7 +159,7 @@ class ProyectoServiceTest {
         when(proyectoRepository.save(proyecto)).thenReturn(proyecto);
 
         ActivoRequestDTO activoDTO = new ActivoRequestDTO("101", TipoActivo.DEPARTAMENTO,
-                BigDecimal.valueOf(80), EstadoComercialActivo.DISPONIBLE,
+                BigDecimal.valueOf(80), BigDecimal.valueOf(80), EstadoComercialActivo.DISPONIBLE,
                 BigDecimal.valueOf(200000), "Dpto 101");
         PisoRequestDTO pisoDTO = new PisoRequestDTO(1, List.of(activoDTO));
         TorreRequestDTO torreDTO = new TorreRequestDTO("Torre A", List.of(pisoDTO));
