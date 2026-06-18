@@ -27,12 +27,12 @@ public interface CitaRepository extends JpaRepository<Cita, UUID> {
 
     /** Próximas citas de un cliente (futuras, activas). */
     @Query("""
-        SELECT c FROM Cita c
-        WHERE c.cliente.id = :clienteId
-          AND c.fechaInicio >= :ahora
-          AND c.estadoCita IN ('PROGRAMADA', 'CONFIRMADA')
-        ORDER BY c.fechaInicio ASC
-    """)
+    SELECT c FROM Cita c
+    WHERE c.cliente.id = :clienteId
+      AND c.fechaInicio >= :ahora
+      AND c.estadoCita IN ('PROGRAMADA', 'CONFIRMADA', 'REPROGRAMACION_PENDIENTE')
+    ORDER BY c.fechaInicio ASC
+""")
     List<Cita> findProximasByClienteId(@Param("clienteId") Integer clienteId,
                                        @Param("ahora") LocalDateTime ahora);
 
