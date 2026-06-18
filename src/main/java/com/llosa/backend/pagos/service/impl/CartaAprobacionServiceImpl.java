@@ -1,7 +1,6 @@
 package com.llosa.backend.pagos.service.impl;
 
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
-import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.pagos.dto.CartaAprobacionRequest;
@@ -16,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service

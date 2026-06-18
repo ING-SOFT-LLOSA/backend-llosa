@@ -76,5 +76,8 @@ public class UsuarioActivo {
     @Builder.Default
     private List<EtapaExpediente> etapas = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_asesor")
+    private Usuario asesor;
 
 }

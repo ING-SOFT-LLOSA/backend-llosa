@@ -99,6 +99,12 @@ public class UsuarioActivoController {
      * Estado: FUNCIONAL
      */
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
+    @GetMapping("/contrato/{uuidExpediente}")
+    public ResponseEntity<UsuarioActivoResponseDTO> obtenerContratoPorId(@PathVariable UUID uuidExpediente) {
+        return ResponseEntity.ok(UsuarioActivoResponseDTO.fromEntity(usuarioActivoService.findById(uuidExpediente)));
+    }
+
+    @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @GetMapping("/{uuidActivo}/contrato")
     public ResponseEntity<UsuarioActivoResponseDTO> verContratoActivoUsuario(@PathVariable UUID uuidActivo) {
         return usuarioActivoService.findByActivo(uuidActivo)
@@ -146,5 +152,27 @@ public class UsuarioActivoController {
         usuarioActivoService.eliminarContrato(uuidUsuarioActivo);
         return ResponseEntity.noContent().build();
     }
+
+    /** Asinar un asesor**/
+
+    @PostMapping("/usuarioActivo/{id_usuario_activo}/asesor/{id_asesor}")
+    @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
+    public ResponseEntity<UsuarioActivoResponseDTO> AsignarUnAsesorAlContrato(
+            @PathVariable UUID id_usuario_activo,
+            @PathVariable Integer id_asesor){
+        UsuarioActivo usuario = usuarioActivoService.asignarAsesorAContrato(id_usuario_activo, id_asesor);
+        return ResponseEntity.ok().body(UsuarioActivoResponseDTO.fromEntity(usuario));
+    }
+
+    @PutMapping("/usuarioActivo/{id_usuario_activo}/asesor/{id_asesor}")
+    @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
+    public ResponseEntity<UsuarioActivoResponseDTO> DesvincularAsesorDelContrato(
+            @PathVariable UUID id_usuario_activo,
+            @PathVariable Integer id_asesor){
+        UsuarioActivo usuario = usuarioActivoService.desasignarAsesorDelContrato(id_usuario_activo, id_asesor);
+        return ResponseEntity.ok().body(UsuarioActivoResponseDTO.fromEntity(usuario));
+    }
+
+    // No se necesita un get, porque ya hay un get para ver un contrato
 
 }

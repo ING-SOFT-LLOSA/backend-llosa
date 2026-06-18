@@ -7,7 +7,6 @@ import com.llosa.backend.comercial.dto.StepperResponse;
 import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.comercial.entity.HitoProcesoCompra;
 import com.llosa.backend.comercial.enums.EstadoHitoComercial;
-import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.HitoProcesoCompraRepository;
 import com.llosa.backend.comercial.service.HitoComercialService;
@@ -20,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Implementación del servicio de Hitos Comerciales (Proceso de Compra).

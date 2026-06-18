@@ -7,7 +7,6 @@ import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.repository.ActivoRepository;
 
 import com.llosa.backend.proyecto.service.ActivoService;
-import com.llosa.backend.proyecto.service.HidratationService;
 import com.llosa.backend.proyecto.service.PisoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,7 +24,6 @@ public class ActivoServiceImpl implements ActivoService {
 
     private final ActivoRepository activoRepository;
     private final PisoService pisoService;
-    private final HidratationService hidratationService;
 
     @Override
     @Transactional

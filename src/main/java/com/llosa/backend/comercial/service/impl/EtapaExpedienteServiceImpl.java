@@ -25,6 +25,9 @@ public class EtapaExpedienteServiceImpl implements EtapaExpedienteService {
     private final EtapaExpedienteRepository etapaExpedienteRepository;
     private final UsuarioActivoRepository usuarioActivoRepository;
 
+    private static final String ETAPA_NO_ENCONTRADA_MSG = "Etapa expediente no encontrada: ";
+
+
     @Override
     @Transactional(readOnly = true)
     public List<EtapaExpedienteResponse> listarPorUsuarioActivo(UUID uuidUsuarioActivo) {
@@ -40,7 +43,7 @@ public class EtapaExpedienteServiceImpl implements EtapaExpedienteService {
     public EtapaExpedienteResponse obtenerPorId(UUID uuidEtapaExpediente) {
         EtapaExpediente etapa = etapaExpedienteRepository.findById(uuidEtapaExpediente)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Etapa expediente no encontrada: " + uuidEtapaExpediente
+                        ETAPA_NO_ENCONTRADA_MSG + uuidEtapaExpediente
                 ));
         return EtapaExpedienteResponse.fromEntity(etapa);
     }
@@ -76,7 +79,7 @@ public class EtapaExpedienteServiceImpl implements EtapaExpedienteService {
     public EtapaExpedienteResponse actualizar(UUID uuidEtapaExpediente, EtapaExpedienteRequest request) {
         EtapaExpediente etapa = etapaExpedienteRepository.findById(uuidEtapaExpediente)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Etapa expediente no encontrada: " + uuidEtapaExpediente
+                        ETAPA_NO_ENCONTRADA_MSG + uuidEtapaExpediente
                 ));
 
         etapa.setEtapaProceso(request.etapaProceso());
@@ -93,7 +96,7 @@ public class EtapaExpedienteServiceImpl implements EtapaExpedienteService {
     public EtapaExpedienteResponse actualizarEstado(UUID uuidEtapaExpediente, EtapaExpedienteEstadoRequest request) {
         EtapaExpediente etapa = etapaExpedienteRepository.findById(uuidEtapaExpediente)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Etapa expediente no encontrada: " + uuidEtapaExpediente
+                        ETAPA_NO_ENCONTRADA_MSG + uuidEtapaExpediente
                 ));
 
         etapa.setEstado(request.estado());
@@ -107,7 +110,7 @@ public class EtapaExpedienteServiceImpl implements EtapaExpedienteService {
     public void eliminar(UUID uuidEtapaExpediente) {
         if (!etapaExpedienteRepository.existsById(uuidEtapaExpediente)) {
             throw new EntityNotFoundException(
-                    "Etapa expediente no encontrada: " + uuidEtapaExpediente
+                    ETAPA_NO_ENCONTRADA_MSG + uuidEtapaExpediente
             );
         }
         etapaExpedienteRepository.deleteById(uuidEtapaExpediente);

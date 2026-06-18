@@ -19,7 +19,8 @@ public record UsuarioActivoResponseDTO(
     LocalDateTime updatedAt,
     Boolean vigente,
     List<ClienteSimpleDTO> clientes,
-    List<ActivoResponseDTO> activos
+    List<ActivoResponseDTO> activos,
+    ClienteSimpleDTO asesor
 ) {
 
     /**
@@ -54,6 +55,7 @@ public record UsuarioActivoResponseDTO(
                 .map(ClienteSimpleDTO::fromEntity)
                 .toList();
         List<ActivoResponseDTO> activos = a.getActivos().stream().map(ActivoResponseDTO::fromEntity).toList();
+        ClienteSimpleDTO asesor = ClienteSimpleDTO.fromEntity(a.getAsesor());
         return new UsuarioActivoResponseDTO(
                 a.getUuidUsuarioActivo(),
                 a.getTipoFinanciamiento(),
@@ -62,7 +64,8 @@ public record UsuarioActivoResponseDTO(
                 a.getUpdatedAt(),
                 a.getVigente(),
                 clientesDTO,
-                activos
+                activos,
+                asesor
         );
     }
 }

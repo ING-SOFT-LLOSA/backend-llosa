@@ -1,6 +1,5 @@
 package com.llosa.backend.comercial.dto;
 
-import com.llosa.backend.comercial.enums.EtapaProceso;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;

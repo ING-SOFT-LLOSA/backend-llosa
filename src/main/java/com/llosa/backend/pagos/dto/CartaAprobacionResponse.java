@@ -15,6 +15,9 @@ public record CartaAprobacionResponse(
         LocalDate fechaEmision,
         LocalDate fechaVencimiento,
         LocalDate fechaDesembolsoProyectada,
+        BigDecimal pagoSeparacion,
+        BigDecimal pagoInicial,
+        Boolean pagoCompleto,
         String comentarios,
         LocalDateTime createdAt
 ) {
@@ -27,6 +30,9 @@ public record CartaAprobacionResponse(
                 ca.getFechaEmision(),
                 ca.getFechaVencimiento(),
                 ca.getFechaDesembolsoProyectada(),
+                ca.getPagoSeparacion(),
+                ca.getPagoInicial(),
+                ca.getPagoCompleto(),
                 ca.getComentarios(),
                 ca.getCreatedAt()
         );

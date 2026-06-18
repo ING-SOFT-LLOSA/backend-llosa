@@ -16,7 +16,7 @@ import java.util.UUID;
 public interface ActivoRepository extends JpaRepository<Activo, UUID> {
     List<Activo> findByPisoId(Long id);
     List<Activo> findByPisoIdAndNroContainingIgnoreCase(Long pisoId, String nro);
-    List<Activo> findByPisoTorreProyectoId(UUID id);
+
     Page<Activo> findByPisoTorreProyectoId(
             UUID uuidProyecto,
             Pageable pageable

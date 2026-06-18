@@ -37,7 +37,7 @@ public class UsuarioService {
     private String dominioCorporativo;
 
     @Transactional
-    public UsuarioResponse crearUsuario(CrearUsuarioRequest request) throws Exception {
+    public UsuarioResponse crearUsuario(CrearUsuarioRequest request) {
 
         if (usuarioRepository.existsByEmail(request.getEmail())) {
             throw new EmailDuplicadoException(request.getEmail());

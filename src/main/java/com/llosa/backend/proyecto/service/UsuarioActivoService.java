@@ -25,4 +25,6 @@ public interface UsuarioActivoService {
     void deleteById(UUID id);
     void eliminarContrato(UUID usuarioActivoId);
     Page<UsuarioActivoResponseDTO> listar(Pageable pageable);
+    UsuarioActivo asignarAsesorAContrato(UUID idUsuarioActivo,Integer idUsuario);
+    UsuarioActivo desasignarAsesorDelContrato(UUID idUsuarioActivo,Integer idUsuario);
 }
