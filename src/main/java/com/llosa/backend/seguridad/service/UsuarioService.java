@@ -78,11 +78,12 @@ public class UsuarioService {
         usuario.setTipoUsuario(request.getTipoUsuario());
         usuario.setActivo(true);
 
-        if ("CLIENTE".equals(request.getTipoUsuario())) {
-            Rol rolCliente = rolRepository.findByNombre("CLIENTE")
-                    .orElseThrow(() -> new RecursoNoEncontradoException("Rol CLIENTE no encontrado en la base de datos."));
-            usuario.setRol(rolCliente);
-        } else if (request.getIdRol() != null) {
+        // if ("CLIENTE".equals(request.getTipoUsuario())) {
+        //     Rol rolCliente = rolRepository.findByNombre("CLIENTE")
+        //             .orElseThrow(() -> new RecursoNoEncontradoException("Rol CLIENTE no encontrado en la base de datos."));
+        //     usuario.setRol(rolCliente);
+        // } else 
+        if (request.getIdRol() != null) {
             Rol rol = rolRepository.findById(request.getIdRol())
                     .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado con ID: " + request.getIdRol()));
             usuario.setRol(rol);
