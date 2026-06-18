@@ -2,9 +2,11 @@ package com.llosa.backend.pagos.service.impl;
 
 import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
+import com.llosa.backend.pagos.EstadoGlobalPago;
 import com.llosa.backend.pagos.dto.CronogramaPagoRequest;
 import com.llosa.backend.pagos.dto.CronogramaPagoResponse;
 import com.llosa.backend.pagos.dto.ResumenResponse;
+import com.llosa.backend.pagos.dto.ResumenResponseHipotecarioDTO;
 import com.llosa.backend.pagos.entity.CronogramaPago;
 import com.llosa.backend.pagos.entity.Pago;
 import com.llosa.backend.pagos.repository.CronogramaPagoRepository;
@@ -93,6 +95,36 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
         }
         cronogramaPagoRepository.deleteById(uuidCronograma);
         log.info("Cronograma eliminado: {}", uuidCronograma);
+    }
+
+    @Override
+    @Transactional
+    public ResumenResponseHipotecarioDTO obtenerResumenHipotecario(UUID uuidCronograma) {
+        CronogramaPago cp = cronogramaPagoRepository.findById(uuidCronograma)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Cronograma no encontrado: " + uuidCronograma));
+        // 1. Obtienes o calculas los valores desde tu entidad 'cp'
+        BigDecimal montoTotal = cp.getTotalPactado(); // Cambia por tus métodos reales
+        BigDecimal cuotaInicial = cp.getCuotaInicial();
+        BigDecimal cuotaSeparacion = cp.getPagoSeparacion();
+        BigDecimal totalPagado = cuotaInicial.add(cuotaSeparacion);
+        BigDecimal saldoPendiente = montoTotal.subtract(totalPagado);
+        // siemrpe esta al dia, siempre y cuando haya pagao la cuato sparaicon e incial
+        EstadoGlobalPago estadoGlobal;
+        if (cuotaInicial.signum() > 0 && cuotaSeparacion.signum() > 0){
+            estadoGlobal = EstadoGlobalPago.AL_DIA;
+        }
+        else{
+            estadoGlobal = EstadoGlobalPago.RETRASADO;
+        }
+
+        // 2. Creas e inicializas el record usando su constructor
+        return new ResumenResponseHipotecarioDTO(
+                montoTotal,
+                totalPagado,
+                saldoPendiente,
+                estadoGlobal
+        );
     }
 
     @Override

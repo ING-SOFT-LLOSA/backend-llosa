@@ -3,6 +3,7 @@ package com.llosa.backend.pagos.service;
 import com.llosa.backend.pagos.dto.CronogramaPagoRequest;
 import com.llosa.backend.pagos.dto.CronogramaPagoResponse;
 import com.llosa.backend.pagos.dto.ResumenResponse;
+import com.llosa.backend.pagos.dto.ResumenResponseHipotecarioDTO;
 
 import java.util.UUID;
 
@@ -17,4 +18,8 @@ public interface CronogramaPagoService {
     void eliminar(UUID uuidCronograma);
 
     ResumenResponse obtenerResumen(UUID uuidCronograma);
+
+    ResumenResponseHipotecarioDTO obtenerResumenHipotecario(UUID uuidCronograma);
+
+
 }

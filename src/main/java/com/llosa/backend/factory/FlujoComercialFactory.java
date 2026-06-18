@@ -126,14 +126,14 @@ public class FlujoComercialFactory {
             // hacemos los requisitos docuemntales
             pago.getRequisitos().add(construirRequisito(
                     pago,
-                    "Inicio De desembolso",
+                    "Pago de Separacion",
                     "Docuemnto el cual confirma que el proceso de pago del banco a Llosa ha comenzado",
                     "bag_of_money",
                     "No hay nota corporativa"
             ));
             pago.getRequisitos().add(construirRequisito(
                     pago,
-                    "Minuta en Notaría",
+                    "Pago Inicial",
                     "La minuta es revisada y procesada por la notaría.",
                     "document2",
                     "No hay nota corporativa"
