@@ -19,5 +19,5 @@ public interface PagoService {
 
     PagoResponse cambiarEstado(UUID uuidPago, String nuevoEstado, Integer actualizadoPor);
 
-    PagoResponse subirComprobante(UUID uuidPago, MultipartFile file, Integer subidoPor);
+    PagoResponse subirComprobante(UUID uuidPago, MultipartFile file, Integer subidoPor, String comentario);
 }

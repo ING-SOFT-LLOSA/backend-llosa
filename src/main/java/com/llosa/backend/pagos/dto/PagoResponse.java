@@ -1,5 +1,6 @@
 package com.llosa.backend.pagos.dto;
 
+import com.llosa.backend.pagos.ConceptoPago;
 import com.llosa.backend.pagos.entity.Pago;
 
 import java.math.BigDecimal;
@@ -18,6 +19,9 @@ public record PagoResponse(
         LocalDateTime fechaPago,
         UUID uuidComprobante,
         Integer actualizadoPor,
+        ConceptoPago concepto,
+        String comentario,
+        UUID uuidRequisitoDocumental,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -33,6 +37,9 @@ public record PagoResponse(
                 pago.getFechaPago(),
                 pago.getUuidComprobante(),
                 pago.getActualizadoPor(),
+                pago.getConcepto(),
+                pago.getComentario(),
+                pago.getUuidRequisitoDocumental(),
                 pago.getCreatedAt(),
                 pago.getUpdatedAt()
         );

@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import com.llosa.backend.seguridad.repository.FuncionRepository;
+import com.llosa.backend.exception.BusinessException;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +34,23 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final FuncionRepository funcionRepository;
+    @org.springframework.beans.factory.annotation.Value("${app.dominio-corporativo}")
+    private String dominioCorporativo;
 
+    /**
+     * NOTA (issue 0000315): Firebase NO participa de la transacción de Spring/JPA.
+     * Por eso el orden es importante: primero se intenta todo lo que es
+     * transaccional y reversible (validaciones + guardar en Postgres), y
+     * RECIÉN AL FINAL se crea el usuario en Firebase, que es la operación
+     * externa no transaccional.
+     *
+     * Si Firebase falla, se hace un rollback manual del registro de Postgres
+     * (que ya se había guardado) para no dejar un usuario "fantasma" en BD
+     * sin su identidad de autenticación.
+     *
+     * Si Postgres fallara, nunca se llega a crear nada en Firebase, así que
+     * no hay inconsistencia posible en ese sentido.
+     */
     @Transactional
     public UsuarioResponse crearUsuario(CrearUsuarioRequest request) {
 
@@ -41,7 +58,52 @@ public class UsuarioService {
             throw new EmailDuplicadoException(request.getEmail());
         }
 
-        // 1. Crear identidad en Firebase
+        // Validación de dominio corporativo para empleados (issue 0000116)
+        if ("EMPLEADO".equals(request.getTipoUsuario())) {
+            String email = request.getEmail().toLowerCase().trim();
+            String dominioEsperado = "@" + dominioCorporativo.toLowerCase().trim();
+            if (!email.endsWith(dominioEsperado)) {
+                throw new BusinessException(
+                        "El correo de un empleado debe pertenecer al dominio corporativo: " + dominioCorporativo);
+            }
+        }
+
+        // 1. Armar el perfil (todavía sin firebaseUuid, se completa después)
+        Usuario usuario = new Usuario();
+        usuario.setNombre(request.getNombre());
+        usuario.setApellidos(request.getApellidos());
+        usuario.setEmail(request.getEmail());
+        usuario.setTelefono(request.getTelefono());
+        usuario.setDocumentoIdentidad(request.getDocumentoIdentidad());
+        usuario.setTipoUsuario(request.getTipoUsuario());
+        usuario.setActivo(true);
+
+        if ("CLIENTE".equals(request.getTipoUsuario())) {
+            Rol rolCliente = rolRepository.findByNombre("CLIENTE")
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Rol CLIENTE no encontrado en la base de datos."));
+            usuario.setRol(rolCliente);
+        } else if (request.getIdRol() != null) {
+            Rol rol = rolRepository.findById(request.getIdRol())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado con ID: " + request.getIdRol()));
+            usuario.setRol(rol);
+        }
+
+        // 2. Crear identidad en Firebase PRIMERO se movió al final (ver abajo).
+        //    Antes de eso, intentamos guardar en BD. Si esto falla, Spring
+        //    revierte la transacción automáticamente y nunca llegamos a
+        //    tocar Firebase: no hay inconsistencia posible en este sentido.
+        //
+        //    NOTA: firebaseUuid es la clave única en la tabla usuario, así que
+        //    no se puede guardar el registro completo sin ella. Para resolver
+        //    esto sin reordenar el modelo de datos, usamos un placeholder
+        //    temporal único y lo actualizamos inmediatamente después de crear
+        //    el usuario en Firebase, dentro de la misma transacción.
+        String placeholderUuid = "PENDING_" + java.util.UUID.randomUUID();
+        usuario.setFirebaseUuid(placeholderUuid);
+
+        usuario = usuarioRepository.save(usuario);
+
+        // 3. Crear identidad en Firebase (operación externa, no transaccional)
         UserRecord.CreateRequest firebaseRequest = new UserRecord.CreateRequest()
                 .setEmail(request.getEmail())
                 .setEmailVerified(false)
@@ -51,42 +113,23 @@ public class UsuarioService {
         try {
             userRecord = FirebaseAuth.getInstance().createUser(firebaseRequest);
         } catch (FirebaseAuthException e) {
+            // Rollback manual: Firebase falló, así que eliminamos el registro
+            // que ya habíamos guardado en Postgres para no dejar un usuario
+            // fantasma sin identidad de autenticación.
+            usuarioRepository.delete(usuario);
             throw new RuntimeException("Error al crear usuario en Firebase: " + e.getMessage());
         }
 
-        // 2. Crear perfil en PostgreSQL
-        Usuario usuario = new Usuario();
+        // 4. Reemplazar el placeholder con el UID real de Firebase
         usuario.setFirebaseUuid(userRecord.getUid());
-        usuario.setNombre(request.getNombre());
-        usuario.setApellidos(request.getApellidos());
-        usuario.setEmail(request.getEmail());
-        usuario.setTelefono(request.getTelefono());
-        usuario.setDocumentoIdentidad(request.getDocumentoIdentidad());
-        usuario.setTipoUsuario(request.getTipoUsuario());
-        usuario.setActivo(true);
+        usuario = usuarioRepository.save(usuario);
 
-        // --- THE RESTORED FLAWLESS ROLE ASSIGNMENT LOGIC ---
-        if ("CLIENTE".equals(request.getTipoUsuario())) {
-            // Asigna automáticamente el rol CLIENTE si el tipo de usuario es cliente
-            Rol rolCliente = rolRepository.findByNombre("CLIENTE")
-                    .orElseThrow(() -> new RecursoNoEncontradoException("Rol CLIENTE no encontrado en la base de datos."));
-            usuario.setRol(rolCliente);
-        } else if (request.getIdRol() != null) {
-            // Asigna el rol enviado en el body (para admins, asesores, etc.)
-            Rol rol = rolRepository.findById(request.getIdRol())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado con ID: " + request.getIdRol()));
-            usuario.setRol(rol);
-        }
-
-        usuarioRepository.save(usuario);
-
-        // --- THE RESTORED EMAIL TRIGGER ---
+        // --- Email de bienvenida / reseteo de contraseña ---
         try {
             sendPasswordResetEmail(request.getEmail());
         } catch (Exception e) {
             log.error("Usuario creado, pero falló el envío del email: {}", e.getMessage());
-            // Optional: You can choose to throw an exception here, but usually,
-            // you don't want to rollback the user creation just because the email failed.
+            // No se revierte la creación del usuario solo porque el email falló.
         }
 
         return toResponse(usuario);
@@ -116,6 +159,14 @@ public class UsuarioService {
 
         usuario.setRol(rol);
         usuarioRepository.save(usuario);
+
+        try {
+            FirebaseAuth.getInstance().revokeRefreshTokens(usuario.getFirebaseUuid());
+        } catch (FirebaseAuthException e) {
+            log.error("No se pudo revocar el refresh token tras cambio de rol para usuario {}: {}",
+                    usuarioId, e.getMessage());
+        }
+
         return toResponse(usuario);
     }
 
@@ -169,10 +220,7 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
 
-        // Eliminar de Firebase
         FirebaseAuth.getInstance().deleteUser(usuario.getFirebaseUuid());
-
-        // Eliminar de PostgreSQL
         usuarioRepository.delete(usuario);
     }
 
@@ -207,15 +255,12 @@ public class UsuarioService {
         if (request.getNombre() != null) {
             usuario.setNombre(request.getNombre());
         }
-
         if (request.getApellidos() != null) {
             usuario.setApellidos(request.getApellidos());
         }
-
         if (request.getTelefono() != null) {
             usuario.setTelefono(request.getTelefono());
         }
-
         if (request.getEmail() != null) {
             usuario.setEmail(request.getEmail());
         }
@@ -230,6 +275,7 @@ public class UsuarioService {
 
         return toResponse(usuario);
     }
+
     @Transactional
     public UsuarioResponse modificarFunciones(Integer usuarioId, List<Integer> idFunciones) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
@@ -246,8 +292,6 @@ public class UsuarioService {
         }
 
         rol.setFunciones(nuevasFunciones);
-        // rol ya está managed por JPA, no hace falta llamar save explícito,
-        // pero lo llamamos para ser explícitos
         usuarioRepository.save(usuario);
 
         return toResponse(usuario);

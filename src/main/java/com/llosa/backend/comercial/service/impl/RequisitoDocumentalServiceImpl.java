@@ -63,6 +63,25 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
     }
 
     @Transactional
+    public void completarRequisitoConDocumento(UUID requisitoId, String rutaGcs, String nombreOriginal, String tipoMime, Integer subidoPor, String comentario) {
+        RequisitoDocumental requisito = requisitoRepository.findById(requisitoId)
+                .orElseThrow(() -> new EntityNotFoundException(REQUISITO_NO_ENCONTRADO_MSG));
+
+        documentoService.crearReferenciaDocumento(
+                rutaGcs, nombreOriginal, tipoMime,
+                requisitoId.toString(), ENTIDAD_REFERENCIA_REQUSITO,
+                TipoDocumento.PDF_LEGAL, subidoPor
+        );
+
+        requisito.setEstado(EtapaRequisitoDocumental.COMPLETADO);
+        requisito.setFechaEmision(LocalDate.now());
+        if (comentario != null) {
+            requisito.setNotaCorporativa(comentario);
+        }
+        requisitoRepository.save(requisito);
+    }
+
+    @Transactional
     public void eliminarArchivoDeRequisito(UUID requisitoId, String firebaseUid) {
         RequisitoDocumental requisito = requisitoRepository.findById(requisitoId)
                 .orElseThrow(() -> new EntityNotFoundException(REQUISITO_NO_ENCONTRADO_MSG));

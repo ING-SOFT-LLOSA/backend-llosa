@@ -39,6 +39,10 @@ public class Activo {
     @Column(nullable = false, name = "area_m2")
     private BigDecimal areaM2 = BigDecimal.valueOf(0.0);
 
+    @Builder.Default
+    @Column(nullable = false, name = "area_techada")
+    private BigDecimal areaTechada = BigDecimal.valueOf(0.0);
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoComercialActivo estadoComercial;
