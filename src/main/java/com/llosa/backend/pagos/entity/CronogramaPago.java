@@ -33,11 +33,6 @@ public class CronogramaPago {
     @Column(name = "total_pactado", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalPactado;
 
-    @Builder.Default
-    @Column(name = "cuota_inicial", precision = 12, scale = 2)
-    private BigDecimal cuotaInicial = BigDecimal.ZERO;
-
-    // PUede ser mejorado porque esto genera nulls en las tablas, por eficincia se deja así.
     @Column(name = "pago_separacion", precision = 12, scale = 2)
     private BigDecimal pagoSeparacion;
 

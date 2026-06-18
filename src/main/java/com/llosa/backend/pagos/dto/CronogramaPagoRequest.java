@@ -9,7 +9,6 @@ import java.util.UUID;
 public record CronogramaPagoRequest(
         @NotNull UUID uuidUsuarioActivo,
         @NotNull @Positive BigDecimal totalPactado,
-        BigDecimal cuotaInicial,
         Integer numeroCuotas,
         BigDecimal pagoSeparacion,
         BigDecimal pagoIncial

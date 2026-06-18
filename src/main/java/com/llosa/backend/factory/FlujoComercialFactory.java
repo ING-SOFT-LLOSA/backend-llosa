@@ -102,6 +102,14 @@ public class FlujoComercialFactory {
                 "payments",
                 "Se actualiza automáticamente según el avance de la construcción y la modalidad de crédito seleccionada."
         ));
+
+        contratoEtapa.getRequisitos().add(construirRequisito(
+                contratoEtapa,
+                "Pago Inicial",
+                "Comprobante del pago de la cuota inicial para formalizar la compra.",
+                "payments",
+                "El comprobante se sube desde la sección de pagos y se refleja automáticamente aquí."
+        ));
         etapas.add(contratoEtapa);
 
         // 3. ETAPA: PAGO
@@ -123,35 +131,6 @@ public class FlujoComercialFactory {
             pago.getHitosComerciales().add(construirHito(pago, "Firma de Escritura Pública", 5, "Las partes firman la escritura pública ante notario."));
             pago.getHitosComerciales().add(construirHito(pago, "Desembolso Completado", 6, "El banco realiza el desembolso final a la inmobiliaria."));
 
-            // hacemos los requisitos docuemntales
-            pago.getRequisitos().add(construirRequisito(
-                    pago,
-                    "Pago de Separacion",
-                    "Docuemnto el cual confirma que el proceso de pago del banco a Llosa ha comenzado",
-                    "bag_of_money",
-                    "No hay nota corporativa"
-            ));
-            pago.getRequisitos().add(construirRequisito(
-                    pago,
-                    "Pago Inicial",
-                    "La minuta es revisada y procesada por la notaría.",
-                    "document2",
-                    "No hay nota corporativa"
-            ));
-            pago.getRequisitos().add(construirRequisito(
-                    pago,
-                    "Firma de Escritura Pública",
-                    "Las partes firman la escritura pública ante notario.",
-                    "document",
-                    "No hay nota corporativa"
-            ));
-            pago.getRequisitos().add(construirRequisito(
-                    pago,
-                    "Desembolso Completado",
-                    "El banco realiza el desembolso final a la inmobiliaria.",
-                    "bag_of_money2",
-                    "No hay nota corporativa"
-            ));
         } else {
 
             HitoProcesoCompra pagoSeparacion =
