@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import com.llosa.backend.seguridad.repository.FuncionRepository;
-
+import com.llosa.backend.exception.BusinessException;
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -33,6 +33,8 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final FuncionRepository funcionRepository;
+    @org.springframework.beans.factory.annotation.Value("${app.dominio-corporativo}")
+    private String dominioCorporativo;
 
     @Transactional
     public UsuarioResponse crearUsuario(CrearUsuarioRequest request) throws Exception {
@@ -40,6 +42,8 @@ public class UsuarioService {
         if (usuarioRepository.existsByEmail(request.getEmail())) {
             throw new EmailDuplicadoException(request.getEmail());
         }
+
+
 
         // 1. Crear identidad en Firebase
         UserRecord.CreateRequest firebaseRequest = new UserRecord.CreateRequest()
@@ -66,7 +70,15 @@ public class UsuarioService {
         usuario.setActivo(true);
 
         // --- THE RESTORED FLAWLESS ROLE ASSIGNMENT LOGIC ---
-        if ("CLIENTE".equals(request.getTipoUsuario())) {
+        if ("EMPLEADO".equals(request.getTipoUsuario())) {
+            String email = request.getEmail().toLowerCase().trim();
+            String dominioEsperado = "@" + dominioCorporativo.toLowerCase().trim();
+            if (!email.endsWith(dominioEsperado)) {
+                throw new BusinessException(
+                        "El correo de un empleado debe pertenecer al dominio corporativo: " + dominioCorporativo);
+            }
+        }
+        else if ("CLIENTE".equals(request.getTipoUsuario())) {
             // Asigna automáticamente el rol CLIENTE si el tipo de usuario es cliente
             Rol rolCliente = rolRepository.findByNombre("CLIENTE")
                     .orElseThrow(() -> new RecursoNoEncontradoException("Rol CLIENTE no encontrado en la base de datos."));
@@ -252,4 +264,5 @@ public class UsuarioService {
 
         return toResponse(usuario);
     }
+
 }
