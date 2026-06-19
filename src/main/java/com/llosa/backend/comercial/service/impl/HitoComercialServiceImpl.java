@@ -11,6 +11,8 @@ import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.HitoProcesoCompraRepository;
 import com.llosa.backend.comercial.service.HitoComercialService;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
+import com.llosa.backend.pagos.entity.CronogramaPago;
+import com.llosa.backend.pagos.repository.CronogramaPagoRepository;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +35,7 @@ public class HitoComercialServiceImpl implements HitoComercialService {
     private final HitoProcesoCompraRepository hitoRepository;
     private final EtapaExpedienteRepository etapaExpedienteRepository;
     private final UsuarioActivoRepository usuarioActivoRepository;
+    private final CronogramaPagoRepository cronogramaPagoRepository;
 
     @Override
     public HitoComercialResponse crearHito(HitoComercialRequest request) {
@@ -114,6 +117,11 @@ public class HitoComercialServiceImpl implements HitoComercialService {
 
         HitoProcesoCompra actualizado = hitoRepository.save(hito);
 
+        if (nuevoEstado == EstadoHitoComercial.COMPLETADO
+                && "Inmueble cancelado".equals(hito.getNombreHito())) {
+            marcarCronogramaComoHistorico(hito);
+        }
+
         log.info("Estado del hito {} actualizado a: {}", uuidHitoComercial, nuevoEstado);
 
         return HitoComercialResponse.fromEntity(actualizado);
@@ -172,6 +180,19 @@ public class HitoComercialServiceImpl implements HitoComercialService {
                 .filter(h -> h.getEstado() == EstadoHitoComercial.COMPLETADO)
                 .count();
         return Math.round(((double) completados / hitos.size()) * 100.0 * 100.0) / 100.0;
+    }
+
+    private void marcarCronogramaComoHistorico(HitoProcesoCompra hito) {
+        UUID usuarioActivoId = hito.getEtapaExpediente()
+                .getUsuarioActivo().getUuidUsuarioActivo();
+        cronogramaPagoRepository
+                .findByUsuarioActivo_UuidUsuarioActivo(usuarioActivoId)
+                .ifPresent(cp -> {
+                    cp.setEstado(CronogramaPago.ESTADO_HISTORICO);
+                    cronogramaPagoRepository.save(cp);
+                    log.info("Cronograma {} marcado como HISTORICO por hito 'Inmueble cancelado'",
+                            cp.getId());
+                });
     }
 
 }

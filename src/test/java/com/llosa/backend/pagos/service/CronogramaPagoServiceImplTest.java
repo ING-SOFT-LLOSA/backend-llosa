@@ -4,6 +4,7 @@ import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
 import com.llosa.backend.config.TestDataPagos;
 import com.llosa.backend.exception.EntidadDuplicadaException;
+import com.llosa.backend.exception.EstadoInvalidoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.factory.PagoFlujoFactory;
 import com.llosa.backend.pagos.dto.CronogramaPagoResponse;
@@ -168,9 +169,33 @@ class CronogramaPagoServiceImplTest {
     }
 
     @Test
+    void actualizar_historico_lanzaEstadoInvalidoException() {
+        UUID uuidCp = UUID.randomUUID();
+        var request = TestDataPagos.crearCronogramaRequest();
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .usuarioActivo(UsuarioActivo.builder().uuidUsuarioActivo(request.uuidUsuarioActivo()).build())
+                .totalPactado(new BigDecimal("100000.00"))
+                .estado(CronogramaPago.ESTADO_HISTORICO)
+                .build();
+
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
+
+        assertThatThrownBy(() -> cronogramaPagoService.actualizar(uuidCp, request))
+                .isInstanceOf(EstadoInvalidoException.class)
+                .hasMessageContaining("HISTORICO");
+
+        verify(cronogramaPagoRepository, never()).save(any());
+    }
+
+    @Test
     void eliminar_exitoso() {
         UUID uuidCp = UUID.randomUUID();
-        when(cronogramaPagoRepository.existsById(uuidCp)).thenReturn(true);
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .estado(CronogramaPago.ESTADO_ACTIVO)
+                .build();
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
 
         cronogramaPagoService.eliminar(uuidCp);
 
@@ -180,11 +205,27 @@ class CronogramaPagoServiceImplTest {
     @Test
     void eliminar_noExiste_lanzaRecursoNoEncontrado() {
         UUID uuidCp = UUID.randomUUID();
-        when(cronogramaPagoRepository.existsById(uuidCp)).thenReturn(false);
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> cronogramaPagoService.eliminar(uuidCp))
                 .isInstanceOf(RecursoNoEncontradoException.class)
                 .hasMessageContaining("Cronograma no encontrado");
+
+        verify(cronogramaPagoRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void eliminar_historico_lanzaEstadoInvalidoException() {
+        UUID uuidCp = UUID.randomUUID();
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .estado(CronogramaPago.ESTADO_HISTORICO)
+                .build();
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
+
+        assertThatThrownBy(() -> cronogramaPagoService.eliminar(uuidCp))
+                .isInstanceOf(EstadoInvalidoException.class)
+                .hasMessageContaining("HISTORICO");
 
         verify(cronogramaPagoRepository, never()).deleteById(any());
     }

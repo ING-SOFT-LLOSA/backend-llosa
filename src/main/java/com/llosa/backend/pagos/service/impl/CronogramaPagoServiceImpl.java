@@ -6,6 +6,7 @@ import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
 import com.llosa.backend.exception.EntidadDuplicadaException;
+import com.llosa.backend.exception.EstadoInvalidoException;
 import com.llosa.backend.pagos.ConceptoPago;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.factory.PagoFlujoFactory;
@@ -62,7 +63,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
                 .numeroCuotas(request.numeroCuotas())
                 .pagoInicial(request.pagoInicial() != null ? request.pagoInicial() : BigDecimal.ZERO)
                 .pagoSeparacion(request.pagoSeparacion() != null ? request.pagoSeparacion() : BigDecimal.ZERO)
-                .estado("ACTIVO")
+                .estado(CronogramaPago.ESTADO_ACTIVO)
                 .build();
 
         CronogramaPago guardado = cronogramaPagoRepository.save(cronograma);
@@ -118,6 +119,11 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Cronograma no encontrado: " + uuidCronograma));
 
+        if (CronogramaPago.ESTADO_HISTORICO.equals(cp.getEstado())) {
+            throw new EstadoInvalidoException(
+                    "No se puede modificar un cronograma en estado HISTORICO");
+        }
+
         cp.setTotalPactado(request.totalPactado());
         cp.setNumeroCuotas(request.numeroCuotas());
         cp.setPagoInicial(request.pagoInicial() != null ? request.pagoInicial() : BigDecimal.ZERO);
@@ -138,9 +144,15 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     @Override
     @Transactional
     public void eliminar(UUID uuidCronograma) {
-        if (!cronogramaPagoRepository.existsById(uuidCronograma)) {
-            throw new RecursoNoEncontradoException("Cronograma no encontrado: " + uuidCronograma);
+        CronogramaPago cp = cronogramaPagoRepository.findById(uuidCronograma)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Cronograma no encontrado: " + uuidCronograma));
+
+        if (CronogramaPago.ESTADO_HISTORICO.equals(cp.getEstado())) {
+            throw new EstadoInvalidoException(
+                    "No se puede eliminar un cronograma en estado HISTORICO");
         }
+
         cronogramaPagoRepository.deleteById(uuidCronograma);
         log.info("Cronograma eliminado: {}", uuidCronograma);
     }
