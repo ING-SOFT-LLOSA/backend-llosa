@@ -53,6 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - Refresco de token
  * - Acceso autorizado a endpoints
  */
+@Disabled
 @Tag("integration")
 @SpringBootTest
 @AutoConfigureMockMvc

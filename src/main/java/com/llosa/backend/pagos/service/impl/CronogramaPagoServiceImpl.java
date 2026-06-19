@@ -60,7 +60,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
                 .usuarioActivo(ua)
                 .totalPactado(request.totalPactado())
                 .numeroCuotas(request.numeroCuotas())
-                .pagoInicial(request.pagoIncial() != null ? request.pagoIncial() : BigDecimal.ZERO)
+                .pagoInicial(request.pagoInicial() != null ? request.pagoInicial() : BigDecimal.ZERO)
                 .pagoSeparacion(request.pagoSeparacion() != null ? request.pagoSeparacion() : BigDecimal.ZERO)
                 .estado("ACTIVO")
                 .build();
@@ -120,7 +120,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
 
         cp.setTotalPactado(request.totalPactado());
         cp.setNumeroCuotas(request.numeroCuotas());
-        cp.setPagoInicial(request.pagoIncial() != null ? request.pagoIncial() : BigDecimal.ZERO);
+        cp.setPagoInicial(request.pagoInicial() != null ? request.pagoInicial() : BigDecimal.ZERO);
         cp.setPagoSeparacion(request.pagoSeparacion() != null ? request.pagoSeparacion() : BigDecimal.ZERO);
 
         CronogramaPago guardado = cronogramaPagoRepository.save(cp);

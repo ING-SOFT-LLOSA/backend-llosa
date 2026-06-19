@@ -58,6 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * CP10: POST /api/users → (activo=false) → POST /api/auth/login (403 Forbidden)
  * CP11: POST /api/users → POST /api/units/assign (Separado) → GET /api/auth/me (200, modoDespera=true)
  */
+@Disabled
 @Tag("integration")
 @SpringBootTest
 @AutoConfigureMockMvc

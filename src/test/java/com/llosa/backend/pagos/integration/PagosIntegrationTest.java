@@ -6,6 +6,7 @@ import com.llosa.backend.config.FirebaseConfig;
 import com.llosa.backend.config.PostgresTestContainerConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.pagos.ConceptoPago;
 import com.llosa.backend.pagos.dto.CronogramaPagoRequest;
 import com.llosa.backend.pagos.dto.PagoRequest;
 import com.llosa.backend.pagos.entity.CronogramaPago;
@@ -136,8 +137,7 @@ class PagosIntegrationTest {
         // 1. Crear cronograma
         var crearRequest = new CronogramaPagoRequest(
                 uuidExpediente, new BigDecimal("100000.00"),
-                new BigDecimal("20000.00"), 4,
-                BigDecimal.ZERO, BigDecimal.ZERO);
+                4, BigDecimal.ZERO, BigDecimal.ZERO);
 
         mockMvc.perform(post("/api/cronogramas")
                         .with(securityContext(contextWithAuth()))
@@ -146,7 +146,6 @@ class PagosIntegrationTest {
                         .content(objectMapper.writeValueAsString(crearRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.totalPactado").value(100000.00))
-                .andExpect(jsonPath("$.cuotaInicial").value(20000.00))
                 .andExpect(jsonPath("$.estado").value("ACTIVO"));
 
         // 2. Obtener cronograma por expediente
@@ -158,47 +157,13 @@ class PagosIntegrationTest {
 
         String uuidCronograma = objectMapper.readTree(getResponse).get("uuidCronograma").asText();
 
-        // 3. Agregar cuotas
-        var pago1 = new PagoRequest(1, new BigDecimal("20000.00"), LocalDate.now().plusMonths(1));
-        var pago2 = new PagoRequest(2, new BigDecimal("20000.00"), LocalDate.now().plusMonths(2));
-        var pago3 = new PagoRequest(3, new BigDecimal("20000.00"), LocalDate.now().plusMonths(3));
-        var pago4 = new PagoRequest(4, new BigDecimal("20000.00"), LocalDate.now().plusMonths(4));
-
-        mockMvc.perform(post("/api/cronogramas/{uuidCronograma}/pagos", uuidCronograma)
-                        .with(securityContext(contextWithAuth()))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(pago1)))
-                .andExpect(status().isCreated());
-
-        mockMvc.perform(post("/api/cronogramas/{uuidCronograma}/pagos", uuidCronograma)
-                        .with(securityContext(contextWithAuth()))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(pago2)))
-                .andExpect(status().isCreated());
-
-        mockMvc.perform(post("/api/cronogramas/{uuidCronograma}/pagos", uuidCronograma)
-                        .with(securityContext(contextWithAuth()))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(pago3)))
-                .andExpect(status().isCreated());
-
-        mockMvc.perform(post("/api/cronogramas/{uuidCronograma}/pagos", uuidCronograma)
-                        .with(securityContext(contextWithAuth()))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(pago4)))
-                .andExpect(status().isCreated());
-
-        // 4. Listar pagos del cronograma
+        // 3. Verificar pagos auto-generados (SEPARACION, INICIAL + 4 cuotas)
         mockMvc.perform(get("/api/cronogramas/{uuidCronograma}/pagos", uuidCronograma)
                         .with(securityContext(contextWithAuth())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(4));
+                .andExpect(jsonPath("$.length()").value(6));
 
-        // 5. Obtener resumen (todo pendiente, al dia)
+        // 4. Obtener resumen (todo pendiente, al dia)
         mockMvc.perform(get("/api/cronogramas/{uuidCronograma}/resumen", uuidCronograma)
                         .with(securityContext(contextWithAuth())))
                 .andExpect(status().isOk())
@@ -206,20 +171,20 @@ class PagosIntegrationTest {
                 .andExpect(jsonPath("$.totalPagado").value(0.00))
                 .andExpect(jsonPath("$.totalPendiente").value(100000.00))
                 .andExpect(jsonPath("$.cuotasPagadas").value(0))
-                .andExpect(jsonPath("$.cuotasPendientes").value(4))
+                .andExpect(jsonPath("$.cuotasPendientes").value(6))
                 .andExpect(jsonPath("$.estadoGlobal").value("AL_DIA"));
 
-        // 6. Verificar en BD
+        // 5. Verificar en BD
         CronogramaPago cp = cronogramaPagoRepository.findById(UUID.fromString(uuidCronograma)).orElseThrow();
         assertThat(cp.getTotalPactado()).isEqualByComparingTo(new BigDecimal("100000.00"));
-        assertThat(pagoRepository.countByCronograma_IdAndEstado(cp.getId(), "PENDIENTE")).isEqualTo(4);
+        assertThat(pagoRepository.countByCronograma_IdAndEstado(cp.getId(), "PENDIENTE")).isEqualTo(6);
     }
 
     @Test
     void crearCronogramaDuplicado_devuelve409() throws Exception {
         var request = new CronogramaPagoRequest(
-                uuidExpediente, new BigDecimal("100000.00"), null, 4,
-                BigDecimal.ZERO, BigDecimal.ZERO);
+                uuidExpediente, new BigDecimal("100000.00"),
+                4, BigDecimal.ZERO, BigDecimal.ZERO);
 
         mockMvc.perform(post("/api/cronogramas")
                         .with(securityContext(contextWithAuth()))
@@ -233,15 +198,15 @@ class PagosIntegrationTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").exists());
     }
 
     @Test
-    void agregarCuotaDuplicada_devuelve400() throws Exception {
+    void agregarCuotaDuplicada_devuelve409() throws Exception {
         var cronogramaRequest = new CronogramaPagoRequest(
-                uuidExpediente, new BigDecimal("100000.00"), null, 4,
-                BigDecimal.ZERO, BigDecimal.ZERO);
+                uuidExpediente, new BigDecimal("100000.00"),
+                4, BigDecimal.ZERO, BigDecimal.ZERO);
 
         String response = mockMvc.perform(post("/api/cronogramas")
                         .with(securityContext(contextWithAuth()))
@@ -253,7 +218,7 @@ class PagosIntegrationTest {
 
         String uuidCp = objectMapper.readTree(response).get("uuidCronograma").asText();
 
-        var pagoReq = new PagoRequest(1, new BigDecimal("25000.00"), LocalDate.now().plusMonths(1));
+        var pagoReq = new PagoRequest(5, new BigDecimal("25000.00"), LocalDate.now().plusMonths(1), ConceptoPago.CUOTA, null);
 
         mockMvc.perform(post("/api/cronogramas/{uuidCronograma}/pagos", uuidCp)
                         .with(securityContext(contextWithAuth()))
@@ -267,7 +232,7 @@ class PagosIntegrationTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagoReq)))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").exists());
     }
 

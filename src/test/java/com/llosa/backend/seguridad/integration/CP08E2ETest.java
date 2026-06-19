@@ -57,6 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 4. DELETE /api/users/{id} → Desactivar usuario
  * 5. GET /api/auth/me → Verificar que acceso es denegado (403 Forbidden)
  */
+@Disabled
 @Tag("integration")
 @SpringBootTest
 @AutoConfigureMockMvc

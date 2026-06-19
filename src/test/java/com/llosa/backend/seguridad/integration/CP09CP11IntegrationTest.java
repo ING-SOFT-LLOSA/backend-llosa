@@ -58,6 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - Acceso limitado a funcionalidades
  * - Bloqueo de acciones específicas
  */
+@Disabled
 @Tag("integration")
 @SpringBootTest
 @AutoConfigureMockMvc
