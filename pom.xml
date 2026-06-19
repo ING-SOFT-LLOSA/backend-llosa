@@ -23,6 +23,7 @@
 		<sonar.projectKey>llosa-backend</sonar.projectKey>
 		<sonar.projectName>Llosa Edificaciones Backend</sonar.projectName>
 		<sonar.projectVersion>1.0.0</sonar.projectVersion>
+		<test.excludedGroups>stress,integration</test.excludedGroups>
 	</properties>
 	<dependencies>
 		<!-- Spring Web MVC -->
@@ -247,11 +248,12 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<argLine>
+						@{argLine}
 						-javaagent:${org.mockito:mockito-core:jar}
 						-XX:+EnableDynamicAgentLoading
 						-Djdk.attach.allowAttachSelf=true
 					</argLine>
-					<excludedGroups>stress</excludedGroups>
+					<excludedGroups>${test.excludedGroups}</excludedGroups>
 					<systemPropertyVariables>
 						<api.version>1.41</api.version>
 					</systemPropertyVariables>
