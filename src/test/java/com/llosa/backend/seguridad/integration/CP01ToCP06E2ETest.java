@@ -131,33 +131,31 @@ class CP01ToCP06E2ETest {
     //   Esperado (PDF): sistema RECHAZA el acceso (denegado) para un EMPLEADO
     //   cuyo correo no termina en @dominio-corporativo.
     // ──────────────────────────────────────────────────────────────────────────
-    @org.junit.jupiter.api.Disabled("DEFECTO reportado en Mantis: el login no valida el dominio "
-            + "corporativo (acepta @gmail). Test deshabilitado para no bloquear el pipeline; "
-            + "REACTIVAR cuando se reactive la validacion en AuthService.")
     @Test
     @CP(value = "CP02",
         scenario = "Empleado con correo NO corporativo (@gmail) es rechazado",
-        input = "correo=usuario@gmail.com, tipoUsuario=EMPLEADO",
-        expected = "GET /api/auth/me => acceso denegado (4xx)",
+        input = "POST /api/usuarios con correo=usuario@gmail.com, tipoUsuario=EMPLEADO",
+        expected = "registro rechazado (4xx): el correo debe ser del dominio corporativo",
         type = CP.TestType.E2E)
     void cp02_correoNoCorporativo_esRechazado() throws Exception {
-        String email = "usuario@gmail.com";
-        String firebaseUid = "cp02-no-corporativo-uid";
+        // CP02: al registrar un EMPLEADO con correo fuera del dominio corporativo,
+        // el sistema debe RECHAZAR el alta. El arreglo (issue Mantis 0000116) valida
+        // el dominio en UsuarioService.crear(), por lo que el test apunta al endpoint
+        // de creacion de usuario (no al login, donde no esta la validacion).
+        String body = """
+                {
+                  "nombre": "Externo",
+                  "apellidos": "Prueba",
+                  "email": "usuario@gmail.com",
+                  "tipoUsuario": "EMPLEADO"
+                }
+                """;
 
-        Usuario empleado = new Usuario();
-        empleado.setNombre("Externo");
-        empleado.setEmail(email);
-        empleado.setTipoUsuario("EMPLEADO");
-        empleado.setFirebaseUuid(firebaseUid);
-        empleado.setActivo(true);
-        usuarioRepository.save(empleado);
-
-        FirebaseAuthenticationToken token = new FirebaseAuthenticationToken(
-                firebaseUid, email, List.of(new SimpleGrantedAuthority("ROLE_USER")));
-
-        // CP02 exige RECHAZO: el sistema NO debe conceder acceso a dominios externos.
-        mockMvc.perform(get("/api/auth/me")
-                        .with(securityContext(contextWithAuth(token))))
+        mockMvc.perform(post("/api/users/register")
+                        .with(securityContext(contextWithAuth(adminAuth())))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().is4xxClientError());
     }
 
