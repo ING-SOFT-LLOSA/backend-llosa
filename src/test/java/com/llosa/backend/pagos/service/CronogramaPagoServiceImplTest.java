@@ -3,12 +3,14 @@ package com.llosa.backend.pagos.service;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
 import com.llosa.backend.config.TestDataPagos;
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.EstadoInvalidoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.factory.PagoFlujoFactory;
 import com.llosa.backend.pagos.ConceptoPago;
 import com.llosa.backend.pagos.EstadoGlobalPago;
+import com.llosa.backend.pagos.dto.CronogramaPagoRequest;
 import com.llosa.backend.pagos.dto.CronogramaPagoResponse;
 import com.llosa.backend.pagos.dto.ResumenResponse;
 import com.llosa.backend.pagos.dto.ResumenResponseHipotecarioDTO;
@@ -448,5 +450,50 @@ class CronogramaPagoServiceImplTest {
         assertThat(result.totalPagado()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(result.saldoPendiente()).isEqualByComparingTo(new BigDecimal("300000.00"));
         assertThat(result.estadoGlobal()).isEqualTo(EstadoGlobalPago.RETRASADO);
+    }
+
+    @Test
+    void crear_montosExcedenTotal_lanzaBusinessException() {
+        var request = new CronogramaPagoRequest(
+                UUID.randomUUID(),
+                new BigDecimal("100000.00"),
+                12,
+                new BigDecimal("60000.00"),
+                new BigDecimal("50000.00"));
+
+        when(cronogramaPagoRepository.existsByUsuarioActivo_UuidUsuarioActivo(request.uuidUsuarioActivo()))
+                .thenReturn(false);
+        var ua = UsuarioActivo.builder().uuidUsuarioActivo(request.uuidUsuarioActivo()).build();
+        when(usuarioActivoRepository.findById(request.uuidUsuarioActivo()))
+                .thenReturn(Optional.of(ua));
+
+        assertThatThrownBy(() -> cronogramaPagoService.crear(request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("no puede exceder el total pactado");
+
+        verify(cronogramaPagoRepository, never()).save(any());
+    }
+
+    @Test
+    void actualizar_montosExcedenTotal_lanzaBusinessException() {
+        UUID uuidCp = UUID.randomUUID();
+        var request = new CronogramaPagoRequest(
+                UUID.randomUUID(),
+                new BigDecimal("100000.00"),
+                12,
+                new BigDecimal("60000.00"),
+                new BigDecimal("50000.00"));
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .estado(CronogramaPago.ESTADO_ACTIVO)
+                .build();
+
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
+
+        assertThatThrownBy(() -> cronogramaPagoService.actualizar(uuidCp, request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("no puede exceder el total pactado");
+
+        verify(cronogramaPagoRepository, never()).save(any());
     }
 }

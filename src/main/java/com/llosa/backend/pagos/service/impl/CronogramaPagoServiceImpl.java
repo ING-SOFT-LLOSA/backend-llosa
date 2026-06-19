@@ -5,6 +5,7 @@ import com.llosa.backend.comercial.entity.RequisitoDocumental;
 import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.EstadoInvalidoException;
 import com.llosa.backend.pagos.ConceptoPago;
@@ -56,6 +57,8 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
         UsuarioActivo ua = usuarioActivoRepository.findById(request.uuidUsuarioActivo())
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Expediente no encontrado: " + request.uuidUsuarioActivo()));
+
+        validarConsistenciaMontos(request);
 
         CronogramaPago cronograma = CronogramaPago.builder()
                 .usuarioActivo(ua)
@@ -123,6 +126,8 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
             throw new EstadoInvalidoException(
                     "No se puede modificar un cronograma en estado HISTORICO");
         }
+
+        validarConsistenciaMontos(request);
 
         cp.setTotalPactado(request.totalPactado());
         cp.setNumeroCuotas(request.numeroCuotas());
@@ -267,5 +272,14 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
             }
         }
         return false;
+    }
+
+    private void validarConsistenciaMontos(CronogramaPagoRequest request) {
+        BigDecimal separacion = request.pagoSeparacion() != null ? request.pagoSeparacion() : BigDecimal.ZERO;
+        BigDecimal inicial = request.pagoInicial() != null ? request.pagoInicial() : BigDecimal.ZERO;
+        if (separacion.add(inicial).compareTo(request.totalPactado()) > 0) {
+            throw new BusinessException(
+                    "La suma del pago de separación e inicial no puede exceder el total pactado");
+        }
     }
 }
