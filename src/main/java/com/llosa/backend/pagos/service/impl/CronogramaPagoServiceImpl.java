@@ -1,11 +1,17 @@
 package com.llosa.backend.pagos.service.impl;
 
+import com.llosa.backend.agenda.dto.request.CrearCitaRequest;
+import com.llosa.backend.agenda.dto.response.CitaResponse;
+import com.llosa.backend.agenda.enums.TipoEvento;
+import com.llosa.backend.agenda.service.AgendaService;
 import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.comercial.entity.RequisitoDocumental;
 import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EntidadDuplicadaException;
+import com.llosa.backend.exception.EstadoInvalidoException;
 import com.llosa.backend.pagos.ConceptoPago;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.factory.PagoFlujoFactory;
@@ -19,8 +25,10 @@ import com.llosa.backend.pagos.entity.Pago;
 import com.llosa.backend.pagos.repository.CronogramaPagoRepository;
 import com.llosa.backend.pagos.repository.PagoRepository;
 import com.llosa.backend.pagos.service.CronogramaPagoService;
+import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
+import com.llosa.backend.seguridad.entity.Usuario;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,6 +52,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     private final PagoFlujoFactory pagoFlujoFactory;
     private final EtapaExpedienteRepository etapaExpedienteRepository;
     private final RequisitoDocumentalRepository requisitoDocumentalRepository;
+    private final AgendaService agendaService;
 
     @Override
     @Transactional
@@ -56,13 +65,15 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Expediente no encontrado: " + request.uuidUsuarioActivo()));
 
+        validarConsistenciaMontos(request);
+
         CronogramaPago cronograma = CronogramaPago.builder()
                 .usuarioActivo(ua)
                 .totalPactado(request.totalPactado())
                 .numeroCuotas(request.numeroCuotas())
                 .pagoInicial(request.pagoInicial() != null ? request.pagoInicial() : BigDecimal.ZERO)
                 .pagoSeparacion(request.pagoSeparacion() != null ? request.pagoSeparacion() : BigDecimal.ZERO)
-                .estado("ACTIVO")
+                .estado(CronogramaPago.ESTADO_ACTIVO)
                 .build();
 
         CronogramaPago guardado = cronogramaPagoRepository.save(cronograma);
@@ -87,7 +98,40 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
             }
         }
 
-        pagoRepository.saveAll(pagos);
+        List<Pago> pagosGuardados = pagoRepository.saveAll(pagos);
+
+        // Crear recordatorios de calendario para cuotas futuras
+        Usuario gestor = ua.getAsesor();
+        Usuario cliente = ua.getClientes().isEmpty() ? null : ua.getClientes().get(0);
+        Activo activo = ua.getActivos().isEmpty() ? null : ua.getActivos().get(0);
+
+        for (Pago pago : pagosGuardados) {
+            if (pago.getConcepto() != ConceptoPago.CUOTA) continue;
+            if (pago.getFechaVencimiento().isBefore(LocalDate.now())) continue;
+            if (cliente == null || activo == null) {
+                log.warn("[Cronograma] No se pudo crear recordatorio de pago para cuota {}: faltan cliente o activo",
+                        pago.getNroCuota());
+                continue;
+            }
+
+            CrearCitaRequest citaReq = new CrearCitaRequest(
+                    cliente.getId(),
+                    activo.getId(),
+                    TipoEvento.RECORDATORIO_PAGO,
+                    "Vencimiento de cuota N° " + pago.getNroCuota(),
+                    null,
+                    null,
+                    pago.getFechaVencimiento().atTime(10, 0),
+                    pago.getFechaVencimiento().atTime(11, 0),
+                    false,
+                    false
+            );
+
+            CitaResponse citaResponse = agendaService.crearCita(gestor.getFirebaseUuid(), citaReq);
+            pago.setUuidCita(citaResponse.id());
+        }
+
+        pagoRepository.saveAll(pagosGuardados);
         log.info("Cronograma creado: {} para expediente: {} con {} pagos generados",
                 guardado.getId(), request.uuidUsuarioActivo(), pagos.size());
         return CronogramaPagoResponse.fromEntity(guardado);
@@ -118,6 +162,13 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Cronograma no encontrado: " + uuidCronograma));
 
+        if (CronogramaPago.ESTADO_HISTORICO.equals(cp.getEstado())) {
+            throw new EstadoInvalidoException(
+                    "No se puede modificar un cronograma en estado HISTORICO");
+        }
+
+        validarConsistenciaMontos(request);
+
         cp.setTotalPactado(request.totalPactado());
         cp.setNumeroCuotas(request.numeroCuotas());
         cp.setPagoInicial(request.pagoInicial() != null ? request.pagoInicial() : BigDecimal.ZERO);
@@ -138,9 +189,15 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     @Override
     @Transactional
     public void eliminar(UUID uuidCronograma) {
-        if (!cronogramaPagoRepository.existsById(uuidCronograma)) {
-            throw new RecursoNoEncontradoException("Cronograma no encontrado: " + uuidCronograma);
+        CronogramaPago cp = cronogramaPagoRepository.findById(uuidCronograma)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Cronograma no encontrado: " + uuidCronograma));
+
+        if (CronogramaPago.ESTADO_HISTORICO.equals(cp.getEstado())) {
+            throw new EstadoInvalidoException(
+                    "No se puede eliminar un cronograma en estado HISTORICO");
         }
+
         cronogramaPagoRepository.deleteById(uuidCronograma);
         log.info("Cronograma eliminado: {}", uuidCronograma);
     }
@@ -153,13 +210,25 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
                         "Cronograma no encontrado: " + uuidCronograma));
 
         BigDecimal montoTotal = cp.getTotalPactado();
-        BigDecimal pagoSeparacion = cp.getPagoSeparacion() != null ? cp.getPagoSeparacion() : BigDecimal.ZERO;
-        BigDecimal pagoInicial = cp.getPagoInicial() != null ? cp.getPagoInicial() : BigDecimal.ZERO;
-        BigDecimal totalPagado = pagoSeparacion.add(pagoInicial);
+
+        BigDecimal montoSeparacionPagado = pagoRepository
+                .findByCronograma_IdAndConcepto(uuidCronograma, ConceptoPago.SEPARACION)
+                .filter(p -> "PAGADO".equals(p.getEstado()))
+                .map(p -> p.getMontoPagado() != null ? p.getMontoPagado() : BigDecimal.ZERO)
+                .orElse(BigDecimal.ZERO);
+
+        BigDecimal montoInicialPagado = pagoRepository
+                .findByCronograma_IdAndConcepto(uuidCronograma, ConceptoPago.INICIAL)
+                .filter(p -> "PAGADO".equals(p.getEstado()))
+                .map(p -> p.getMontoPagado() != null ? p.getMontoPagado() : BigDecimal.ZERO)
+                .orElse(BigDecimal.ZERO);
+
+        BigDecimal totalPagado = montoSeparacionPagado.add(montoInicialPagado);
         BigDecimal saldoPendiente = montoTotal.subtract(totalPagado);
 
         EstadoGlobalPago estadoGlobal;
-        if (pagoSeparacion.signum() > 0 && pagoInicial.signum() > 0) {
+        if (montoSeparacionPagado.compareTo(BigDecimal.ZERO) > 0
+                && montoInicialPagado.compareTo(BigDecimal.ZERO) > 0) {
             estadoGlobal = EstadoGlobalPago.AL_DIA;
         } else {
             estadoGlobal = EstadoGlobalPago.RETRASADO;
@@ -243,5 +312,14 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
             }
         }
         return false;
+    }
+
+    private void validarConsistenciaMontos(CronogramaPagoRequest request) {
+        BigDecimal separacion = request.pagoSeparacion() != null ? request.pagoSeparacion() : BigDecimal.ZERO;
+        BigDecimal inicial = request.pagoInicial() != null ? request.pagoInicial() : BigDecimal.ZERO;
+        if (separacion.add(inicial).compareTo(request.totalPactado()) > 0) {
+            throw new BusinessException(
+                    "La suma del pago de separación e inicial no puede exceder el total pactado");
+        }
     }
 }

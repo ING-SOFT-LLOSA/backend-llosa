@@ -22,6 +22,7 @@ public record PagoResponse(
         ConceptoPago concepto,
         String comentario,
         UUID uuidRequisitoDocumental,
+        UUID uuidCita,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -40,6 +41,7 @@ public record PagoResponse(
                 pago.getConcepto(),
                 pago.getComentario(),
                 pago.getUuidRequisitoDocumental(),
+                pago.getUuidCita(),
                 pago.getCreatedAt(),
                 pago.getUpdatedAt()
         );

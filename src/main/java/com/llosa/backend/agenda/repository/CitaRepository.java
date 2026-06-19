@@ -3,6 +3,7 @@ package com.llosa.backend.agenda.repository;
 import com.llosa.backend.agenda.entity.Cita;
 import com.llosa.backend.agenda.enums.EstadoCita;
 import com.llosa.backend.agenda.enums.EstadoSincronizacion;
+import com.llosa.backend.agenda.enums.TipoEvento;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -54,6 +55,10 @@ public interface CitaRepository extends JpaRepository<Cita, UUID> {
     /** Citas pendientes de sincronizar con Google Calendar (para el worker de reintentos). */
     List<Cita> findByEstadoSincronizacionAndClienteUsaGoogle(
             EstadoSincronizacion estado, Boolean clienteUsaGoogle);
+
+    /** Citas de recordatorio de pago pendientes de sincronizar. */
+    List<Cita> findByEstadoSincronizacionAndTipoEvento(
+            EstadoSincronizacion estado, TipoEvento tipoEvento);
 
     /** Verifica si ya existe una cita en ese rango para el gestor (evita solapamientos). */
     @Query("""

@@ -9,6 +9,9 @@ import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.HitoProcesoCompraRepository;
 import com.llosa.backend.comercial.service.impl.HitoComercialServiceImpl;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
+import com.llosa.backend.pagos.entity.CronogramaPago;
+import com.llosa.backend.pagos.repository.CronogramaPagoRepository;
+import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +34,7 @@ class HitoComercialServiceImplTest {
     @Mock HitoProcesoCompraRepository hitoRepository;
     @Mock EtapaExpedienteRepository etapaExpedienteRepository;
     @Mock UsuarioActivoRepository usuarioActivoRepository;
+    @Mock CronogramaPagoRepository cronogramaPagoRepository;
 
     @InjectMocks HitoComercialServiceImpl hitoComercialService;
 
@@ -42,6 +46,7 @@ class HitoComercialServiceImplTest {
         return EtapaExpediente.builder()
                 .uuidEtapaExpediente(uuidEtapa)
                 .etapaProceso(EtapaProceso.SEPARACION)
+                .usuarioActivo(UsuarioActivo.builder().uuidUsuarioActivo(uuidUa).build())
                 .build();
     }
 
@@ -178,6 +183,69 @@ class HitoComercialServiceImplTest {
 
         assertThat(result.estado()).isEqualTo(EstadoHitoComercial.PENDIENTE);
         assertThat(result.fechaCompletado()).isNull();
+    }
+
+    @Test
+    void actualizarEstado_inmuebleCancelado_marcaCronogramaComoHistorico() {
+        var hito = HitoProcesoCompra.builder()
+                .uuidHitoComercial(uuidHito)
+                .etapaExpediente(buildEtapa())
+                .nombreHito("Inmueble cancelado")
+                .orden(2)
+                .estado(EstadoHitoComercial.PENDIENTE)
+                .build();
+        var hitoAnterior = HitoProcesoCompra.builder()
+                .uuidHitoComercial(UUID.randomUUID())
+                .etapaExpediente(buildEtapa())
+                .nombreHito("Inmueble terminado")
+                .orden(1)
+                .estado(EstadoHitoComercial.COMPLETADO)
+                .build();
+        var cp = CronogramaPago.builder()
+                .id(UUID.randomUUID())
+                .estado(CronogramaPago.ESTADO_ACTIVO)
+                .build();
+
+        when(hitoRepository.findById(uuidHito)).thenReturn(Optional.of(hito));
+        when(hitoRepository.findByEtapaExpediente_UuidEtapaExpedienteAndOrden(uuidEtapa, 1))
+                .thenReturn(Optional.of(hitoAnterior));
+        when(cronogramaPagoRepository.findByUsuarioActivo_UuidUsuarioActivo(uuidUa))
+                .thenReturn(Optional.of(cp));
+        when(cronogramaPagoRepository.save(any())).thenReturn(cp);
+        when(hitoRepository.save(any())).thenReturn(hito);
+
+        var result = hitoComercialService.actualizarEstado(uuidHito, EstadoHitoComercial.COMPLETADO);
+
+        assertThat(result.estado()).isEqualTo(EstadoHitoComercial.COMPLETADO);
+        verify(cronogramaPagoRepository).save(argThat(c ->
+                CronogramaPago.ESTADO_HISTORICO.equals(c.getEstado())));
+    }
+
+    @Test
+    void actualizarEstado_otroHito_noMarcaCronogramaHistorico() {
+        var hito = HitoProcesoCompra.builder()
+                .uuidHitoComercial(uuidHito)
+                .etapaExpediente(buildEtapa())
+                .nombreHito("Otro hito")
+                .orden(2)
+                .estado(EstadoHitoComercial.PENDIENTE)
+                .build();
+        var hitoAnterior = HitoProcesoCompra.builder()
+                .uuidHitoComercial(UUID.randomUUID())
+                .etapaExpediente(buildEtapa())
+                .nombreHito("Hito anterior")
+                .orden(1)
+                .estado(EstadoHitoComercial.COMPLETADO)
+                .build();
+
+        when(hitoRepository.findById(uuidHito)).thenReturn(Optional.of(hito));
+        when(hitoRepository.findByEtapaExpediente_UuidEtapaExpedienteAndOrden(uuidEtapa, 1))
+                .thenReturn(Optional.of(hitoAnterior));
+        when(hitoRepository.save(any())).thenReturn(hito);
+
+        hitoComercialService.actualizarEstado(uuidHito, EstadoHitoComercial.COMPLETADO);
+
+        verify(cronogramaPagoRepository, never()).save(any());
     }
 
     @Test

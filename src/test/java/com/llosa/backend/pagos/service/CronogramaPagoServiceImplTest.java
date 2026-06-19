@@ -3,11 +3,17 @@ package com.llosa.backend.pagos.service;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
 import com.llosa.backend.config.TestDataPagos;
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EntidadDuplicadaException;
+import com.llosa.backend.exception.EstadoInvalidoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.factory.PagoFlujoFactory;
+import com.llosa.backend.pagos.ConceptoPago;
+import com.llosa.backend.pagos.EstadoGlobalPago;
+import com.llosa.backend.pagos.dto.CronogramaPagoRequest;
 import com.llosa.backend.pagos.dto.CronogramaPagoResponse;
 import com.llosa.backend.pagos.dto.ResumenResponse;
+import com.llosa.backend.pagos.dto.ResumenResponseHipotecarioDTO;
 import com.llosa.backend.pagos.entity.CronogramaPago;
 import com.llosa.backend.pagos.entity.Pago;
 import com.llosa.backend.pagos.repository.CronogramaPagoRepository;
@@ -168,9 +174,33 @@ class CronogramaPagoServiceImplTest {
     }
 
     @Test
+    void actualizar_historico_lanzaEstadoInvalidoException() {
+        UUID uuidCp = UUID.randomUUID();
+        var request = TestDataPagos.crearCronogramaRequest();
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .usuarioActivo(UsuarioActivo.builder().uuidUsuarioActivo(request.uuidUsuarioActivo()).build())
+                .totalPactado(new BigDecimal("100000.00"))
+                .estado(CronogramaPago.ESTADO_HISTORICO)
+                .build();
+
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
+
+        assertThatThrownBy(() -> cronogramaPagoService.actualizar(uuidCp, request))
+                .isInstanceOf(EstadoInvalidoException.class)
+                .hasMessageContaining("HISTORICO");
+
+        verify(cronogramaPagoRepository, never()).save(any());
+    }
+
+    @Test
     void eliminar_exitoso() {
         UUID uuidCp = UUID.randomUUID();
-        when(cronogramaPagoRepository.existsById(uuidCp)).thenReturn(true);
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .estado(CronogramaPago.ESTADO_ACTIVO)
+                .build();
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
 
         cronogramaPagoService.eliminar(uuidCp);
 
@@ -180,11 +210,27 @@ class CronogramaPagoServiceImplTest {
     @Test
     void eliminar_noExiste_lanzaRecursoNoEncontrado() {
         UUID uuidCp = UUID.randomUUID();
-        when(cronogramaPagoRepository.existsById(uuidCp)).thenReturn(false);
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> cronogramaPagoService.eliminar(uuidCp))
                 .isInstanceOf(RecursoNoEncontradoException.class)
                 .hasMessageContaining("Cronograma no encontrado");
+
+        verify(cronogramaPagoRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void eliminar_historico_lanzaEstadoInvalidoException() {
+        UUID uuidCp = UUID.randomUUID();
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .estado(CronogramaPago.ESTADO_HISTORICO)
+                .build();
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
+
+        assertThatThrownBy(() -> cronogramaPagoService.eliminar(uuidCp))
+                .isInstanceOf(EstadoInvalidoException.class)
+                .hasMessageContaining("HISTORICO");
 
         verify(cronogramaPagoRepository, never()).deleteById(any());
     }
@@ -302,5 +348,152 @@ class CronogramaPagoServiceImplTest {
         assertThatThrownBy(() -> cronogramaPagoService.obtenerResumen(uuidCp))
                 .isInstanceOf(RecursoNoEncontradoException.class)
                 .hasMessageContaining("Cronograma no encontrado");
+    }
+
+    @Test
+    void obtenerResumenHipotecario_ambosPagados_devuelveAL_DIA() {
+        UUID uuidCp = UUID.randomUUID();
+        var ua = UsuarioActivo.builder().uuidUsuarioActivo(UUID.randomUUID()).build();
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .usuarioActivo(ua)
+                .totalPactado(new BigDecimal("300000.00"))
+                .pagoSeparacion(new BigDecimal("5000.00"))
+                .pagoInicial(new BigDecimal("45000.00"))
+                .estado(CronogramaPago.ESTADO_ACTIVO)
+                .build();
+        var pagoSep = Pago.builder()
+                .concepto(ConceptoPago.SEPARACION)
+                .montoProgramado(new BigDecimal("5000.00"))
+                .montoPagado(new BigDecimal("5000.00"))
+                .estado("PAGADO")
+                .build();
+        var pagoIni = Pago.builder()
+                .concepto(ConceptoPago.INICIAL)
+                .montoProgramado(new BigDecimal("45000.00"))
+                .montoPagado(new BigDecimal("45000.00"))
+                .estado("PAGADO")
+                .build();
+
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, ConceptoPago.SEPARACION))
+                .thenReturn(Optional.of(pagoSep));
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, ConceptoPago.INICIAL))
+                .thenReturn(Optional.of(pagoIni));
+
+        ResumenResponseHipotecarioDTO result = cronogramaPagoService.obtenerResumenHipotecario(uuidCp);
+
+        assertThat(result.montoTotal()).isEqualByComparingTo(new BigDecimal("300000.00"));
+        assertThat(result.totalPagado()).isEqualByComparingTo(new BigDecimal("50000.00"));
+        assertThat(result.saldoPendiente()).isEqualByComparingTo(new BigDecimal("250000.00"));
+        assertThat(result.estadoGlobal()).isEqualTo(EstadoGlobalPago.AL_DIA);
+    }
+
+    @Test
+    void obtenerResumenHipotecario_separacionPendiente_devuelveRETRASADO() {
+        UUID uuidCp = UUID.randomUUID();
+        var ua = UsuarioActivo.builder().uuidUsuarioActivo(UUID.randomUUID()).build();
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .usuarioActivo(ua)
+                .totalPactado(new BigDecimal("300000.00"))
+                .pagoSeparacion(new BigDecimal("5000.00"))
+                .pagoInicial(new BigDecimal("45000.00"))
+                .estado(CronogramaPago.ESTADO_ACTIVO)
+                .build();
+        var pagoSep = Pago.builder()
+                .concepto(ConceptoPago.SEPARACION)
+                .montoProgramado(new BigDecimal("5000.00"))
+                .montoPagado(BigDecimal.ZERO)
+                .estado("PENDIENTE")
+                .build();
+        var pagoIni = Pago.builder()
+                .concepto(ConceptoPago.INICIAL)
+                .montoProgramado(new BigDecimal("45000.00"))
+                .montoPagado(new BigDecimal("45000.00"))
+                .estado("PAGADO")
+                .build();
+
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, ConceptoPago.SEPARACION))
+                .thenReturn(Optional.of(pagoSep));
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, ConceptoPago.INICIAL))
+                .thenReturn(Optional.of(pagoIni));
+
+        ResumenResponseHipotecarioDTO result = cronogramaPagoService.obtenerResumenHipotecario(uuidCp);
+
+        assertThat(result.totalPagado()).isEqualByComparingTo(new BigDecimal("45000.00"));
+        assertThat(result.estadoGlobal()).isEqualTo(EstadoGlobalPago.RETRASADO);
+    }
+
+    @Test
+    void obtenerResumenHipotecario_ningunPago_devuelveCeroPagado() {
+        UUID uuidCp = UUID.randomUUID();
+        var ua = UsuarioActivo.builder().uuidUsuarioActivo(UUID.randomUUID()).build();
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .usuarioActivo(ua)
+                .totalPactado(new BigDecimal("300000.00"))
+                .pagoSeparacion(new BigDecimal("5000.00"))
+                .pagoInicial(new BigDecimal("45000.00"))
+                .estado(CronogramaPago.ESTADO_ACTIVO)
+                .build();
+
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, ConceptoPago.SEPARACION))
+                .thenReturn(Optional.empty());
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, ConceptoPago.INICIAL))
+                .thenReturn(Optional.empty());
+
+        ResumenResponseHipotecarioDTO result = cronogramaPagoService.obtenerResumenHipotecario(uuidCp);
+
+        assertThat(result.totalPagado()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(result.saldoPendiente()).isEqualByComparingTo(new BigDecimal("300000.00"));
+        assertThat(result.estadoGlobal()).isEqualTo(EstadoGlobalPago.RETRASADO);
+    }
+
+    @Test
+    void crear_montosExcedenTotal_lanzaBusinessException() {
+        var request = new CronogramaPagoRequest(
+                UUID.randomUUID(),
+                new BigDecimal("100000.00"),
+                12,
+                new BigDecimal("60000.00"),
+                new BigDecimal("50000.00"));
+
+        when(cronogramaPagoRepository.existsByUsuarioActivo_UuidUsuarioActivo(request.uuidUsuarioActivo()))
+                .thenReturn(false);
+        var ua = UsuarioActivo.builder().uuidUsuarioActivo(request.uuidUsuarioActivo()).build();
+        when(usuarioActivoRepository.findById(request.uuidUsuarioActivo()))
+                .thenReturn(Optional.of(ua));
+
+        assertThatThrownBy(() -> cronogramaPagoService.crear(request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("no puede exceder el total pactado");
+
+        verify(cronogramaPagoRepository, never()).save(any());
+    }
+
+    @Test
+    void actualizar_montosExcedenTotal_lanzaBusinessException() {
+        UUID uuidCp = UUID.randomUUID();
+        var request = new CronogramaPagoRequest(
+                UUID.randomUUID(),
+                new BigDecimal("100000.00"),
+                12,
+                new BigDecimal("60000.00"),
+                new BigDecimal("50000.00"));
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .estado(CronogramaPago.ESTADO_ACTIVO)
+                .build();
+
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
+
+        assertThatThrownBy(() -> cronogramaPagoService.actualizar(uuidCp, request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("no puede exceder el total pactado");
+
+        verify(cronogramaPagoRepository, never()).save(any());
     }
 }

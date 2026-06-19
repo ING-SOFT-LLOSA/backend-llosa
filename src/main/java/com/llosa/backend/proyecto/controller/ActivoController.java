@@ -72,6 +72,7 @@ public class ActivoController {
         activoExistente.setNro(activoDTO.nro());
         activoExistente.setTipo(activoDTO.tipo());
         activoExistente.setAreaM2(activoDTO.areaM2());
+        activoExistente.setAreaTechada(activoDTO.areaTechada());
         activoExistente.setEstadoComercial(activoDTO.estadoComercial());
         activoExistente.setPrecio(activoDTO.precio());
         activoExistente.setDescripcion(activoDTO.descripcion());

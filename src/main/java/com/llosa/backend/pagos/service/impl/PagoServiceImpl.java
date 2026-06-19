@@ -1,5 +1,7 @@
 package com.llosa.backend.pagos.service.impl;
 
+import com.llosa.backend.agenda.dto.request.ActualizarCitaRequest;
+import com.llosa.backend.agenda.service.AgendaService;
 import com.llosa.backend.comercial.service.RequisitoDocumentalService;
 import com.llosa.backend.documentos.dto.DocumentoResponse;
 import com.llosa.backend.documentos.entity.Documento;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +41,7 @@ public class PagoServiceImpl implements PagoService {
     private final DocumentoService documentoService;
     private final DocumentoRepository documentoRepository;
     private final RequisitoDocumentalService requisitoDocumentalService;
+    private final AgendaService agendaService;
 
     @Override
     public List<PagoResponse> listarPorCronograma(UUID uuidCronograma) {
@@ -102,6 +106,8 @@ public class PagoServiceImpl implements PagoService {
             throw new EntidadDuplicadaException("Ya existe una cuota con el número " + request.nroCuota());
         }
 
+        LocalDate oldVencimiento = pago.getFechaVencimiento();
+
         pago.setNroCuota(request.nroCuota());
         pago.setMontoProgramado(request.montoProgramado());
         pago.setFechaVencimiento(request.fechaVencimiento());
@@ -125,6 +131,15 @@ public class PagoServiceImpl implements PagoService {
             cronogramaPagoRepository.save(cp);
         }
 
+        // Actualizar fecha de la cita vinculada si cambió la fecha de vencimiento
+        if (guardado.getUuidCita() != null && !guardado.getFechaVencimiento().equals(oldVencimiento)) {
+            agendaService.actualizarCita(guardado.getUuidCita(),
+                    new ActualizarCitaRequest(null, null, null,
+                            guardado.getFechaVencimiento().atTime(10, 0),
+                            guardado.getFechaVencimiento().atTime(11, 0),
+                            null, null, null));
+        }
+
         log.info("Cuota actualizada: {}", uuidPago);
         return PagoResponse.fromEntity(guardado);
     }
@@ -132,10 +147,21 @@ public class PagoServiceImpl implements PagoService {
     @Override
     @Transactional
     public void eliminarCuota(UUID uuidPago) {
-        if (!pagoRepository.existsById(uuidPago)) {
-            throw new RecursoNoEncontradoException("Pago no encontrado: " + uuidPago);
-        }
+        Pago pago = pagoRepository.findById(uuidPago)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Pago no encontrado: " + uuidPago));
+
+        UUID uuidCita = pago.getUuidCita();
         pagoRepository.deleteById(uuidPago);
+
+        if (uuidCita != null) {
+            try {
+                agendaService.cancelarCita(uuidCita, "Cuota eliminada del cronograma");
+            } catch (Exception e) {
+                log.warn("[Pago] No se pudo cancelar la cita {} vinculada al pago {}: {}",
+                        uuidCita, uuidPago, e.getMessage());
+            }
+        }
+
         log.info("Cuota eliminada: {}", uuidPago);
     }
 
