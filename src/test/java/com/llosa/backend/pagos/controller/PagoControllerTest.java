@@ -75,9 +75,9 @@ class PagoControllerTest {
         UUID uuidCp = UUID.randomUUID();
         var pagos = List.of(
                 new PagoResponse(UUID.randomUUID(), uuidCp, 1, new BigDecimal("25000.00"),
-                        LocalDate.now(), "PENDIENTE", BigDecimal.ZERO, null, null, null, null, null, null, null, null),
+                        LocalDate.now(), "PENDIENTE", BigDecimal.ZERO, null, null, null, null, null, null, null, null, null),
                 new PagoResponse(UUID.randomUUID(), uuidCp, 2, new BigDecimal("25000.00"),
-                        LocalDate.now(), "PAGADO", new BigDecimal("25000.00"), LocalDateTime.now(), null, null, null, null, null, null, null));
+                        LocalDate.now(), "PAGADO", new BigDecimal("25000.00"), LocalDateTime.now(), null, null, null, null, null, null, null, null));
 
         when(pagoService.listarPorCronograma(uuidCp)).thenReturn(pagos);
 
@@ -93,7 +93,7 @@ class PagoControllerTest {
         UUID uuidCp = UUID.randomUUID();
         var request = new PagoRequest(1, new BigDecimal("25000.00"), LocalDate.now().plusMonths(1), null, null);
         var response = new PagoResponse(UUID.randomUUID(), uuidCp, 1, request.montoProgramado(),
-                request.fechaVencimiento(), "PENDIENTE", BigDecimal.ZERO, null, null, null, null, null, null, null, null);
+                request.fechaVencimiento(), "PENDIENTE", BigDecimal.ZERO, null, null, null, null, null, null, null, null, null);
 
         when(pagoService.agregarCuota(eq(uuidCp), any(PagoRequest.class))).thenReturn(response);
 
@@ -122,7 +122,7 @@ class PagoControllerTest {
         UUID uuidPago = UUID.randomUUID();
         var request = new PagoRequest(2, new BigDecimal("30000.00"), LocalDate.now().plusMonths(2), null, null);
         var response = new PagoResponse(uuidPago, UUID.randomUUID(), 2, request.montoProgramado(),
-                request.fechaVencimiento(), "PENDIENTE", BigDecimal.ZERO, null, null, null, null, null, null, null, null);
+                request.fechaVencimiento(), "PENDIENTE", BigDecimal.ZERO, null, null, null, null, null, null, null, null, null);
 
         when(pagoService.actualizarCuota(eq(uuidPago), any(PagoRequest.class))).thenReturn(response);
 
@@ -161,7 +161,7 @@ class PagoControllerTest {
         when(usuarioRepository.findByFirebaseUuid("test-uid")).thenReturn(Optional.of(usuario));
         when(pagoService.cambiarEstado(uuidPago, "PAGADO", 1)).thenReturn(
                 new PagoResponse(uuidPago, UUID.randomUUID(), 1, new BigDecimal("25000.00"),
-                        LocalDate.now(), "PAGADO", new BigDecimal("25000.00"), LocalDateTime.now(), null, 1, null, null, null, null, null));
+                        LocalDate.now(), "PAGADO", new BigDecimal("25000.00"), LocalDateTime.now(), null, 1, null, null, null, null, null, null));
 
         mockMvc.perform(patch("/api/pagos/{uuidPago}/estado", uuidPago)
                         .param("estado", "PAGADO")
@@ -213,7 +213,7 @@ class PagoControllerTest {
 
         var response = new PagoResponse(uuidPago, UUID.randomUUID(), 1, new BigDecimal("25000.00"),
                 LocalDate.now(), "PAGADO", new BigDecimal("25000.00"), LocalDateTime.now(),
-                docId, 1, null, null, null, null, null);
+                docId, 1, null, null, null, null, null, null);
 
         MockMultipartFile file = new MockMultipartFile("file", "comprobante.pdf",
                 "application/pdf", "contenido".getBytes());

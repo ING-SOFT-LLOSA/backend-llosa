@@ -8,5 +8,6 @@ public enum TipoEvento {
     FIRMA_ESCRITURA,
     INSPECCION_OBRA,
     JUNTA_PROPIETARIOS,
+    RECORDATORIO_PAGO,
     OTRO
 }

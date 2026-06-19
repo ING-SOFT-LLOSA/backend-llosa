@@ -1,5 +1,6 @@
 package com.llosa.backend.pagos.service;
 
+import com.llosa.backend.agenda.service.AgendaService;
 import com.llosa.backend.comercial.service.RequisitoDocumentalService;
 import com.llosa.backend.config.TestDataPagos;
 import com.llosa.backend.documentos.dto.DocumentoResponse;
@@ -52,6 +53,9 @@ class PagoServiceImplTest {
 
     @Mock
     RequisitoDocumentalService requisitoDocumentalService;
+
+    @Mock
+    AgendaService agendaService;
 
     @InjectMocks
     PagoServiceImpl pagoService;
@@ -177,7 +181,11 @@ class PagoServiceImplTest {
     @Test
     void eliminarCuota_exitoso() {
         UUID uuidPago = UUID.randomUUID();
-        when(pagoRepository.existsById(uuidPago)).thenReturn(true);
+        var cp = CronogramaPago.builder().id(UUID.randomUUID()).build();
+        var pago = TestDataPagos.pago(cp, 1);
+        pago.setId(uuidPago);
+
+        when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
 
         pagoService.eliminarCuota(uuidPago);
 
@@ -187,7 +195,7 @@ class PagoServiceImplTest {
     @Test
     void eliminarCuota_noExiste_lanzaRecursoNoEncontrado() {
         UUID uuidPago = UUID.randomUUID();
-        when(pagoRepository.existsById(uuidPago)).thenReturn(false);
+        when(pagoRepository.findById(uuidPago)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> pagoService.eliminarCuota(uuidPago))
                 .isInstanceOf(RecursoNoEncontradoException.class)

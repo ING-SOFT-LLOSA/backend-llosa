@@ -68,6 +68,9 @@ public class Pago {
     @Column(name = "uuid_requisito_documental")
     private UUID uuidRequisitoDocumental;
 
+    @Column(name = "uuid_cita")
+    private UUID uuidCita;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

@@ -7,6 +7,7 @@ import com.llosa.backend.agenda.entity.Cita;
 import com.llosa.backend.agenda.entity.DisponibilidadCita;
 import com.llosa.backend.agenda.enums.EstadoCita;
 import com.llosa.backend.agenda.enums.EstadoSincronizacion;
+import com.llosa.backend.agenda.enums.TipoEvento;
 import com.llosa.backend.agenda.repository.CitaRepository;
 import com.llosa.backend.agenda.repository.DisponibilidadCitaRepository;
 import com.llosa.backend.agenda.service.AgendaService;
@@ -60,11 +61,15 @@ public class AgendaServiceImpl implements AgendaService {
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Unidad no encontrada: " + req.activoId()));
 
-        // Verificar solapamiento de agenda del gestor
-        if (citaRepository.existeSolapamiento(gestor.getId(), req.fechaInicio(), req.fechaFin())) {
+        // Verificar solapamiento de agenda del gestor (salta para recordatorios de pago)
+        if (req.tipoEvento() != TipoEvento.RECORDATORIO_PAGO
+                && citaRepository.existeSolapamiento(gestor.getId(), req.fechaInicio(), req.fechaFin())) {
             throw new BusinessException(
                     "El gestor ya tiene una cita en ese rango horario. Elige otro horario.");
         }
+
+        boolean sincronizar = req.clienteUsaGoogle()
+                || req.tipoEvento() == TipoEvento.RECORDATORIO_PAGO;
 
         Cita cita = Cita.builder()
                 .gestor(gestor)
@@ -79,15 +84,14 @@ public class AgendaServiceImpl implements AgendaService {
                 .permiteReprogramacion(req.permiteReprogramacion())
                 .clienteUsaGoogle(req.clienteUsaGoogle())
                 .estadoCita(EstadoCita.PROGRAMADA)
-                .estadoSincronizacion(req.clienteUsaGoogle()
+                .estadoSincronizacion(sincronizar
                         ? EstadoSincronizacion.PENDIENTE
                         : EstadoSincronizacion.NO_APLICA)
                 .build();
 
         cita = citaRepository.save(cita);
 
-        // Intentar Google Calendar solo si el cliente usa Google
-        if (req.clienteUsaGoogle()) {
+        if (sincronizar) {
             sincronizarCreacion(cita);
         } else {
             log.info("[Agenda] Cita {} guardada solo en BD (cliente sin Google)", cita.getId());
@@ -355,9 +359,13 @@ public class AgendaServiceImpl implements AgendaService {
     @Transactional
     @Override
     public void reintentarSincronizacionesPendientes() {
-        List<Cita> pendientes = citaRepository
+        List<Cita> pendientes = new java.util.ArrayList<>();
+        pendientes.addAll(citaRepository
                 .findByEstadoSincronizacionAndClienteUsaGoogle(
-                        EstadoSincronizacion.PENDIENTE, true);
+                        EstadoSincronizacion.PENDIENTE, true));
+        pendientes.addAll(citaRepository
+                .findByEstadoSincronizacionAndTipoEvento(
+                        EstadoSincronizacion.PENDIENTE, TipoEvento.RECORDATORIO_PAGO));
 
         if (pendientes.isEmpty()) return;
 

@@ -1,5 +1,9 @@
 package com.llosa.backend.pagos.service.impl;
 
+import com.llosa.backend.agenda.dto.request.CrearCitaRequest;
+import com.llosa.backend.agenda.dto.response.CitaResponse;
+import com.llosa.backend.agenda.enums.TipoEvento;
+import com.llosa.backend.agenda.service.AgendaService;
 import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.comercial.entity.RequisitoDocumental;
 import com.llosa.backend.comercial.enums.EtapaProceso;
@@ -21,8 +25,10 @@ import com.llosa.backend.pagos.entity.Pago;
 import com.llosa.backend.pagos.repository.CronogramaPagoRepository;
 import com.llosa.backend.pagos.repository.PagoRepository;
 import com.llosa.backend.pagos.service.CronogramaPagoService;
+import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
+import com.llosa.backend.seguridad.entity.Usuario;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -46,6 +52,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     private final PagoFlujoFactory pagoFlujoFactory;
     private final EtapaExpedienteRepository etapaExpedienteRepository;
     private final RequisitoDocumentalRepository requisitoDocumentalRepository;
+    private final AgendaService agendaService;
 
     @Override
     @Transactional
@@ -91,7 +98,40 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
             }
         }
 
-        pagoRepository.saveAll(pagos);
+        List<Pago> pagosGuardados = pagoRepository.saveAll(pagos);
+
+        // Crear recordatorios de calendario para cuotas futuras
+        Usuario gestor = ua.getAsesor();
+        Usuario cliente = ua.getClientes().isEmpty() ? null : ua.getClientes().get(0);
+        Activo activo = ua.getActivos().isEmpty() ? null : ua.getActivos().get(0);
+
+        for (Pago pago : pagosGuardados) {
+            if (pago.getConcepto() != ConceptoPago.CUOTA) continue;
+            if (pago.getFechaVencimiento().isBefore(LocalDate.now())) continue;
+            if (cliente == null || activo == null) {
+                log.warn("[Cronograma] No se pudo crear recordatorio de pago para cuota {}: faltan cliente o activo",
+                        pago.getNroCuota());
+                continue;
+            }
+
+            CrearCitaRequest citaReq = new CrearCitaRequest(
+                    cliente.getId(),
+                    activo.getId(),
+                    TipoEvento.RECORDATORIO_PAGO,
+                    "Vencimiento de cuota N° " + pago.getNroCuota(),
+                    null,
+                    null,
+                    pago.getFechaVencimiento().atTime(10, 0),
+                    pago.getFechaVencimiento().atTime(11, 0),
+                    false,
+                    false
+            );
+
+            CitaResponse citaResponse = agendaService.crearCita(gestor.getFirebaseUuid(), citaReq);
+            pago.setUuidCita(citaResponse.id());
+        }
+
+        pagoRepository.saveAll(pagosGuardados);
         log.info("Cronograma creado: {} para expediente: {} con {} pagos generados",
                 guardado.getId(), request.uuidUsuarioActivo(), pagos.size());
         return CronogramaPagoResponse.fromEntity(guardado);
