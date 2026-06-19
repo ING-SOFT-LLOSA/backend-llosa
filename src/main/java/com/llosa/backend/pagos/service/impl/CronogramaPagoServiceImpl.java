@@ -165,13 +165,25 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
                         "Cronograma no encontrado: " + uuidCronograma));
 
         BigDecimal montoTotal = cp.getTotalPactado();
-        BigDecimal pagoSeparacion = cp.getPagoSeparacion() != null ? cp.getPagoSeparacion() : BigDecimal.ZERO;
-        BigDecimal pagoInicial = cp.getPagoInicial() != null ? cp.getPagoInicial() : BigDecimal.ZERO;
-        BigDecimal totalPagado = pagoSeparacion.add(pagoInicial);
+
+        BigDecimal montoSeparacionPagado = pagoRepository
+                .findByCronograma_IdAndConcepto(uuidCronograma, ConceptoPago.SEPARACION)
+                .filter(p -> "PAGADO".equals(p.getEstado()))
+                .map(p -> p.getMontoPagado() != null ? p.getMontoPagado() : BigDecimal.ZERO)
+                .orElse(BigDecimal.ZERO);
+
+        BigDecimal montoInicialPagado = pagoRepository
+                .findByCronograma_IdAndConcepto(uuidCronograma, ConceptoPago.INICIAL)
+                .filter(p -> "PAGADO".equals(p.getEstado()))
+                .map(p -> p.getMontoPagado() != null ? p.getMontoPagado() : BigDecimal.ZERO)
+                .orElse(BigDecimal.ZERO);
+
+        BigDecimal totalPagado = montoSeparacionPagado.add(montoInicialPagado);
         BigDecimal saldoPendiente = montoTotal.subtract(totalPagado);
 
         EstadoGlobalPago estadoGlobal;
-        if (pagoSeparacion.signum() > 0 && pagoInicial.signum() > 0) {
+        if (montoSeparacionPagado.compareTo(BigDecimal.ZERO) > 0
+                && montoInicialPagado.compareTo(BigDecimal.ZERO) > 0) {
             estadoGlobal = EstadoGlobalPago.AL_DIA;
         } else {
             estadoGlobal = EstadoGlobalPago.RETRASADO;
