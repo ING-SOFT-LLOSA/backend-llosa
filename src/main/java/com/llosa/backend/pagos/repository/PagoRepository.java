@@ -1,5 +1,6 @@
 package com.llosa.backend.pagos.repository;
 
+import com.llosa.backend.pagos.ConceptoPago;
 import com.llosa.backend.pagos.entity.Pago;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -22,4 +23,6 @@ public interface PagoRepository extends JpaRepository<Pago, UUID> {
     BigDecimal sumMontoPagadoByCronogramaId(@Param("cronogramaId") UUID cronogramaId);
 
     long countByCronograma_IdAndEstado(UUID cronogramaId, String estado);
+
+    Optional<Pago> findByCronograma_IdAndConcepto(UUID cronogramaId, ConceptoPago concepto);
 }

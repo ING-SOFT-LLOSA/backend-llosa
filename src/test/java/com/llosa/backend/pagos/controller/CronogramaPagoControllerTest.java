@@ -58,8 +58,8 @@ class CronogramaPagoControllerTest {
         var request = TestDataPagos.crearCronogramaRequest();
         var response = new CronogramaPagoResponse(
                 UUID.randomUUID(), request.uuidUsuarioActivo(),
-                request.totalPactado(), request.cuotaInicial(),
-                request.numeroCuotas(), "ACTIVO", null, null);
+                request.totalPactado(), request.numeroCuotas(), "ACTIVO",
+                null, null, null, null);
 
         when(cronogramaPagoService.crear(any(CronogramaPagoRequest.class))).thenReturn(response);
 
@@ -99,8 +99,8 @@ class CronogramaPagoControllerTest {
         UUID uuidUa = UUID.randomUUID();
         var response = new CronogramaPagoResponse(
                 UUID.randomUUID(), uuidUa,
-                new BigDecimal("350000.00"), new BigDecimal("50000.00"),
-                12, "ACTIVO", null, null);
+                new BigDecimal("350000.00"), 12, "ACTIVO",
+                null, null, null, null);
 
         when(cronogramaPagoService.obtenerPorUsuarioActivo(uuidUa)).thenReturn(response);
 
@@ -126,8 +126,8 @@ class CronogramaPagoControllerTest {
         var request = TestDataPagos.crearCronogramaRequest();
         var response = new CronogramaPagoResponse(
                 uuidCp, request.uuidUsuarioActivo(),
-                request.totalPactado(), request.cuotaInicial(),
-                request.numeroCuotas(), "ACTIVO", null, null);
+                request.totalPactado(), request.numeroCuotas(), "ACTIVO",
+                null, null, null, null);
 
         when(cronogramaPagoService.actualizar(eq(uuidCp), any(CronogramaPagoRequest.class))).thenReturn(response);
 

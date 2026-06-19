@@ -6,7 +6,6 @@ REST API Spring Boot 3.3 / Java 21 para la inmobiliaria Llosa Edificaciones. Imp
 
 ## 🚀 Inicio rápido
 
-x
 ### Prerrequisitos
 - **Java 21**
 - **Docker** (para PostgreSQL y Testcontainers)

@@ -16,6 +16,7 @@ public record ActivoResponseDTO(
         String nro,
         TipoActivo tipo,
         BigDecimal areaM2,
+        BigDecimal areaTechada,
         EstadoComercialActivo estadoComercial,
         BigDecimal precio,
         String descripcion
@@ -30,6 +31,7 @@ public record ActivoResponseDTO(
                 a.getNro(),
                 a.getTipo(),
                 a.getAreaM2(),
+                a.getAreaTechada(),
                 a.getEstadoComercial(),
                 a.getPrecio(),
                 a.getDescripcion()

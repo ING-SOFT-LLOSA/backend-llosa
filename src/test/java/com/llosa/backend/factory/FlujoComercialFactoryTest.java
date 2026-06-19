@@ -64,7 +64,7 @@ class FlujoComercialFactoryTest {
         var contratoEtapa = etapas.get(1);
 
         assertThat(contratoEtapa.getHitosComerciales()).hasSize(5);
-        assertThat(contratoEtapa.getRequisitos()).hasSize(3);
+        assertThat(contratoEtapa.getRequisitos()).hasSize(4);
     }
 
     @Test
@@ -91,7 +91,7 @@ class FlujoComercialFactoryTest {
         var pago = etapas.get(2);
 
         assertThat(pago.getHitosComerciales()).hasSize(6);
-        assertThat(pago.getRequisitos()).hasSize(4);
+        assertThat(pago.getRequisitos()).hasSize(0);
     }
 
     @Test

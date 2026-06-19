@@ -59,7 +59,6 @@ class HitoControllerTest {
     @Test
     void actualizarHito_valido_devuelve200() throws Exception {
         Hito hito = buildHito();
-        when(hitoPisoRepository.existsByHitoId(hito.getId())).thenReturn(false);
         when(hitoService.findById(hito.getId())).thenReturn(hito);
         when(hitoService.save(hito)).thenReturn(hito);
 

@@ -10,6 +10,7 @@ import com.llosa.backend.agenda.enums.TipoEvento;
 import com.llosa.backend.agenda.repository.CitaRepository;
 import com.llosa.backend.agenda.repository.DisponibilidadCitaRepository;
 import com.llosa.backend.agenda.service.impl.AgendaServiceImpl;
+import com.llosa.backend.agenda.service.impl.GoogleCalendarServiceImpl;
 import com.llosa.backend.exception.AccesoDenegadoException;
 import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
@@ -43,7 +44,7 @@ class AgendaServiceImplTest {
     @Mock DisponibilidadCitaRepository disponibilidadRepository;
     @Mock UsuarioRepository usuarioRepository;
     @Mock ActivoRepository activoRepository;
-    @Mock GoogleCalendarService googleCalendarService;
+    @Mock GoogleCalendarServiceImpl googleCalendarService;
 
     @InjectMocks AgendaServiceImpl agendaService;
 
@@ -366,7 +367,7 @@ class AgendaServiceImplTest {
 
         agendaService.cancelarCita(citaId, "Motivo");
 
-        verify(googleCalendarService).eliminarEvento("google-id");
+        verify(googleCalendarService).eliminarEvento(cita);
         assertThat(cita.getGoogleEventId()).isNull();
     }
 
@@ -568,7 +569,7 @@ class AgendaServiceImplTest {
 
         agendaService.responderCita(citaId, clienteFirebaseUid, req);
 
-        verify(googleCalendarService).actualizarRsvpInvitado("google-id", cliente.getEmail(), true);
+        verify(googleCalendarService).actualizarRsvpInvitado(cita.getGestor(), "google-id", cliente.getEmail(), true);
     }
 
     // ─── proponerDisponibilidad ───────────────────────────────────────

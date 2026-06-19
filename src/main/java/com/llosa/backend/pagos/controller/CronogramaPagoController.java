@@ -3,6 +3,7 @@ package com.llosa.backend.pagos.controller;
 import com.llosa.backend.pagos.dto.CronogramaPagoRequest;
 import com.llosa.backend.pagos.dto.CronogramaPagoResponse;
 import com.llosa.backend.pagos.dto.ResumenResponse;
+import com.llosa.backend.pagos.dto.ResumenResponseHipotecarioDTO;
 import com.llosa.backend.pagos.service.CronogramaPagoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -52,4 +53,11 @@ public class CronogramaPagoController {
     public ResponseEntity<ResumenResponse> obtenerResumen(@PathVariable UUID uuidCronograma) {
         return ResponseEntity.ok(cronogramaPagoService.obtenerResumen(uuidCronograma));
     }
+
+    @GetMapping("/{uuidCronograma}/resumen/credito-hipo")
+    @PreAuthorize("hasAuthority('CONTRATO_VER')")
+    public ResponseEntity<ResumenResponseHipotecarioDTO> obtenerResumenHitpotecario(@PathVariable UUID uuidCronograma) {
+        return ResponseEntity.ok(cronogramaPagoService.obtenerResumenHipotecario(uuidCronograma));
+    }
+
 }

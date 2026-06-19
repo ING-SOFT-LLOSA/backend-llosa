@@ -1,5 +1,6 @@
 package com.llosa.backend.pagos.entity;
 
+import com.llosa.backend.pagos.ConceptoPago;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -56,6 +57,16 @@ public class Pago {
 
     @Column(name = "actualizado_por")
     private Integer actualizadoPor;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "concepto", nullable = false, length = 20)
+    private ConceptoPago concepto;
+
+    @Column(columnDefinition = "TEXT")
+    private String comentario;
+
+    @Column(name = "uuid_requisito_documental")
+    private UUID uuidRequisitoDocumental;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

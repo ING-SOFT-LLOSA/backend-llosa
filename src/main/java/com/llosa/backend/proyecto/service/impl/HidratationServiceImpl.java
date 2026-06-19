@@ -1,6 +1,5 @@
 package com.llosa.backend.proyecto.service.impl;
 
-import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.Piso;
 import com.llosa.backend.proyecto.entity.Hito;
 import com.llosa.backend.proyecto.entity.HitoPiso;

@@ -1,7 +1,6 @@
 HELP.md
 casos_prueba.md
 CLAUDE.md
-.m2
 
 ### Maven ###
 target/
@@ -15,7 +14,7 @@ buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 .mvn/wrapper/maven-wrapper.properties
-
+context/pagos.md
 ### STS ###
 .apt_generated
 .classpath

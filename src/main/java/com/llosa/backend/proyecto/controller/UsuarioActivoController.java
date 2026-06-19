@@ -153,4 +153,26 @@ public class UsuarioActivoController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Asinar un asesor**/
+
+    @PostMapping("/usuarioActivo/{id_usuario_activo}/asesor/{id_asesor}")
+    @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
+    public ResponseEntity<UsuarioActivoResponseDTO> AsignarUnAsesorAlContrato(
+            @PathVariable UUID id_usuario_activo,
+            @PathVariable Integer id_asesor){
+        UsuarioActivo usuario = usuarioActivoService.asignarAsesorAContrato(id_usuario_activo, id_asesor);
+        return ResponseEntity.ok().body(UsuarioActivoResponseDTO.fromEntity(usuario));
+    }
+
+    @PutMapping("/usuarioActivo/{id_usuario_activo}/asesor/{id_asesor}")
+    @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
+    public ResponseEntity<UsuarioActivoResponseDTO> DesvincularAsesorDelContrato(
+            @PathVariable UUID id_usuario_activo,
+            @PathVariable Integer id_asesor){
+        UsuarioActivo usuario = usuarioActivoService.desasignarAsesorDelContrato(id_usuario_activo, id_asesor);
+        return ResponseEntity.ok().body(UsuarioActivoResponseDTO.fromEntity(usuario));
+    }
+
+    // No se necesita un get, porque ya hay un get para ver un contrato
+
 }

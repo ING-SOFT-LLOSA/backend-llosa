@@ -25,7 +25,6 @@ class GoogleCalendarServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new GoogleCalendarServiceImpl();
-        ReflectionTestUtils.setField(service, "serviceAccountPath", "/invalid/path.json");
     }
 
     private Cita buildCita() {
@@ -76,7 +75,7 @@ class GoogleCalendarServiceImplTest {
 
     @Test
     void eliminarEvento_googleEventIdNull_retornaFalse() {
-        assertThat(service.eliminarEvento(null)).isFalse();
+        assertThat(service.eliminarEvento((String) null)).isFalse();
     }
 
     @Test

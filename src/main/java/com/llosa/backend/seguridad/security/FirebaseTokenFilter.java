@@ -55,6 +55,10 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
             Usuario usuario = usuarioRepository.findByFirebaseUuid(uid)
                     .orElseThrow(() -> new BadCredentialsException("Usuario verificado en Firebase pero no existe en BD"));
 
+            if (Boolean.FALSE.equals(usuario.getActivo())) {
+                throw new BadCredentialsException("Usuario suspendido. Acceso denegado.");
+            }
+
             List<SimpleGrantedAuthority> authorities = new ArrayList<>();
 
             if (usuario.getRol() != null && usuario.getRol().getFunciones() != null) {

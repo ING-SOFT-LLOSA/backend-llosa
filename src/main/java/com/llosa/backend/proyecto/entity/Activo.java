@@ -9,8 +9,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -41,6 +39,10 @@ public class Activo {
     @Column(nullable = false, name = "area_m2")
     private BigDecimal areaM2 = BigDecimal.valueOf(0.0);
 
+    @Builder.Default
+    @Column(nullable = false, name = "area_techada")
+    private BigDecimal areaTechada = BigDecimal.valueOf(0.0);
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoComercialActivo estadoComercial;
@@ -69,6 +71,6 @@ public class Activo {
     private Piso piso;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uuid_usuario_activo", unique = true) // Es nullable porque en inventario no tiene contrato
+    @JoinColumn(name = "uuid_usuario_activo") // Es nullable porque en inventario no tiene contrato
     private UsuarioActivo usuarioActivo;
 }

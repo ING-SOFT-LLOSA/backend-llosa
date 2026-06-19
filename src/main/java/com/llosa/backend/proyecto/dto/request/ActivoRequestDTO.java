@@ -21,6 +21,10 @@ public record ActivoRequestDTO(
         @Positive(message = "El área debe ser mayor a 0")
         BigDecimal areaM2,
 
+        @NotNull(message = "El área es obligatoria")
+        @Positive(message = "El área debe ser mayor a 0")
+        BigDecimal areaTechada,
+
         @NotNull(message = "El estado comercial es obligatorio")
         EstadoComercialActivo estadoComercial,
 

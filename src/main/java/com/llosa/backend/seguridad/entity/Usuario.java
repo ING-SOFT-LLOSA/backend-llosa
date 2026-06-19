@@ -49,5 +49,15 @@ public class Usuario {
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
         if (this.activo == null) this.activo = true;
+        if (this.googleCalendarConectado == null) this.googleCalendarConectado = false;
     }
+    // ---- Integración Google Calendar (OAuth del gestor) ----
+
+    @Column(name = "google_refresh_token", columnDefinition = "TEXT")
+    private String googleRefreshToken;
+
+    @Column(name = "google_calendar_conectado", nullable = false, columnDefinition = "boolean default false")
+    private Boolean googleCalendarConectado = false;
+
+
 }

@@ -72,10 +72,11 @@ public class PagoController {
     public ResponseEntity<PagoResponse> subirComprobante(
             @PathVariable UUID uuidPago,
             @RequestPart("file") MultipartFile file,
+            @RequestParam(value = "comentario", required = false) String comentario,
             Authentication authentication) {
         String uid = (String) authentication.getPrincipal();
         Usuario usuario = usuarioRepository.findByFirebaseUuid(uid)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
-        return ResponseEntity.ok(pagoService.subirComprobante(uuidPago, file, usuario.getId()));
+        return ResponseEntity.ok(pagoService.subirComprobante(uuidPago, file, usuario.getId(), comentario));
     }
 }

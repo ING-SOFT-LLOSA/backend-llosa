@@ -1,11 +1,19 @@
 package com.llosa.backend.pagos.service.impl;
 
-import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.comercial.entity.EtapaExpediente;
+import com.llosa.backend.comercial.entity.RequisitoDocumental;
+import com.llosa.backend.comercial.enums.EtapaProceso;
+import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
+import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
 import com.llosa.backend.exception.EntidadDuplicadaException;
+import com.llosa.backend.pagos.ConceptoPago;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
+import com.llosa.backend.factory.PagoFlujoFactory;
+import com.llosa.backend.pagos.EstadoGlobalPago;
 import com.llosa.backend.pagos.dto.CronogramaPagoRequest;
 import com.llosa.backend.pagos.dto.CronogramaPagoResponse;
 import com.llosa.backend.pagos.dto.ResumenResponse;
+import com.llosa.backend.pagos.dto.ResumenResponseHipotecarioDTO;
 import com.llosa.backend.pagos.entity.CronogramaPago;
 import com.llosa.backend.pagos.entity.Pago;
 import com.llosa.backend.pagos.repository.CronogramaPagoRepository;
@@ -21,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -32,6 +41,9 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     private final CronogramaPagoRepository cronogramaPagoRepository;
     private final PagoRepository pagoRepository;
     private final UsuarioActivoRepository usuarioActivoRepository;
+    private final PagoFlujoFactory pagoFlujoFactory;
+    private final EtapaExpedienteRepository etapaExpedienteRepository;
+    private final RequisitoDocumentalRepository requisitoDocumentalRepository;
 
     @Override
     @Transactional
@@ -47,7 +59,6 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
         CronogramaPago cronograma = CronogramaPago.builder()
                 .usuarioActivo(ua)
                 .totalPactado(request.totalPactado())
-                .cuotaInicial(request.cuotaInicial() != null ? request.cuotaInicial() : BigDecimal.ZERO)
                 .numeroCuotas(request.numeroCuotas())
                 .pagoInicial(request.pagoIncial() != null ? request.pagoIncial() : BigDecimal.ZERO)
                 .pagoSeparacion(request.pagoSeparacion() != null ? request.pagoSeparacion() : BigDecimal.ZERO)
@@ -55,8 +66,40 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
                 .build();
 
         CronogramaPago guardado = cronogramaPagoRepository.save(cronograma);
-        log.info("Cronograma creado: {} para expediente: {}", guardado.getId(), request.uuidUsuarioActivo());
+
+        // Generar pagos automáticos según tipo de financiamiento
+        List<Pago> pagos = pagoFlujoFactory.generarPagos(guardado, ua.getTipoFinanciamiento());
+
+        // Vincular pagos de separación e inicial a sus requisitos documentales
+        for (Pago pago : pagos) {
+            switch (pago.getConcepto()) {
+                case SEPARACION -> {
+                    Optional<UUID> reqId = buscarRequisito(ua.getUuidUsuarioActivo(),
+                            EtapaProceso.SEPARACION, "Comprobante de separación");
+                    reqId.ifPresent(pago::setUuidRequisitoDocumental);
+                }
+                case INICIAL -> {
+                    Optional<UUID> reqId = buscarRequisito(ua.getUuidUsuarioActivo(),
+                            EtapaProceso.CONTRATO, "Pago Inicial");
+                    reqId.ifPresent(pago::setUuidRequisitoDocumental);
+                }
+                default -> { }
+            }
+        }
+
+        pagoRepository.saveAll(pagos);
+        log.info("Cronograma creado: {} para expediente: {} con {} pagos generados",
+                guardado.getId(), request.uuidUsuarioActivo(), pagos.size());
         return CronogramaPagoResponse.fromEntity(guardado);
+    }
+
+    private Optional<UUID> buscarRequisito(UUID uuidUsuarioActivo, EtapaProceso etapa, String titulo) {
+        return etapaExpedienteRepository
+                .findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(uuidUsuarioActivo, etapa)
+                .flatMap(etapaEx -> requisitoDocumentalRepository
+                        .findByEtapaExpediente_UuidEtapaExpedienteAndTitulo(
+                                etapaEx.getUuidEtapaExpediente(), titulo)
+                        .map(RequisitoDocumental::getId));
     }
 
     @Override
@@ -76,12 +119,18 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
                         "Cronograma no encontrado: " + uuidCronograma));
 
         cp.setTotalPactado(request.totalPactado());
-        cp.setCuotaInicial(request.cuotaInicial() != null ? request.cuotaInicial() : BigDecimal.ZERO);
         cp.setNumeroCuotas(request.numeroCuotas());
         cp.setPagoInicial(request.pagoIncial() != null ? request.pagoIncial() : BigDecimal.ZERO);
         cp.setPagoSeparacion(request.pagoSeparacion() != null ? request.pagoSeparacion() : BigDecimal.ZERO);
 
         CronogramaPago guardado = cronogramaPagoRepository.save(cp);
+
+        // Sincronizar Pagos existentes con los nuevos montos del cronograma
+        pagoRepository.findByCronograma_IdAndConcepto(uuidCronograma, ConceptoPago.SEPARACION)
+                .ifPresent(p -> { p.setMontoProgramado(guardado.getPagoSeparacion()); pagoRepository.save(p); });
+        pagoRepository.findByCronograma_IdAndConcepto(uuidCronograma, ConceptoPago.INICIAL)
+                .ifPresent(p -> { p.setMontoProgramado(guardado.getPagoInicial()); pagoRepository.save(p); });
+
         log.info("Cronograma actualizado: {}", uuidCronograma);
         return CronogramaPagoResponse.fromEntity(guardado);
     }
@@ -94,6 +143,34 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
         }
         cronogramaPagoRepository.deleteById(uuidCronograma);
         log.info("Cronograma eliminado: {}", uuidCronograma);
+    }
+
+    @Override
+    @Transactional
+    public ResumenResponseHipotecarioDTO obtenerResumenHipotecario(UUID uuidCronograma) {
+        CronogramaPago cp = cronogramaPagoRepository.findById(uuidCronograma)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Cronograma no encontrado: " + uuidCronograma));
+
+        BigDecimal montoTotal = cp.getTotalPactado();
+        BigDecimal pagoSeparacion = cp.getPagoSeparacion() != null ? cp.getPagoSeparacion() : BigDecimal.ZERO;
+        BigDecimal pagoInicial = cp.getPagoInicial() != null ? cp.getPagoInicial() : BigDecimal.ZERO;
+        BigDecimal totalPagado = pagoSeparacion.add(pagoInicial);
+        BigDecimal saldoPendiente = montoTotal.subtract(totalPagado);
+
+        EstadoGlobalPago estadoGlobal;
+        if (pagoSeparacion.signum() > 0 && pagoInicial.signum() > 0) {
+            estadoGlobal = EstadoGlobalPago.AL_DIA;
+        } else {
+            estadoGlobal = EstadoGlobalPago.RETRASADO;
+        }
+
+        return new ResumenResponseHipotecarioDTO(
+                montoTotal,
+                totalPagado,
+                saldoPendiente,
+                estadoGlobal
+        );
     }
 
     @Override

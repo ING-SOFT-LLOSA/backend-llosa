@@ -23,10 +23,6 @@
 		<sonar.projectKey>llosa-backend</sonar.projectKey>
 		<sonar.projectName>Llosa Edificaciones Backend</sonar.projectName>
 		<sonar.projectVersion>1.0.0</sonar.projectVersion>
-		<!-- Grupos de tests excluidos por defecto. 'integration' = E2E con Testcontainers
-		     (requieren Docker, no disponible en CI). En local con Docker, para incluirlos:
-		     ./mvnw test -Dtest.excludedGroups=stress -->
-		<test.excludedGroups>stress,integration</test.excludedGroups>
 	</properties>
 	<dependencies>
 		<!-- Spring Web MVC -->
@@ -251,15 +247,11 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<argLine>
-						@{argLine}
 						-javaagent:${org.mockito:mockito-core:jar}
 						-XX:+EnableDynamicAgentLoading
 						-Djdk.attach.allowAttachSelf=true
 					</argLine>
-					<!-- 'integration': tests E2E con Testcontainers (Docker). Se excluyen por
-					     defecto porque el agente de CI no levanta contenedores. Correr en local
-					     con Docker activo usando: mvn test -DexcludedGroups=stress -->
-					<excludedGroups>${test.excludedGroups}</excludedGroups>
+					<excludedGroups>stress</excludedGroups>
 					<systemPropertyVariables>
 						<api.version>1.41</api.version>
 					</systemPropertyVariables>

@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
@@ -25,16 +25,18 @@ services:
       dockerfile: Dockerfile
     container_name: llosa_backend_dev
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      - "${BACKEND_PORT}:8080"
     environment:
       - DB_URL=jdbc:postgresql://db:5432/${POSTGRES_DB}
       - DB_USERNAME=${POSTGRES_USER}
       - DB_PASSWORD=${POSTGRES_PASSWORD}
       - DOMINIO_CORPORATIVO=${DOMINIO_CORPORATIVO}
-      - SHOW_SQL=${SHOW_SQL}
       - GCS_BUCKET_NAME=${GCS_BUCKET_NAME}
       - FIREBASE_CREDENTIALS_PATH=/app/secrets/firebase-service-account.json
       - SPRING_PROFILES_ACTIVE=demo
+      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
+      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
+      - GOOGLE_OAUTH_REDIRECT_URI=${GOOGLE_OAUTH_REDIRECT_URI}
     volumes:
       - ./secrets/firebase-service-account.json:/app/secrets/firebase-service-account.json
     networks:

@@ -1,10 +1,12 @@
 package com.llosa.backend.pagos.service;
 
+import com.llosa.backend.comercial.service.RequisitoDocumentalService;
 import com.llosa.backend.config.TestDataPagos;
 import com.llosa.backend.documentos.dto.DocumentoResponse;
+import com.llosa.backend.documentos.entity.Documento;
 import com.llosa.backend.documentos.enums.TipoDocumento;
+import com.llosa.backend.documentos.repository.DocumentoRepository;
 import com.llosa.backend.documentos.service.DocumentoService;
-import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.exception.EstadoInvalidoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
@@ -44,6 +46,12 @@ class PagoServiceImplTest {
 
     @Mock
     DocumentoService documentoService;
+
+    @Mock
+    DocumentoRepository documentoRepository;
+
+    @Mock
+    RequisitoDocumentalService requisitoDocumentalService;
 
     @InjectMocks
     PagoServiceImpl pagoService;
@@ -125,7 +133,7 @@ class PagoServiceImplTest {
         var cp = CronogramaPago.builder().id(UUID.randomUUID()).build();
         var pago = TestDataPagos.pago(cp, 1);
         pago.setId(uuidPago);
-        var request = new PagoRequest(2, new BigDecimal("30000.00"), LocalDate.now().plusMonths(2));
+        var request = new PagoRequest(2, new BigDecimal("30000.00"), LocalDate.now().plusMonths(2), null, null);
 
         when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
         when(pagoRepository.findByCronograma_IdAndNroCuota(cp.getId(), 2)).thenReturn(Optional.empty());
@@ -156,7 +164,7 @@ class PagoServiceImplTest {
         var pago = TestDataPagos.pago(cp, 1);
         pago.setId(uuidPago);
 
-        var request = new PagoRequest(2, new BigDecimal("30000.00"), LocalDate.now().plusMonths(2));
+        var request = new PagoRequest(2, new BigDecimal("30000.00"), LocalDate.now().plusMonths(2), null, null);
 
         when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
         when(pagoRepository.findByCronograma_IdAndNroCuota(uuidCp, 2)).thenReturn(Optional.of(mock(Pago.class)));
@@ -283,7 +291,7 @@ class PagoServiceImplTest {
                 .thenReturn(docResponse);
         when(pagoRepository.save(any())).thenReturn(pago);
 
-        PagoResponse result = pagoService.subirComprobante(uuidPago, file, 1);
+        PagoResponse result = pagoService.subirComprobante(uuidPago, file, 1, null);
 
         assertThat(result.uuidComprobante()).isEqualTo(docId);
         assertThat(pago.getEstado()).isEqualTo("PAGADO");
@@ -316,7 +324,7 @@ class PagoServiceImplTest {
                 .thenReturn(docResponse);
         when(pagoRepository.save(any())).thenReturn(pago);
 
-        PagoResponse result = pagoService.subirComprobante(uuidPago, file, 1);
+        PagoResponse result = pagoService.subirComprobante(uuidPago, file, 1, null);
 
         assertThat(result.uuidComprobante()).isEqualTo(docId);
         assertThat(pago.getEstado()).isEqualTo("PAGADO");
@@ -327,7 +335,7 @@ class PagoServiceImplTest {
         UUID uuidPago = UUID.randomUUID();
         when(pagoRepository.findById(uuidPago)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> pagoService.subirComprobante(uuidPago, mock(MultipartFile.class), 1))
+        assertThatThrownBy(() -> pagoService.subirComprobante(uuidPago, mock(MultipartFile.class), 1, null))
                 .isInstanceOf(RecursoNoEncontradoException.class)
                 .hasMessageContaining("Pago no encontrado");
     }

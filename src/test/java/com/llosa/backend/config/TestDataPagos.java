@@ -1,9 +1,8 @@
 package com.llosa.backend.config;
 
-import com.llosa.backend.pagos.dto.CartaAprobacionRequest;
+import com.llosa.backend.pagos.ConceptoPago;
 import com.llosa.backend.pagos.dto.CronogramaPagoRequest;
 import com.llosa.backend.pagos.dto.PagoRequest;
-import com.llosa.backend.pagos.entity.CartaAprobacion;
 import com.llosa.backend.pagos.entity.CronogramaPago;
 import com.llosa.backend.pagos.entity.Pago;
 import com.llosa.backend.proyecto.entity.Activo;
@@ -63,7 +62,6 @@ public final class TestDataPagos {
         return CronogramaPago.builder()
                 .usuarioActivo(ua)
                 .totalPactado(new BigDecimal("350000.00"))
-                .cuotaInicial(new BigDecimal("50000.00"))
                 .numeroCuotas(12)
                 .estado("ACTIVO")
                 .build();
@@ -76,6 +74,7 @@ public final class TestDataPagos {
                 .montoProgramado(new BigDecimal("25000.00"))
                 .fechaVencimiento(LocalDate.now().plusMonths(nroCuota))
                 .estado("PENDIENTE")
+                .concepto(nroCuota <= 0 ? ConceptoPago.SEPARACION : ConceptoPago.CUOTA)
                 .build();
     }
 
@@ -87,6 +86,7 @@ public final class TestDataPagos {
                 .fechaVencimiento(LocalDate.now().minusMonths(1))
                 .estado("PAGADO")
                 .montoPagado(new BigDecimal("25000.00"))
+                .concepto(nroCuota <= 0 ? ConceptoPago.SEPARACION : ConceptoPago.CUOTA)
                 .build();
     }
 
@@ -97,18 +97,7 @@ public final class TestDataPagos {
                 .montoProgramado(new BigDecimal("25000.00"))
                 .fechaVencimiento(LocalDate.now().minusDays(10))
                 .estado("VENCIDO")
-                .build();
-    }
-
-    public static CartaAprobacion cartaAprobacion(UsuarioActivo ua) {
-        return CartaAprobacion.builder()
-                .usuarioActivo(ua)
-                .banco("Banco de Prueba")
-                .montoAprobado(new BigDecimal("300000.00"))
-                .fechaEmision(LocalDate.now())
-                .fechaVencimiento(LocalDate.now().plusMonths(6))
-                .fechaDesembolsoProyectada(LocalDate.now().plusMonths(1))
-                .comentarios("Carta de aprobación de prueba")
+                .concepto(nroCuota <= 0 ? ConceptoPago.SEPARACION : ConceptoPago.CUOTA)
                 .build();
     }
 
@@ -116,7 +105,6 @@ public final class TestDataPagos {
         return new CronogramaPagoRequest(
                 UUID.randomUUID(),
                 new BigDecimal("350000.00"),
-                new BigDecimal("50000.00"),
                 12,
                 BigDecimal.ZERO,
                 BigDecimal.ZERO
@@ -127,19 +115,9 @@ public final class TestDataPagos {
         return new PagoRequest(
                 nroCuota,
                 new BigDecimal("25000.00"),
-                LocalDate.now().plusMonths(nroCuota)
-        );
-    }
-
-    public static CartaAprobacionRequest crearCartaRequest() {
-        return new CartaAprobacionRequest(
-                UUID.randomUUID(),
-                "Banco de Prueba",
-                new BigDecimal("300000.00"),
-                LocalDate.now(),
-                LocalDate.now().plusMonths(6),
-                LocalDate.now().plusMonths(1),
-                "Comentarios de prueba"
+                LocalDate.now().plusMonths(nroCuota),
+                ConceptoPago.CUOTA,
+                null
         );
     }
 }

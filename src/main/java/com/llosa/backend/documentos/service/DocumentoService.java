@@ -245,6 +245,31 @@ public class DocumentoService {
         eliminarDocumento(documentoId);
     }
 
+    // ─── Crear referencia a un archivo GCS existente (sin re-subir) ──────────────
+
+    @Transactional
+    public DocumentoResponse crearReferenciaDocumento(
+            String rutaGcs,
+            String nombreOriginal,
+            String tipoMime,
+            String idReferencia,
+            String entidadReferencia,
+            TipoDocumento tipoDocumento,
+            Integer subidoPor
+    ) {
+        Documento documento = Documento.builder()
+                .rutaGcs(rutaGcs)
+                .nombreOriginal(nombreOriginal)
+                .idReferencia(idReferencia)
+                .entidadReferencia(entidadReferencia)
+                .tipoDocumento(tipoDocumento)
+                .tipoMime(tipoMime)
+                .accesoRestringido(true)
+                .subidoPor(subidoPor)
+                .build();
+        return DocumentoResponse.fromEntity(documentoRepository.save(documento));
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
     private void validarArchivo(MultipartFile file, TipoDocumento tipo) {

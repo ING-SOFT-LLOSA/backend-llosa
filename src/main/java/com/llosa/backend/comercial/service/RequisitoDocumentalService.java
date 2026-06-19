@@ -13,4 +13,5 @@ public interface RequisitoDocumentalService {
     RequisitoDocumental crearRequisito(RequisitoCreateRequest request);
     RequisitoDocumental actualizarRequisito(UUID id, RequisitoUpdateRequest request);
     void eliminarRequisitoTotalmente(UUID id, String firebaseUid);
+    void completarRequisitoConDocumento(UUID requisitoId, String rutaGcs, String nombreOriginal, String tipoMime, Integer subidoPor, String comentario);
 }
