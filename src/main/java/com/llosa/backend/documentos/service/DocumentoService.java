@@ -87,15 +87,26 @@ public class DocumentoService {
     }
 
     private StageDocumentsResponse.DocumentoItem mapActivoToItem(Activo activo) {
-        String tipo = activo.getTipo() == TipoActivo.DEPARTAMENTO ? "DEPARTAMENTO"
-                : activo.getTipo() == TipoActivo.COCHERA ? "ESTACIONAMIENTO" : "OTRO";
-        String nombre = activo.getTipo() == TipoActivo.DEPARTAMENTO
-                ? "Dpto. " + activo.getNro()
-                : activo.getTipo() == TipoActivo.COCHERA
-                  ? "Cochera " + activo.getNro()
-                  : activo.getNro();
-        String icono = activo.getTipo() == TipoActivo.DEPARTAMENTO ? "edificio"
-                : activo.getTipo() == TipoActivo.COCHERA ? "parking" : "file";
+        TipoActivo tipoEnum = activo.getTipo();
+
+        // 2. Usamos switch moderno como expresión para asignar las variables limpiamente
+        String tipo = switch (tipoEnum != null ? tipoEnum : TipoActivo.DEPOSITO) {
+            case DEPARTAMENTO -> "DEPARTAMENTO";
+            case COCHERA      -> "ESTACIONAMIENTO";
+            case DEPOSITO     -> "OTRO"; // Mapea DEPOSITO (o nulos) a "OTRO" como tu código original
+        };
+
+        String nombre = switch (tipoEnum != null ? tipoEnum : TipoActivo.DEPOSITO) {
+            case DEPARTAMENTO -> "Dpto. " + activo.getNro();
+            case COCHERA      -> "Cochera " + activo.getNro();
+            case DEPOSITO     -> activo.getNro();
+        };
+
+        String icono = switch (tipoEnum != null ? tipoEnum : TipoActivo.DEPOSITO) {
+            case DEPARTAMENTO -> "edificio";
+            case COCHERA      -> "parking";
+            case DEPOSITO     -> "file";
+        };
 
         DecimalFormat df = new DecimalFormat("#,###");
         String aporte = "S/." + df.format(activo.getPrecio());
