@@ -194,7 +194,7 @@ public class UsuarioService {
         return r;
     }
 
-    private void sendPasswordResetEmail(String email) throws Exception {
+    private void sendPasswordResetEmail(String email) {
         String apiKey = "AIzaSyDo_yQ7_tJ3kulCZXaqOcPXAzywtF4pAj0";
         String url = "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=" + apiKey;
 

@@ -181,9 +181,11 @@ public class StageServiceImpl implements StageService {
                 items
         );
     }
+
     @Override
     @Transactional(readOnly = true)
     public StageActivosResponse obtenerActivosEtapa(String firebaseUid, UUID uuidUsuarioActivo, EtapaProceso etapaProceso) {
+
         // 1. Si no estamos en la etapa de CONTRATO, retornamos estructura vacía de inmediato
         if (etapaProceso != EtapaProceso.CONTRATO) {
             return new StageActivosResponse(null, 0, List.of());
@@ -195,36 +197,54 @@ public class StageServiceImpl implements StageService {
         List<StageActivosResponse.ActivoItemResponse> activosDTO = new ArrayList<>();
         BigDecimal areaTotal = BigDecimal.ZERO;
 
-        // 3. Recorrer los activos usando la estructura exacta de tu entidad 'Activo'
+        // 3. Recorrer los activos (Complejidad reducida usando 'continue')
         if (ua.getActivos() != null) {
             for (Activo activo : ua.getActivos()) {
-                if (activo != null) {
-                    activosDTO.add(new StageActivosResponse.ActivoItemResponse(
-                            activo.getId(), // 'id' mapeado a uuid_activo
-                            activo.getNro(),
-                            activo.getTipo() != null ? activo.getTipo().name() : null,
-                            activo.getAreaM2(),
-                            activo.getPrecio(),
-                            activo.getDescripcion(),
-                            activo.getLinkRecorridoVirtual()
-                    ));
+                if (activo == null) {
+                    continue; // Evita anidar el resto del código en un 'if'
+                }
 
-                    if (activo.getAreaM2() != null) {
-                        areaTotal = areaTotal.add(activo.getAreaM2());
-                    }
+                activosDTO.add(construirActivoResponse(activo));
+
+                if (activo.getAreaM2() != null) {
+                    areaTotal = areaTotal.add(activo.getAreaM2());
                 }
             }
         }
 
-        // 4. Formatear la información del contrato para el string resumen
-        String firmaContrato = ua.getFechaAdquisicion() != null ? ua.getFechaAdquisicion().format(FRONT_DATE_FORMATTER) : "Pendiente";
-        String financiamiento = ua.getTipoFinanciamiento() != null ? ua.getTipoFinanciamiento() : "-";
+        // 4. Formatear el resumen delegando la lógica
+        String resumen = construirResumenContrato(ua, areaTotal);
 
-        String resumen = String.format(Locale.US,
+        // 5. Retornar
+        return new StageActivosResponse(resumen, activosDTO.size(), activosDTO);
+    }
+
+    private StageActivosResponse.ActivoItemResponse construirActivoResponse(Activo activo) {
+        String tipoNombre = activo.getTipo() != null ? activo.getTipo().name() : null;
+
+        return new StageActivosResponse.ActivoItemResponse(
+                activo.getId(), // 'id' mapeado a uuid_activo
+                activo.getNro(),
+                tipoNombre,
+                activo.getAreaM2(),
+                activo.getPrecio(),
+                activo.getDescripcion(),
+                activo.getLinkRecorridoVirtual()
+        );
+    }
+
+    private String construirResumenContrato(UsuarioActivo ua, BigDecimal areaTotal) {
+        String firmaContrato = ua.getFechaAdquisicion() != null
+                ? ua.getFechaAdquisicion().format(FRONT_DATE_FORMATTER)
+                : "Pendiente";
+
+        String financiamiento = ua.getTipoFinanciamiento() != null
+                ? ua.getTipoFinanciamiento()
+                : "-";
+
+        return String.format(Locale.US,
                 "Contrato firmado: %s | Financiamiento: %s | Área total: %.2f m²",
                 firmaContrato, financiamiento, areaTotal.doubleValue());
-
-        return new StageActivosResponse(resumen, activosDTO.size(), activosDTO);
     }
 
     // ─── Helpers ────────────────────────────────────────────────────────────────
