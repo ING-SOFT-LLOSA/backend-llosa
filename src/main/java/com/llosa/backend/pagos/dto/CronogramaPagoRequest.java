@@ -11,5 +11,5 @@ public record CronogramaPagoRequest(
         @NotNull @Positive BigDecimal totalPactado,
         Integer numeroCuotas,
         BigDecimal pagoSeparacion,
-        BigDecimal pagoIncial
+        BigDecimal pagoInicial
 ) {}

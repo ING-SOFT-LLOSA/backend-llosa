@@ -21,6 +21,9 @@ import java.util.UUID;
 @ToString(exclude = {"usuarioActivo"})
 public class CronogramaPago {
 
+    public static final String ESTADO_ACTIVO = "ACTIVO";
+    public static final String ESTADO_HISTORICO = "HISTORICO";
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "uuid_cronograma", updatable = false, nullable = false)
