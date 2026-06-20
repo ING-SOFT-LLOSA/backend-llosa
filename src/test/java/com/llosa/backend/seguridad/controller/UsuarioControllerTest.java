@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.llosa.backend.config.FirebaseConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
+import com.llosa.backend.exception.AccesoDenegadoException;
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EmailDuplicadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.seguridad.dto.AsignarRolRequest;
@@ -268,6 +270,32 @@ class UsuarioControllerTest {
                         .with(csrf()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Usuario no encontrado"));
+    }
+
+    // ── Desactivar Admin / Superadmin ─────────────────────────────────────────
+
+    @Test
+    void desactivar_ultimoAdmin_devuelve400() throws Exception {
+        doThrow(new BusinessException("No se puede desactivar al unico administrador del sistema"))
+                .when(usuarioService).cambiarEstado(eq(1), eq(false));
+
+        mockMvc.perform(delete("/api/users/1")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("No se puede desactivar al unico administrador del sistema"));
+    }
+
+    @Test
+    void desactivar_admin_comoNoAdmin_devuelve403() throws Exception {
+        doThrow(new AccesoDenegadoException("Solo un administrador puede desactivar a otro administrador"))
+                .when(usuarioService).cambiarEstado(eq(2), eq(false));
+
+        mockMvc.perform(delete("/api/users/2")
+                        .with(authentication(TestData.authToken()))
+                        .with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Solo un administrador puede desactivar a otro administrador"));
     }
 
     // ── Body vacío y Content-Type ausente ────────────────────────────────────

@@ -3,6 +3,8 @@ package com.llosa.backend.seguridad.service;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
 import com.llosa.backend.config.TestData;
+import com.llosa.backend.exception.AccesoDenegadoException;
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EmailDuplicadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.seguridad.dto.CrearUsuarioRequest;
@@ -11,6 +13,7 @@ import com.llosa.backend.seguridad.entity.Rol;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.RolRepository;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +22,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
@@ -41,6 +47,11 @@ class UsuarioServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(usuarioService, "dominioCorporativo", "test.com");
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     // ── crearUsuario ─────────────────────────────────────────────────────────
@@ -275,6 +286,141 @@ class UsuarioServiceTest {
                     .isInstanceOf(RecursoNoEncontradoException.class)
                     .hasMessageContaining("no encontrado");
         }
+    }
+
+    // ── cambiarEstado con Admin ────────────────────────────────────────────────
+
+    @Test
+    void desactivarUltimoAdmin_lanzaBusinessException() {
+        Rol adminRol = new Rol();
+        adminRol.setIdRol(1);
+        adminRol.setNombre("ADMIN");
+
+        Usuario targetAdmin = new Usuario();
+        targetAdmin.setId(1);
+        targetAdmin.setFirebaseUuid("admin-uid");
+        targetAdmin.setRol(adminRol);
+        targetAdmin.setActivo(true);
+
+        when(usuarioRepository.findById(1)).thenReturn(Optional.of(targetAdmin));
+        when(usuarioRepository.countByRol_NombreAndActivoTrue("ADMIN")).thenReturn(1L);
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            assertThatThrownBy(() -> usuarioService.cambiarEstado(1, false))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("No se puede desactivar al unico administrador");
+
+            ms.verifyNoInteractions();
+        }
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void desactivarAdmin_comoAdmin_exitoso() throws Exception {
+        Rol adminRol = new Rol();
+        adminRol.setIdRol(1);
+        adminRol.setNombre("ADMIN");
+
+        Usuario targetAdmin = new Usuario();
+        targetAdmin.setId(10);
+        targetAdmin.setFirebaseUuid("target-admin-uid");
+        targetAdmin.setRol(adminRol);
+        targetAdmin.setActivo(true);
+
+        Usuario callerAdmin = new Usuario();
+        callerAdmin.setId(20);
+        callerAdmin.setFirebaseUuid("caller-admin-uid");
+        callerAdmin.setRol(adminRol);
+
+        when(usuarioRepository.findById(10)).thenReturn(Optional.of(targetAdmin));
+        when(usuarioRepository.countByRol_NombreAndActivoTrue("ADMIN")).thenReturn(3L);
+        when(usuarioRepository.findByFirebaseUuid("caller-admin-uid")).thenReturn(Optional.of(callerAdmin));
+        when(usuarioRepository.save(any())).thenReturn(targetAdmin);
+
+        Authentication auth = mock(Authentication.class);
+        when(auth.getName()).thenReturn("caller-admin-uid");
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(auth);
+        SecurityContextHolder.setContext(securityContext);
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            usuarioService.cambiarEstado(10, false);
+
+            verify(mockAuth).revokeRefreshTokens("target-admin-uid");
+            verify(mockAuth).updateUser(any(UserRecord.UpdateRequest.class));
+            assertThat(targetAdmin.getActivo()).isFalse();
+        }
+    }
+
+    @Test
+    void desactivarAdmin_comoNoAdmin_lanzaAccesoDenegado() {
+        Rol adminRol = new Rol();
+        adminRol.setIdRol(1);
+        adminRol.setNombre("ADMIN");
+
+        Rol clienteRol = new Rol();
+        clienteRol.setIdRol(2);
+        clienteRol.setNombre("CLIENTE");
+
+        Usuario targetAdmin = new Usuario();
+        targetAdmin.setId(10);
+        targetAdmin.setFirebaseUuid("target-admin-uid");
+        targetAdmin.setRol(adminRol);
+        targetAdmin.setActivo(true);
+
+        Usuario callerCliente = new Usuario();
+        callerCliente.setId(30);
+        callerCliente.setFirebaseUuid("caller-cliente-uid");
+        callerCliente.setRol(clienteRol);
+
+        when(usuarioRepository.findById(10)).thenReturn(Optional.of(targetAdmin));
+        when(usuarioRepository.countByRol_NombreAndActivoTrue("ADMIN")).thenReturn(3L);
+        when(usuarioRepository.findByFirebaseUuid("caller-cliente-uid")).thenReturn(Optional.of(callerCliente));
+
+        Authentication auth = mock(Authentication.class);
+        when(auth.getName()).thenReturn("caller-cliente-uid");
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(auth);
+        SecurityContextHolder.setContext(securityContext);
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            assertThatThrownBy(() -> usuarioService.cambiarEstado(10, false))
+                    .isInstanceOf(AccesoDenegadoException.class)
+                    .hasMessageContaining("Solo un administrador puede desactivar");
+
+            ms.verifyNoInteractions();
+        }
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void desactivarAdmin_sinAuthentication_lanzaAccesoDenegado() {
+        Rol adminRol = new Rol();
+        adminRol.setIdRol(1);
+        adminRol.setNombre("ADMIN");
+
+        Usuario targetAdmin = new Usuario();
+        targetAdmin.setId(10);
+        targetAdmin.setFirebaseUuid("target-admin-uid");
+        targetAdmin.setRol(adminRol);
+        targetAdmin.setActivo(true);
+
+        when(usuarioRepository.findById(10)).thenReturn(Optional.of(targetAdmin));
+        when(usuarioRepository.countByRol_NombreAndActivoTrue("ADMIN")).thenReturn(3L);
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            assertThatThrownBy(() -> usuarioService.cambiarEstado(10, false))
+                    .isInstanceOf(AccesoDenegadoException.class)
+                    .hasMessageContaining("Solo un administrador puede desactivar");
+// ... existing code continues, this is the sinAuthentication test
+
+            ms.verifyNoInteractions();
+        }
+        verify(usuarioRepository, never()).save(any());
     }
 
     @Test

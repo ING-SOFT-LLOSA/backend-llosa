@@ -11,6 +11,8 @@ import com.llosa.backend.seguridad.entity.Rol;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.RolRepository;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.exception.AccesoDenegadoException;
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EmailDuplicadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.seguridad.dto.UsuarioResponseFunciones;
@@ -19,12 +21,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import com.llosa.backend.seguridad.repository.FuncionRepository;
-import com.llosa.backend.exception.BusinessException;
 
 @Service
 @RequiredArgsConstructor
@@ -141,6 +144,25 @@ public class UsuarioService {
     public void cambiarEstado(Integer usuarioId, Boolean activo) throws Exception {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException(USUARIO_NO_ENCONTRADO));
+
+        if (!activo && usuario.getRol() != null && "ADMIN".equals(usuario.getRol().getNombre())) {
+            long adminCount = usuarioRepository.countByRol_NombreAndActivoTrue("ADMIN");
+            if (adminCount <= 1) {
+                throw new BusinessException("No se puede desactivar al unico administrador del sistema");
+            }
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || auth.getName() == null) {
+                throw new AccesoDenegadoException("Solo un administrador puede desactivar a otro administrador");
+            }
+
+            Usuario caller = usuarioRepository.findByFirebaseUuid(auth.getName())
+                    .orElseThrow(() -> new AccesoDenegadoException("Solo un administrador puede desactivar a otro administrador"));
+
+            if (caller.getRol() == null || !"ADMIN".equals(caller.getRol().getNombre())) {
+                throw new AccesoDenegadoException("Solo un administrador puede desactivar a otro administrador");
+            }
+        }
 
         FirebaseAuth.getInstance().revokeRefreshTokens(usuario.getFirebaseUuid());
         FirebaseAuth.getInstance().updateUser(
