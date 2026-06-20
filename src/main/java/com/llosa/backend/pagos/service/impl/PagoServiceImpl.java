@@ -43,8 +43,8 @@ public class PagoServiceImpl implements PagoService {
     private final RequisitoDocumentalService requisitoDocumentalService;
     private final AgendaService agendaService;
 
-    static private final String PAGO_NO_ENCONTRADO = "Pago no encontrado: ";
-    static private final String PAGADO = "PAGADO";
+    private static final String PAGO_NO_ENCONTRADO = "Pago no encontrado: ";
+    private static final String PAGADO = "PAGADO";
 
     @Override
     public List<PagoResponse> listarPorCronograma(UUID uuidCronograma) {
