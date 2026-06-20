@@ -16,8 +16,8 @@ public class TorreServiceImpl implements TorreService {
     private final TorreRepository torreRepository;
     private final ProyectoRepository proyectoRepository;
 
-    public Torre save(UUID ProyectoId, Torre torre) {
-        Proyecto proyecto = proyectoRepository.findById(ProyectoId).orElseThrow(
+    public Torre save(UUID proyectoId, Torre torre) {
+        Proyecto proyecto = proyectoRepository.findById(proyectoId).orElseThrow(
                 () -> new RuntimeException("Proyecto no encontrado")
         );
         torre.setProyecto(proyecto);

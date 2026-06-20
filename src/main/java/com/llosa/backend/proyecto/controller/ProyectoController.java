@@ -129,10 +129,10 @@ public class ProyectoController {
     Estado: Funcional
      */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
-    @PostMapping("/{id_proyecto}/estructura-fisica")
-    public ResponseEntity<Void> crearEstructuraFisica(@PathVariable("id_proyecto") UUID id_proyecto,
+    @PostMapping("/{idProyecto}/estructura-fisica")
+    public ResponseEntity<Void> crearEstructuraFisica(@PathVariable UUID idProyecto,
                                                       @Valid @RequestBody ProyectoCargaDTO estructuraFisica) {
-        proyectoService.cargarProyecto(id_proyecto,estructuraFisica);
+        proyectoService.cargarProyecto(idProyecto,estructuraFisica);
         return ResponseEntity.ok().build();
     }
 
