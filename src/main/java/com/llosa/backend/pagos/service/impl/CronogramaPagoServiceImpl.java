@@ -100,35 +100,40 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
 
         List<Pago> pagosGuardados = pagoRepository.saveAll(pagos);
 
-        // Crear recordatorios de calendario para cuotas futuras
+        // Crear recordatorios de calendario para cuotas futuras (solo si hay asesor)
         Usuario gestor = ua.getAsesor();
-        Usuario cliente = ua.getClientes().isEmpty() ? null : ua.getClientes().get(0);
-        Activo activo = ua.getActivos().isEmpty() ? null : ua.getActivos().get(0);
+        if (gestor != null) {
+            Usuario cliente = ua.getClientes().isEmpty() ? null : ua.getClientes().get(0);
+            Activo activo = ua.getActivos().isEmpty() ? null : ua.getActivos().get(0);
 
-        for (Pago pago : pagosGuardados) {
-            if (pago.getConcepto() != ConceptoPago.CUOTA) continue;
-            if (pago.getFechaVencimiento().isBefore(LocalDate.now())) continue;
-            if (cliente == null || activo == null) {
-                log.warn("[Cronograma] No se pudo crear recordatorio de pago para cuota {}: faltan cliente o activo",
-                        pago.getNroCuota());
-                continue;
+            for (Pago pago : pagosGuardados) {
+                if (pago.getConcepto() != ConceptoPago.CUOTA) continue;
+                if (pago.getFechaVencimiento().isBefore(LocalDate.now())) continue;
+                if (cliente == null || activo == null) {
+                    log.warn("[Cronograma] No se pudo crear recordatorio de pago para cuota {}: faltan cliente o activo",
+                            pago.getNroCuota());
+                    continue;
+                }
+
+                CrearCitaRequest citaReq = new CrearCitaRequest(
+                        cliente.getId(),
+                        activo.getId(),
+                        TipoEvento.RECORDATORIO_PAGO,
+                        "Vencimiento de cuota N° " + pago.getNroCuota(),
+                        null,
+                        null,
+                        pago.getFechaVencimiento().atTime(10, 0),
+                        pago.getFechaVencimiento().atTime(11, 0),
+                        false,
+                        false
+                );
+
+                CitaResponse citaResponse = agendaService.crearCita(gestor.getFirebaseUuid(), citaReq);
+                pago.setUuidCita(citaResponse.id());
             }
-
-            CrearCitaRequest citaReq = new CrearCitaRequest(
-                    cliente.getId(),
-                    activo.getId(),
-                    TipoEvento.RECORDATORIO_PAGO,
-                    "Vencimiento de cuota N° " + pago.getNroCuota(),
-                    null,
-                    null,
-                    pago.getFechaVencimiento().atTime(10, 0),
-                    pago.getFechaVencimiento().atTime(11, 0),
-                    false,
-                    false
-            );
-
-            CitaResponse citaResponse = agendaService.crearCita(gestor.getFirebaseUuid(), citaReq);
-            pago.setUuidCita(citaResponse.id());
+        } else {
+            log.info("[Cronograma] Expediente {} sin asesor asignado, no se crean recordatorios de pago",
+                    ua.getUuidUsuarioActivo());
         }
 
         pagoRepository.saveAll(pagosGuardados);
