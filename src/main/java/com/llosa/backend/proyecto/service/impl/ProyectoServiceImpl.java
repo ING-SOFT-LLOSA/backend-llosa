@@ -26,7 +26,6 @@ public class ProyectoServiceImpl implements ProyectoService {
     private final TorreService torreService;
     private final ActivoService activoService;
     private final PisoService pisoService;
-    private final HidratationService hidratacionService;
     private final FlujoConstruccionFactory flujoConstruccionFactory;
 
     @Override

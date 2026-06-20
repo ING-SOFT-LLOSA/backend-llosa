@@ -32,7 +32,6 @@ import java.util.UUID;
 public class UsuarioActivoServiceImpl implements UsuarioActivoService {
 
     private final UsuarioActivoRepository usuarioActivoRepository;
-    private final ActivoService activoService;
     private final UsuarioRepository usuarioRepository;
     private final FlujoComercialFactory flujoComercialFactory;
     private final ActivoRepository activoRepository;

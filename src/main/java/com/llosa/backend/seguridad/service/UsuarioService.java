@@ -199,19 +199,24 @@ public class UsuarioService {
         String url = "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=" + apiKey;
 
         String body = "{\"requestType\":\"PASSWORD_RESET\",\"email\":\"" + email + "\"}";
+        try (java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient()) {
 
-        java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-        java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
-                .uri(java.net.URI.create(url))
-                .header("Content-Type", "application/json")
-                .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
-                .build();
+            java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
+                    .build();
 
-        java.net.http.HttpResponse<String> response = client.send(httpRequest,
-                java.net.http.HttpResponse.BodyHandlers.ofString());
+            java.net.http.HttpResponse<String> response = client.send(httpRequest,
+                    java.net.http.HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() != 200) {
-            throw new RuntimeException("Error al enviar email de bienvenida: " + response.body());
+            if (response.statusCode() != 200) {
+                throw new RuntimeException("Error al enviar email de bienvenida: " + response.body());
+            }
+
+        } catch (java.io.IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Error de comunicación con el servidor de correo: " + e.getMessage(), e);
         }
     }
 

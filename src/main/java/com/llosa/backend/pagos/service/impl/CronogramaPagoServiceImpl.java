@@ -43,7 +43,9 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     private final PagoFlujoFactory pagoFlujoFactory;
     private final EtapaExpedienteRepository etapaExpedienteRepository;
     private final RequisitoDocumentalRepository requisitoDocumentalRepository;
-
+    
+    static private final String CRONOGRAMA_NO_ENCONTRADO_MSG = "Cronograma no encontrado: ";
+    
     @Override
     @Transactional
     public CronogramaPagoResponse crear(CronogramaPagoRequest request) {
@@ -68,28 +70,31 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
 
         // Generar pagos automáticos según tipo de financiamiento
         List<Pago> pagos = pagoFlujoFactory.generarPagos(guardado, ua.getTipoFinanciamiento());
-
-        // Vincular pagos de separación e inicial a sus requisitos documentales
-        for (Pago pago : pagos) {
-            switch (pago.getConcepto()) {
-                case SEPARACION -> {
-                    Optional<UUID> reqId = buscarRequisito(ua.getUuidUsuarioActivo(),
-                            EtapaProceso.SEPARACION, "Comprobante de separación");
-                    reqId.ifPresent(pago::setUuidRequisitoDocumental);
-                }
-                case INICIAL -> {
-                    Optional<UUID> reqId = buscarRequisito(ua.getUuidUsuarioActivo(),
-                            EtapaProceso.CONTRATO, "Pago Inicial");
-                    reqId.ifPresent(pago::setUuidRequisitoDocumental);
-                }
-                default -> { }
-            }
-        }
+        // Correcion
+        vincularPagosARequisitos(pagos, ua.getUuidUsuarioActivo());
 
         pagoRepository.saveAll(pagos);
+
         log.info("Cronograma creado: {} para expediente: {} con {} pagos generados",
                 guardado.getId(), request.uuidUsuarioActivo(), pagos.size());
+
         return CronogramaPagoResponse.fromEntity(guardado);
+    }
+
+    private void vincularPagosARequisitos(List<Pago> pagos, UUID uuidUsuarioActivo) {
+        for (Pago pago : pagos) {
+            switch (pago.getConcepto()) {
+                case SEPARACION -> buscarRequisito(uuidUsuarioActivo, EtapaProceso.SEPARACION, "Comprobante de separación")
+                        .ifPresent(pago::setUuidRequisitoDocumental);
+
+                case INICIAL -> buscarRequisito(uuidUsuarioActivo, EtapaProceso.CONTRATO, "Pago Inicial")
+                        .ifPresent(pago::setUuidRequisitoDocumental);
+
+                default -> {
+                    // No requiere vinculación
+                }
+            }
+        }
     }
 
     private Optional<UUID> buscarRequisito(UUID uuidUsuarioActivo, EtapaProceso etapa, String titulo) {
@@ -115,7 +120,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     public CronogramaPagoResponse actualizar(UUID uuidCronograma, CronogramaPagoRequest request) {
         CronogramaPago cp = cronogramaPagoRepository.findById(uuidCronograma)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "Cronograma no encontrado: " + uuidCronograma));
+                        CRONOGRAMA_NO_ENCONTRADO_MSG + uuidCronograma));
 
         cp.setTotalPactado(request.totalPactado());
         cp.setNumeroCuotas(request.numeroCuotas());
@@ -131,7 +136,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     @Transactional
     public void eliminar(UUID uuidCronograma) {
         if (!cronogramaPagoRepository.existsById(uuidCronograma)) {
-            throw new RecursoNoEncontradoException("Cronograma no encontrado: " + uuidCronograma);
+            throw new RecursoNoEncontradoException(CRONOGRAMA_NO_ENCONTRADO_MSG + uuidCronograma);
         }
         cronogramaPagoRepository.deleteById(uuidCronograma);
         log.info("Cronograma eliminado: {}", uuidCronograma);
@@ -142,7 +147,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     public ResumenResponseHipotecarioDTO obtenerResumenHipotecario(UUID uuidCronograma) {
         CronogramaPago cp = cronogramaPagoRepository.findById(uuidCronograma)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "Cronograma no encontrado: " + uuidCronograma));
+                        CRONOGRAMA_NO_ENCONTRADO_MSG + uuidCronograma));
 
         BigDecimal montoTotal = cp.getTotalPactado();
         BigDecimal pagoSeparacion = cp.getPagoSeparacion() != null ? cp.getPagoSeparacion() : BigDecimal.ZERO;
@@ -169,7 +174,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     public ResumenResponse obtenerResumen(UUID uuidCronograma) {
         CronogramaPago cp = cronogramaPagoRepository.findById(uuidCronograma)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "Cronograma no encontrado: " + uuidCronograma));
+                        CRONOGRAMA_NO_ENCONTRADO_MSG + uuidCronograma));
 
         List<Pago> pagos = pagoRepository.findByCronograma_IdOrderByNroCuotaAsc(uuidCronograma);
 
