@@ -109,17 +109,19 @@ public class SeguridadConcurrencyTest {
      */
     @Test
     void asignacionConcurrenteDeRol_dbConsistente() throws InterruptedException {
-        Rol crearRolA = new Rol();
-        crearRolA.setNombre("CLIENTE");
-        // crearRolA.setDescripcion("..."); // Descomenta si tu BD exige descripción obligatoria
-        rolRepository.save(crearRolA);
 
-        Rol crearRolB = new Rol();
-        crearRolB.setNombre("ASESOR");
-        rolRepository.save(crearRolB);
+        // 1. Buscamos el rol, y SOLO lo creamos si no existe previamente
+        Rol rolA = rolRepository.findByNombre("CLIENTE").orElseGet(() -> {
+            Rol r = new Rol();
+            r.setNombre("CLIENTE");
+            return rolRepository.save(r);
+        });
 
-        Rol rolA = rolRepository.findByNombre("CLIENTE").orElseThrow();
-        Rol rolB = rolRepository.findByNombre("ASESOR").orElseThrow();
+        Rol rolB = rolRepository.findByNombre("ASESOR").orElseGet(() -> {
+            Rol r = new Rol();
+            r.setNombre("ASESOR");
+            return rolRepository.save(r);
+        });
 
         Usuario usuario = TestData.usuarioConEmail("rol-concurrente@test.com");
         usuarioRepository.save(usuario);
@@ -133,6 +135,7 @@ public class SeguridadConcurrencyTest {
         ExecutorService executor = Executors.newFixedThreadPool(hilos);
         List<Exception> errores = new CopyOnWriteArrayList<>();
 
+        // 2. Ejecutamos la prueba de concurrencia
         for (int i = 0; i < hilos; i++) {
             final Rol rol = (i % 2 == 0) ? rolA : rolB;
             executor.submit(() -> {
@@ -156,7 +159,7 @@ public class SeguridadConcurrencyTest {
         fin.await(30, TimeUnit.SECONDS);
         executor.shutdownNow();
 
-        // DB debe tener al usuario con uno de los dos roles (estado consistente)
+        // 3. Verificamos consistencia
         Usuario resultado = usuarioRepository.findById(uid).orElseThrow();
         assertThat(resultado.getRol()).isNotNull();
         assertThat(resultado.getRol().getNombre()).isIn("CLIENTE", "ASESOR");
