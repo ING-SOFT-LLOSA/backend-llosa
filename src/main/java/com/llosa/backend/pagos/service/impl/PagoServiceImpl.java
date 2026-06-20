@@ -43,6 +43,9 @@ public class PagoServiceImpl implements PagoService {
     private final RequisitoDocumentalService requisitoDocumentalService;
     private final AgendaService agendaService;
 
+    static private final String PAGO_NO_ENCONTRADO = "Pago no encontrado: ";
+    static private final String PAGADO = "PAGADO";
+
     @Override
     public List<PagoResponse> listarPorCronograma(UUID uuidCronograma) {
         return pagoRepository.findByCronograma_IdOrderByNroCuotaAsc(uuidCronograma)
@@ -89,7 +92,7 @@ public class PagoServiceImpl implements PagoService {
     @Transactional
     public PagoResponse actualizarCuota(UUID uuidPago, PagoRequest request) {
         Pago pago = pagoRepository.findById(uuidPago)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Pago no encontrado: " + uuidPago));
+                .orElseThrow(() -> new RecursoNoEncontradoException(PAGO_NO_ENCONTRADO + uuidPago));
 
         // Validar que no exista duplicado por concepto único (solo si cambia de concepto)
         if (request.concepto() != null && request.concepto() != pago.getConcepto()
@@ -148,7 +151,7 @@ public class PagoServiceImpl implements PagoService {
     @Transactional
     public void eliminarCuota(UUID uuidPago) {
         Pago pago = pagoRepository.findById(uuidPago)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Pago no encontrado: " + uuidPago));
+                .orElseThrow(() -> new RecursoNoEncontradoException(PAGO_NO_ENCONTRADO + uuidPago));
 
         UUID uuidCita = pago.getUuidCita();
         pagoRepository.deleteById(uuidPago);
@@ -169,15 +172,15 @@ public class PagoServiceImpl implements PagoService {
     @Transactional
     public PagoResponse cambiarEstado(UUID uuidPago, String nuevoEstado, Integer actualizadoPor) {
         Pago pago = pagoRepository.findById(uuidPago)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Pago no encontrado: " + uuidPago));
+                .orElseThrow(() -> new RecursoNoEncontradoException(PAGO_NO_ENCONTRADO + uuidPago));
 
-        if (!List.of("PENDIENTE", "PAGADO", "VENCIDO").contains(nuevoEstado)) {
+        if (!List.of("PENDIENTE", PAGADO, "VENCIDO").contains(nuevoEstado)) {
             throw new EstadoInvalidoException("Estado inválido: " + nuevoEstado);
         }
 
         pago.setEstado(nuevoEstado);
 
-        if ("PAGADO".equals(nuevoEstado)) {
+        if (PAGADO.equals(nuevoEstado)) {
             pago.setFechaPago(LocalDateTime.now());
             if (pago.getMontoPagado().compareTo(java.math.BigDecimal.ZERO) == 0) {
                 pago.setMontoPagado(pago.getMontoProgramado());
@@ -197,7 +200,7 @@ public class PagoServiceImpl implements PagoService {
     @Transactional
     public PagoResponse subirComprobante(UUID uuidPago, MultipartFile file, Integer subidoPor, String comentario) {
         Pago pago = pagoRepository.findById(uuidPago)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Pago no encontrado: " + uuidPago));
+                .orElseThrow(() -> new RecursoNoEncontradoException(PAGO_NO_ENCONTRADO + uuidPago));
 
         DocumentoResponse doc = documentoService.subirDocumentoPolimorfico(
                 file,
@@ -228,8 +231,8 @@ public class PagoServiceImpl implements PagoService {
             pago.setComentario(comentario);
         }
 
-        if (!"PAGADO".equals(pago.getEstado())) {
-            pago.setEstado("PAGADO");
+        if (!PAGADO.equals(pago.getEstado())) {
+            pago.setEstado(PAGADO);
             pago.setFechaPago(LocalDateTime.now());
             if (pago.getMontoPagado().compareTo(java.math.BigDecimal.ZERO) == 0) {
                 pago.setMontoPagado(pago.getMontoProgramado());

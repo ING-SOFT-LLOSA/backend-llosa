@@ -23,11 +23,11 @@ public class AvanceController {
     Estado: Funcional
      */
     @PreAuthorize("hasAuthority('OBRA_EDITAR')")
-    @PutMapping("/{id_hito_piso}")
-    public ResponseEntity<AvanceUnidadResponseDTO> actualizarAvance(@PathVariable UUID id_hito_piso,
+    @PutMapping("/{idHitoPiso}")
+    public ResponseEntity<AvanceUnidadResponseDTO> actualizarAvance(@PathVariable UUID idHitoPiso,
                                                                     @Valid @RequestBody HitoPisoUpdateDTO dto) {
         return ResponseEntity.ok(
-            AvanceUnidadResponseDTO.fromEntity(hitoPisoService.cambiarEstado(id_hito_piso, dto.estado()))
+            AvanceUnidadResponseDTO.fromEntity(hitoPisoService.cambiarEstado(idHitoPiso, dto.estado()))
         );
     }
 }

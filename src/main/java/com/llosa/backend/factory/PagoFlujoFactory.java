@@ -17,49 +17,68 @@ public class PagoFlujoFactory {
     public List<Pago> generarPagos(CronogramaPago cronograma, String tipoFinanciamiento) {
         List<Pago> pagos = new ArrayList<>();
 
+        // 1. Pagos base (siempre se crean si existen)
+        agregarPagosBase(pagos, cronograma);
+
+        // 2. Determinar el flujo según el tipo de financiamiento
         boolean esHipotecario = tipoFinanciamiento != null
                 && tipoFinanciamiento.toUpperCase().contains("HIPOT");
 
-        // Pago de separación (siempre se crea el registro)
-        if (cronograma.getPagoSeparacion() != null) {
-            pagos.add(construirPago(cronograma, -1, cronograma.getPagoSeparacion(),
-                    ConceptoPago.SEPARACION));
-        }
-
-        // Pago inicial (siempre se crea el registro)
-        if (cronograma.getPagoInicial() != null) {
-            pagos.add(construirPago(cronograma, 0, cronograma.getPagoInicial(),
-                    ConceptoPago.INICIAL));
-        }
-
         if (esHipotecario) {
-            // Pago completo (restante después de separación e inicial)
-            BigDecimal pagado = BigDecimal.ZERO;
-            if (cronograma.getPagoSeparacion() != null)
-                pagado = pagado.add(cronograma.getPagoSeparacion());
-            if (cronograma.getPagoInicial() != null)
-                pagado = pagado.add(cronograma.getPagoInicial());
-
-            BigDecimal completo = cronograma.getTotalPactado().subtract(pagado);
-            if (completo.compareTo(BigDecimal.ZERO) > 0) {
-                pagos.add(construirPago(cronograma, 1, completo,
-                        ConceptoPago.COMPLETO));
-            }
+            generarPagoHipotecario(pagos, cronograma);
         } else {
-            // Cuotas regulares para crédito directo
-            int numCuotas = cronograma.getNumeroCuotas() != null ? cronograma.getNumeroCuotas() : 0;
-            if (numCuotas > 0) {
-                BigDecimal montoCuota = calcularMontoCuota(cronograma, numCuotas);
-                LocalDate vencimientoBase = LocalDate.now().plusMonths(1);
-
-                for (int i = 1; i <= numCuotas; i++) {
-                    pagos.add(construirPago(cronograma, i, montoCuota,
-                            ConceptoPago.CUOTA, vencimientoBase.plusMonths((long)i - 1)));
-                }
-            }
+            generarCuotasDirectas(pagos, cronograma);
         }
 
         return pagos;
+    }
+
+    // =========================================================================
+    // MÉTODOS EXTRACTOS PARA REDUCIR COMPLEJIDAD COGNITIVA
+    // =========================================================================
+
+    private void agregarPagosBase(List<Pago> pagos, CronogramaPago cronograma) {
+        if (cronograma.getPagoSeparacion() != null) {
+            pagos.add(construirPago(cronograma, -1, cronograma.getPagoSeparacion(), ConceptoPago.SEPARACION));
+        }
+        if (cronograma.getPagoInicial() != null) {
+            pagos.add(construirPago(cronograma, 0, cronograma.getPagoInicial(), ConceptoPago.INICIAL));
+        }
+    }
+
+    private void generarPagoHipotecario(List<Pago> pagos, CronogramaPago cronograma) {
+        BigDecimal pagado = BigDecimal.ZERO;
+
+        if (cronograma.getPagoSeparacion() != null) {
+            pagado = pagado.add(cronograma.getPagoSeparacion());
+        }
+        if (cronograma.getPagoInicial() != null) {
+            pagado = pagado.add(cronograma.getPagoInicial());
+        }
+
+        BigDecimal completo = cronograma.getTotalPactado().subtract(pagado);
+
+        if (completo.compareTo(BigDecimal.ZERO) > 0) {
+            pagos.add(construirPago(cronograma, 1, completo, ConceptoPago.COMPLETO));
+        }
+    }
+
+    private void generarCuotasDirectas(List<Pago> pagos, CronogramaPago cronograma) {
+        int numCuotas = cronograma.getNumeroCuotas() != null ? cronograma.getNumeroCuotas() : 0;
+
+        // Cláusula de guarda para evitar anidar el for dentro de un if
+        if (numCuotas <= 0) {
+            return;
+        }
+
+        BigDecimal montoCuota = calcularMontoCuota(cronograma, numCuotas);
+        LocalDate vencimientoBase = LocalDate.now().plusMonths(1);
+
+        for (int i = 1; i <= numCuotas; i++) {
+            // CORRECCIÓN SONAR: Casteo explícito a (long) para evitar el warning aritmético
+            pagos.add(construirPago(cronograma, i, montoCuota,
+                    ConceptoPago.CUOTA, vencimientoBase.plusMonths((long) i - 1)));
+        }
     }
 
     private Pago construirPago(CronogramaPago cronograma, int nroCuota,
