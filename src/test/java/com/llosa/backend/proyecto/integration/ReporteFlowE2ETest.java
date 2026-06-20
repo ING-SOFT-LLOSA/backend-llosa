@@ -52,7 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
-@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class, })
+@Import({SecurityTestConfiguration.class, })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class ReporteFlowE2ETest {
 
@@ -149,7 +149,7 @@ class ReporteFlowE2ETest {
     }
 
     @Test
-    void reporte_crearConProyectoInexistente_devuelveError() throws Exception {
+    void reporte_crearConProyectoInexistente_devuelveError() {
         String crearJson = """
                 {
                   "uuidProyecto": "%s",

@@ -32,10 +32,11 @@ import java.util.UUID;
 public class UsuarioActivoServiceImpl implements UsuarioActivoService {
 
     private final UsuarioActivoRepository usuarioActivoRepository;
-    private final ActivoService activoService;
     private final UsuarioRepository usuarioRepository;
     private final FlujoComercialFactory flujoComercialFactory;
     private final ActivoRepository activoRepository;
+
+    static private final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
 
     @Override
     @Transactional(readOnly = true)
@@ -59,7 +60,7 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
         // Validar que los clientes existan
         List<Usuario> clientesValidos = dto.idsUsuarios().stream().map(
                 id -> usuarioRepository.findById(id).orElseThrow(
-                        () -> new EntityNotFoundException("Usuario no encontrado: " + id)
+                        () -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + id)
                 ))
                 .toList();
         // Construimos la entidad
@@ -90,7 +91,7 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
     public UsuarioActivoResponseDTO asignarActivo(AsignarActivoDTO dto) {
         // Encontrar el contrato y validar su existencia
         UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(dto.uuidUsuarioActivo()).orElseThrow(
-                ()-> new EntityNotFoundException("Usuario no encontrado: " + dto.uuidUsuarioActivo())
+                ()-> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + dto.uuidUsuarioActivo())
         );
         List<Activo> activos = activoRepository.findByIdsForUpdate(dto.idsActivo());
 
@@ -162,7 +163,6 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
             }
         }
 
-        // 4. Una vez que todo el entorno quedó limpio y actualizado, borramos físicamente el expediente
         usuarioActivoRepository.delete(usuarioActivo);
     }
 
@@ -190,10 +190,10 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
     @Transactional
     public UsuarioActivo asignarAsesorAContrato(UUID idUsuarioActivo, Integer idUsuario){
         UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(idUsuarioActivo).orElseThrow(
-                () -> new EntityNotFoundException("Usuario no encontrado: " + idUsuarioActivo)
+                () -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + idUsuarioActivo)
         );
         Usuario usuario = usuarioRepository.findById(idUsuario).orElseThrow(
-                () -> new EntityNotFoundException("Usuario no encontrado: " + idUsuario)
+                () -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + idUsuario)
         );
         usuarioActivo.setAsesor(usuario);
 
@@ -204,10 +204,7 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
     @Transactional
     public UsuarioActivo desasignarAsesorDelContrato(UUID idUsuarioActivo,Integer idUsuario){
         UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(idUsuarioActivo).orElseThrow(
-                () -> new EntityNotFoundException("Usuario no encontrado: " + idUsuarioActivo)
-        );
-        Usuario usuario = usuarioRepository.findById(idUsuario).orElseThrow(
-                () -> new EntityNotFoundException("Usuario no encontrado: " + idUsuario)
+                () -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + idUsuarioActivo)
         );
         usuarioActivo.setAsesor(null);
 

@@ -37,6 +37,8 @@ public class UsuarioService {
     @org.springframework.beans.factory.annotation.Value("${app.dominio-corporativo}")
     private String dominioCorporativo;
 
+    static private final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado";
+
     /**
      * NOTA (issue 0000315): Firebase NO participa de la transacción de Spring/JPA.
      * Por eso el orden es importante: primero se intenta todo lo que es
@@ -117,7 +119,7 @@ public class UsuarioService {
             // que ya habíamos guardado en Postgres para no dejar un usuario
             // fantasma sin identidad de autenticación.
             usuarioRepository.delete(usuario);
-            throw new RuntimeException("Error al crear usuario en Firebase: " + e.getMessage());
+            throw new BusinessException("Error al crear usuario en Firebase: " + e.getMessage());
         }
 
         // 4. Reemplazar el placeholder con el UID real de Firebase
@@ -138,7 +140,7 @@ public class UsuarioService {
     @Transactional
     public void cambiarEstado(Integer usuarioId, Boolean activo) throws Exception {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(USUARIO_NO_ENCONTRADO));
 
         FirebaseAuth.getInstance().revokeRefreshTokens(usuario.getFirebaseUuid());
         FirebaseAuth.getInstance().updateUser(
@@ -152,7 +154,7 @@ public class UsuarioService {
     @Transactional
     public UsuarioResponse asignarRol(Integer usuarioId, Integer idRol) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(USUARIO_NO_ENCONTRADO));
 
         Rol rol = rolRepository.findById(idRol)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado"));
@@ -194,31 +196,37 @@ public class UsuarioService {
         return r;
     }
 
-    private void sendPasswordResetEmail(String email) throws Exception {
+    private void sendPasswordResetEmail(String email) {
         String apiKey = "AIzaSyDo_yQ7_tJ3kulCZXaqOcPXAzywtF4pAj0";
         String url = "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=" + apiKey;
 
         String body = "{\"requestType\":\"PASSWORD_RESET\",\"email\":\"" + email + "\"}";
 
-        java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-        java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
-                .uri(java.net.URI.create(url))
-                .header("Content-Type", "application/json")
-                .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
-                .build();
+        try (java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient()) {
 
-        java.net.http.HttpResponse<String> response = client.send(httpRequest,
-                java.net.http.HttpResponse.BodyHandlers.ofString());
+            java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
+                    .build();
 
-        if (response.statusCode() != 200) {
-            throw new RuntimeException("Error al enviar email de bienvenida: " + response.body());
+            java.net.http.HttpResponse<String> response = client.send(httpRequest,
+                    java.net.http.HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                throw new BusinessException("Error al enviar email de bienvenida: " + response.body());
+            }
+
+        } catch (java.io.IOException | InterruptedException e) {
+            Thread.currentThread().interrupt(); // Buena práctica si es InterruptedException
+            throw new RuntimeException("Error de comunicación con el servidor de correo: " + e.getMessage(), e);
         }
     }
 
     @Transactional
     public void eliminarCompletamente(Integer usuarioId) throws Exception {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(USUARIO_NO_ENCONTRADO));
 
         FirebaseAuth.getInstance().deleteUser(usuario.getFirebaseUuid());
         usuarioRepository.delete(usuario);
@@ -227,7 +235,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public Usuario findById(Integer id){
         return usuarioRepository.findById(id).orElseThrow(
-                () -> new RecursoNoEncontradoException("Usuario no encontrado")
+                () -> new RecursoNoEncontradoException(USUARIO_NO_ENCONTRADO)
         );
     }
 
@@ -241,7 +249,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public Usuario findByFirebaseUuid(String firebaseUuid) {
         return usuarioRepository.findByFirebaseUuid(firebaseUuid)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(USUARIO_NO_ENCONTRADO));
     }
 
     @Transactional
@@ -250,7 +258,7 @@ public class UsuarioService {
             UpdateUsuarioDTO request) {
 
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(USUARIO_NO_ENCONTRADO));
 
         if (request.getNombre() != null) {
             usuario.setNombre(request.getNombre());
@@ -279,7 +287,7 @@ public class UsuarioService {
     @Transactional
     public UsuarioResponse modificarFunciones(Integer usuarioId, List<Integer> idFunciones) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+                .orElseThrow(() -> new RecursoNoEncontradoException(USUARIO_NO_ENCONTRADO));
 
         Rol rol = usuario.getRol();
         if (rol == null) {

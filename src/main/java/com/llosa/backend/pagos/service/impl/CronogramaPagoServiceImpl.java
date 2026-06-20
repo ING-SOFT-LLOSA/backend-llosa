@@ -4,7 +4,6 @@ import com.llosa.backend.agenda.dto.request.CrearCitaRequest;
 import com.llosa.backend.agenda.dto.response.CitaResponse;
 import com.llosa.backend.agenda.enums.TipoEvento;
 import com.llosa.backend.agenda.service.AgendaService;
-import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.comercial.entity.RequisitoDocumental;
 import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
@@ -54,6 +53,10 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     private final RequisitoDocumentalRepository requisitoDocumentalRepository;
     private final AgendaService agendaService;
 
+    static private final String CRONOGRAMA_NO_ENCONTRADO = "Cronograma no encontrado: ";
+    static private final String PAGADO = "PAGADO";
+
+
     @Override
     @Transactional
     public CronogramaPagoResponse crear(CronogramaPagoRequest request) {
@@ -78,63 +81,78 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
 
         CronogramaPago guardado = cronogramaPagoRepository.save(cronograma);
 
-        // Generar pagos automáticos según tipo de financiamiento
+        // 1. Generar pagos
         List<Pago> pagos = pagoFlujoFactory.generarPagos(guardado, ua.getTipoFinanciamiento());
 
-        // Vincular pagos de separación e inicial a sus requisitos documentales
-        for (Pago pago : pagos) {
-            switch (pago.getConcepto()) {
-                case SEPARACION -> {
-                    Optional<UUID> reqId = buscarRequisito(ua.getUuidUsuarioActivo(),
-                            EtapaProceso.SEPARACION, "Comprobante de separación");
-                    reqId.ifPresent(pago::setUuidRequisitoDocumental);
-                }
-                case INICIAL -> {
-                    Optional<UUID> reqId = buscarRequisito(ua.getUuidUsuarioActivo(),
-                            EtapaProceso.CONTRATO, "Pago Inicial");
-                    reqId.ifPresent(pago::setUuidRequisitoDocumental);
-                }
-                default -> { }
-            }
-        }
-
+        // 2. Vincular pagos (Delegado a método privado)
+        vincularPagosARequisitos(pagos, ua.getUuidUsuarioActivo());
         List<Pago> pagosGuardados = pagoRepository.saveAll(pagos);
 
-        // Crear recordatorios de calendario para cuotas futuras
-        Usuario gestor = ua.getAsesor();
-        Usuario cliente = ua.getClientes().isEmpty() ? null : ua.getClientes().get(0);
-        Activo activo = ua.getActivos().isEmpty() ? null : ua.getActivos().get(0);
+        // 3. Crear recordatorios (Delegado a método privado)
+        crearRecordatorios(ua, pagosGuardados);
 
-        for (Pago pago : pagosGuardados) {
-            if (pago.getConcepto() != ConceptoPago.CUOTA) continue;
-            if (pago.getFechaVencimiento().isBefore(LocalDate.now())) continue;
-            if (cliente == null || activo == null) {
-                log.warn("[Cronograma] No se pudo crear recordatorio de pago para cuota {}: faltan cliente o activo",
-                        pago.getNroCuota());
-                continue;
-            }
+        pagoRepository.saveAll(pagosGuardados); // Actualizar los pagos con el UUID de la cita
 
-            CrearCitaRequest citaReq = new CrearCitaRequest(
-                    cliente.getId(),
-                    activo.getId(),
-                    TipoEvento.RECORDATORIO_PAGO,
-                    "Vencimiento de cuota N° " + pago.getNroCuota(),
-                    null,
-                    null,
-                    pago.getFechaVencimiento().atTime(10, 0),
-                    pago.getFechaVencimiento().atTime(11, 0),
-                    false,
-                    false
-            );
-
-            CitaResponse citaResponse = agendaService.crearCita(gestor.getFirebaseUuid(), citaReq);
-            pago.setUuidCita(citaResponse.id());
-        }
-
-        pagoRepository.saveAll(pagosGuardados);
         log.info("Cronograma creado: {} para expediente: {} con {} pagos generados",
                 guardado.getId(), request.uuidUsuarioActivo(), pagos.size());
+
         return CronogramaPagoResponse.fromEntity(guardado);
+    }
+
+    private void vincularPagosARequisitos(List<Pago> pagos, UUID uuidUsuarioActivo) {
+        for (Pago pago : pagos) {
+            switch (pago.getConcepto()) {
+                case SEPARACION -> buscarRequisito(uuidUsuarioActivo, EtapaProceso.SEPARACION, "Comprobante de separación")
+                        .ifPresent(pago::setUuidRequisitoDocumental);
+
+                case INICIAL -> buscarRequisito(uuidUsuarioActivo, EtapaProceso.CONTRATO, "Pago Inicial")
+                        .ifPresent(pago::setUuidRequisitoDocumental);
+
+                default -> {
+                    // CORRECCIÓN SONAR: Se añade comentario explícito explicando por qué está vacío
+                    // No se requiere vinculación para otros conceptos de pago (ej. CUOTA)
+                }
+            }
+        }
+    }
+
+    private void crearRecordatorios(UsuarioActivo ua, List<Pago> pagosGuardados) {
+        Usuario gestor = ua.getAsesor();
+        if (gestor == null) {
+            log.info("[Cronograma] Expediente {} sin asesor asignado, no se crean recordatorios de pago", ua.getUuidUsuarioActivo());
+            return; // Cláusula de guarda para evitar if anidados
+        }
+
+        Usuario cliente = ua.getClientes().isEmpty() ? null : ua.getClientes().getFirst();
+        Activo activo = ua.getActivos().isEmpty() ? null : ua.getActivos().getFirst();
+
+        for (Pago pago : pagosGuardados) {
+            // CORRECCIÓN SONAR: Se combinan las condiciones para evitar múltiples "continue"
+            boolean esCuotaValida = pago.getConcepto() == ConceptoPago.CUOTA
+                    && !pago.getFechaVencimiento().isBefore(LocalDate.now());
+
+            if (esCuotaValida) {
+                if (cliente == null || activo == null) {
+                    log.warn("[Cronograma] No se pudo crear recordatorio de pago para cuota {}: faltan cliente o activo", pago.getNroCuota());
+                } else {
+                    CrearCitaRequest citaReq = new CrearCitaRequest(
+                            cliente.getId(),
+                            activo.getId(),
+                            TipoEvento.RECORDATORIO_PAGO,
+                            "Vencimiento de cuota N° " + pago.getNroCuota(),
+                            null,
+                            null,
+                            pago.getFechaVencimiento().atTime(10, 0),
+                            pago.getFechaVencimiento().atTime(11, 0),
+                            false,
+                            false
+                    );
+
+                    CitaResponse citaResponse = agendaService.crearCita(gestor.getFirebaseUuid(), citaReq);
+                    pago.setUuidCita(citaResponse.id());
+                }
+            }
+        }
     }
 
     private Optional<UUID> buscarRequisito(UUID uuidUsuarioActivo, EtapaProceso etapa, String titulo) {
@@ -160,7 +178,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     public CronogramaPagoResponse actualizar(UUID uuidCronograma, CronogramaPagoRequest request) {
         CronogramaPago cp = cronogramaPagoRepository.findById(uuidCronograma)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "Cronograma no encontrado: " + uuidCronograma));
+                        CRONOGRAMA_NO_ENCONTRADO + uuidCronograma));
 
         if (CronogramaPago.ESTADO_HISTORICO.equals(cp.getEstado())) {
             throw new EstadoInvalidoException(
@@ -191,7 +209,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     public void eliminar(UUID uuidCronograma) {
         CronogramaPago cp = cronogramaPagoRepository.findById(uuidCronograma)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "Cronograma no encontrado: " + uuidCronograma));
+                        CRONOGRAMA_NO_ENCONTRADO + uuidCronograma));
 
         if (CronogramaPago.ESTADO_HISTORICO.equals(cp.getEstado())) {
             throw new EstadoInvalidoException(
@@ -207,19 +225,19 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     public ResumenResponseHipotecarioDTO obtenerResumenHipotecario(UUID uuidCronograma) {
         CronogramaPago cp = cronogramaPagoRepository.findById(uuidCronograma)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "Cronograma no encontrado: " + uuidCronograma));
+                        CRONOGRAMA_NO_ENCONTRADO + uuidCronograma));
 
         BigDecimal montoTotal = cp.getTotalPactado();
 
         BigDecimal montoSeparacionPagado = pagoRepository
                 .findByCronograma_IdAndConcepto(uuidCronograma, ConceptoPago.SEPARACION)
-                .filter(p -> "PAGADO".equals(p.getEstado()))
+                .filter(p -> PAGADO.equals(p.getEstado()))
                 .map(p -> p.getMontoPagado() != null ? p.getMontoPagado() : BigDecimal.ZERO)
                 .orElse(BigDecimal.ZERO);
 
         BigDecimal montoInicialPagado = pagoRepository
                 .findByCronograma_IdAndConcepto(uuidCronograma, ConceptoPago.INICIAL)
-                .filter(p -> "PAGADO".equals(p.getEstado()))
+                .filter(p -> PAGADO.equals(p.getEstado()))
                 .map(p -> p.getMontoPagado() != null ? p.getMontoPagado() : BigDecimal.ZERO)
                 .orElse(BigDecimal.ZERO);
 
@@ -246,7 +264,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     public ResumenResponse obtenerResumen(UUID uuidCronograma) {
         CronogramaPago cp = cronogramaPagoRepository.findById(uuidCronograma)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "Cronograma no encontrado: " + uuidCronograma));
+                        CRONOGRAMA_NO_ENCONTRADO + uuidCronograma));
 
         List<Pago> pagos = pagoRepository.findByCronograma_IdOrderByNroCuotaAsc(uuidCronograma);
 
@@ -258,7 +276,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
 
         for (Pago p : pagos) {
             switch (p.getEstado()) {
-                case "PAGADO" -> {
+                case PAGADO -> {
                     totalPagado = totalPagado.add(p.getMontoPagado());
                     cuotasPagadas++;
                 }
@@ -268,11 +286,14 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
                 }
                 default -> {
                     cuotasPendientes++;
+                    // =========================================================================
+                    // CORRECCIÓN SONAR: Se combinan los dos 'if' anidados en una sola evaluación
+                    // =========================================================================
                     if (p.getEstado().equals("PENDIENTE")
-                            && (proximoVencimiento == null || p.getFechaVencimiento().isBefore(proximoVencimiento))) {
-                        if (!p.getFechaVencimiento().isBefore(LocalDate.now())) {
-                            proximoVencimiento = p.getFechaVencimiento();
-                        }
+                            && (proximoVencimiento == null || p.getFechaVencimiento().isBefore(proximoVencimiento))
+                            && !p.getFechaVencimiento().isBefore(LocalDate.now())) {
+
+                        proximoVencimiento = p.getFechaVencimiento();
                     }
                 }
             }

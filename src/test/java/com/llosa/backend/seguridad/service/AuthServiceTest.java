@@ -1,7 +1,6 @@
 package com.llosa.backend.seguridad.service;
 
 import com.llosa.backend.config.TestData;
-import com.llosa.backend.exception.AccesoDenegadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.seguridad.dto.PerfilConPermisosResponse;
 import com.llosa.backend.seguridad.entity.Rol;
@@ -13,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
@@ -31,6 +29,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
+        // No se carga el dominio corporativo por defecto
     }
 
     // ── Usuario no encontrado ─────────────────────────────────────────────────
@@ -39,7 +38,7 @@ class AuthServiceTest {
     void verificarPerfil_usuarioNoExiste_lanzaExcepcion() {
         when(usuarioRepository.findByFirebaseUuid("uid-x")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.verificarYCargarPerfil("uid-x", "x@test.com"))
+        assertThatThrownBy(() -> authService.verificarYCargarPerfil("uid-x"))
                 .isInstanceOf(RecursoNoEncontradoException.class)
                 .hasMessageContaining("no registrado");
     }
@@ -53,7 +52,7 @@ class AuthServiceTest {
         when(usuarioRepository.findByFirebaseUuid(u.getFirebaseUuid()))
                 .thenReturn(Optional.of(u));
 
-        PerfilConPermisosResponse result = authService.verificarYCargarPerfil(u.getFirebaseUuid(), u.getEmail());
+        PerfilConPermisosResponse result = authService.verificarYCargarPerfil(u.getFirebaseUuid());
 
         assertThat(result).isNotNull();
         assertThat(result.getActivo()).isFalse();
@@ -71,7 +70,7 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(empleado));
 
         PerfilConPermisosResponse perfil =
-                authService.verificarYCargarPerfil(empleado.getFirebaseUuid(), emailCorp);
+                authService.verificarYCargarPerfil(empleado.getFirebaseUuid());
 
         assertThat(perfil.getTipoUsuario()).isEqualTo("EMPLEADO");
         assertThat(perfil.getEmail()).isEqualTo(emailCorp);
@@ -89,7 +88,7 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(cliente));
 
         PerfilConPermisosResponse perfil =
-                authService.verificarYCargarPerfil(cliente.getFirebaseUuid(), cliente.getEmail());
+                authService.verificarYCargarPerfil(cliente.getFirebaseUuid());
 
         assertThat(perfil.getTipoUsuario()).isEqualTo("CLIENTE");
         assertThat(perfil.getFunciones()).containsExactlyInAnyOrder("PROY_VER", "DOCS_VER");
@@ -105,7 +104,7 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(cliente));
 
         PerfilConPermisosResponse perfil =
-                authService.verificarYCargarPerfil(cliente.getFirebaseUuid(), cliente.getEmail());
+                authService.verificarYCargarPerfil(cliente.getFirebaseUuid());
 
         assertThat(perfil.getFunciones()).isEmpty();
         assertThat(perfil.getRol()).isNull();
@@ -126,7 +125,7 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(empleado));
 
         PerfilConPermisosResponse perfil =
-                authService.verificarYCargarPerfil(empleado.getFirebaseUuid(), emailCorp);
+                authService.verificarYCargarPerfil(empleado.getFirebaseUuid());
 
         assertThat(perfil.getTipoUsuario()).isEqualTo("EMPLEADO");
         assertThat(perfil.getFunciones()).isEmpty();
@@ -143,7 +142,7 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(cliente));
 
         PerfilConPermisosResponse perfil =
-                authService.verificarYCargarPerfil(cliente.getFirebaseUuid(), cliente.getEmail());
+                authService.verificarYCargarPerfil(cliente.getFirebaseUuid());
 
         assertThat(perfil.getId()).isEqualTo(42);
         assertThat(perfil.getNombre()).isEqualTo("Juan");

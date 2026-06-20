@@ -47,7 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
-@Import({PostgresTestContainerConfig.class, SecurityTestConfiguration.class, })
+@Import({SecurityTestConfiguration.class, })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class CP12ToCP14E2ETest {
 
@@ -104,10 +104,9 @@ class CP12ToCP14E2ETest {
     //   Esperado (PDF): el backend detecta nombre existente, interrumpe el
     //   guardado y exige nombre unico.
     // ──────────────────────────────────────────────────────────────────────────
-    @org.junit.jupiter.api.Disabled("DEFECTO PERSISTE (verificado 2026-06-19): se permite crear "
-            + "proyectos con nombre duplicado. ProyectoServiceImpl.save() genera hitos por defecto "
-            + "pero sigue sin validar unicidad de nombre (no hay existsByNombre). Reportado en Mantis; "
-            + "REACTIVAR cuando se valide la unicidad.")
+    @org.junit.jupiter.api.Disabled("DEFECTO reportado en Mantis: se permite crear proyectos con "
+            + "nombre duplicado (no hay validacion de unicidad en ProyectoServiceImpl.save). Test "
+            + "deshabilitado para no bloquear el pipeline; REACTIVAR cuando se valide la unicidad.")
     @Test
     @CP(value = "CP13",
         scenario = "Rechazar proyecto con nombre duplicado",

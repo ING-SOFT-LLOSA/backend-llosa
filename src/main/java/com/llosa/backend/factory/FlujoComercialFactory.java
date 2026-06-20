@@ -20,6 +20,10 @@ public class FlujoComercialFactory {
     /**
      * Genera las etapas e hitos por defecto para un nuevo contrato.
      */
+
+    private static final String PAGO_INCIAL = "Pago Inicial";
+    private static final String NO_NOTE_CORPORATIVA = "No hay nota corporativa";
+
     public List<EtapaExpediente> generarEtapasPorDefecto(UsuarioActivo contrato) {
 
         List<EtapaExpediente> etapas = new ArrayList<>();
@@ -105,7 +109,7 @@ public class FlujoComercialFactory {
 
         contratoEtapa.getRequisitos().add(construirRequisito(
                 contratoEtapa,
-                "Pago Inicial",
+                PAGO_INCIAL,
                 "Comprobante del pago de la cuota inicial para formalizar la compra.",
                 "payments",
                 "El comprobante se sube desde la sección de pagos y se refleja automáticamente aquí."
@@ -125,7 +129,7 @@ public class FlujoComercialFactory {
             pagoSeparacion.setFechaCompletado(LocalDateTime.now());
 
             pago.getHitosComerciales().add(pagoSeparacion);
-            pago.getHitosComerciales().add(construirHito(pago, "Pago Inicial", 2, "Abono inicial requerido para iniciar el proceso de compra."));
+            pago.getHitosComerciales().add(construirHito(pago, PAGO_INCIAL, 2, "Abono inicial requerido para iniciar el proceso de compra."));
             pago.getHitosComerciales().add(construirHito(pago, "Inicio de Desembolso", 3, "El banco inicia el proceso de desembolso del crédito hipotecario."));
             pago.getHitosComerciales().add(construirHito(pago, "Minuta en Notaría", 4, "La minuta es revisada y procesada por la notaría."));
             pago.getHitosComerciales().add(construirHito(pago, "Firma de Escritura Pública", 5, "Las partes firman la escritura pública ante notario."));
@@ -141,7 +145,7 @@ public class FlujoComercialFactory {
             pagoSeparacion.setFechaCompletado(LocalDateTime.now());
 
             pago.getHitosComerciales().add(pagoSeparacion);
-            pago.getHitosComerciales().add(construirHito(pago, "Pago Inicial", 2, "Cuota inicial requerida para formalizar la compra."));
+            pago.getHitosComerciales().add(construirHito(pago, PAGO_INCIAL, 2, "Cuota inicial requerida para formalizar la compra."));
             pago.getHitosComerciales().add(construirHito(pago, "Pago en Proceso", 3, "El cliente continúa realizando los pagos acordados."));
             pago.getHitosComerciales().add(construirHito(pago, "Pago Completado", 4, "La totalidad del importe acordado ha sido cancelada."));
         }
@@ -168,7 +172,7 @@ public class FlujoComercialFactory {
                 "Planos As Built",
                 "Planos finales del departamento tal como quedó construido, con arquitectura, estructuras, sanitarias, eléctricas, mecánicas y de gas.",
                 "architecture",
-                "No hay nota corporativa"
+                NO_NOTE_CORPORATIVA
         ));
 
         entrega.getRequisitos().add(construirRequisito(
@@ -184,7 +188,7 @@ public class FlujoComercialFactory {
                 "Manual del propietario",
                 "Guía completa sobre el funcionamiento, mantenimiento y uso correcto de la unidad y sus instalaciones.",
                 "book",
-                "No hay nota corporativa"
+                NO_NOTE_CORPORATIVA
         ));
 
         entrega.getRequisitos().add(construirRequisito(
@@ -192,7 +196,7 @@ public class FlujoComercialFactory {
                 "Manual de convivencia",
                 "Reglamento interno del edificio con normas de uso de áreas comunes, horarios, restricciones y obligaciones de los residentes.",
                 "groups",
-                "No hay nota corporativa"
+                NO_NOTE_CORPORATIVA
         ));
 
         entrega.getRequisitos().add(construirRequisito(
@@ -200,7 +204,7 @@ public class FlujoComercialFactory {
                 "Manual de Calidad Cloud",
                 "Guía de uso de la plataforma de gestión postventa de Llosa para reportar observaciones sobre la unidad.",
                 "cloud",
-                "No hay nota corporativa"
+                NO_NOTE_CORPORATIVA
         ));
 
 
@@ -225,7 +229,7 @@ public class FlujoComercialFactory {
                 "Fichas técnicas",
                 "Especificaciones técnicas detalladas de materiales, equipos y sistemas instalados en la unidad.",
                 "description",
-                "No hay nota corporativa"
+                NO_NOTE_CORPORATIVA
         ));
 
         entrega.getRequisitos().add(construirRequisito(
@@ -233,7 +237,7 @@ public class FlujoComercialFactory {
                 "Lista de proveedores",
                 "Directorio de proveedores de los principales materiales y equipos del departamento.",
                 "list",
-                "No hay nota corporativa"
+                NO_NOTE_CORPORATIVA
         ));
 
         entrega.getRequisitos().add(construirRequisito(
@@ -241,7 +245,7 @@ public class FlujoComercialFactory {
                 "Cuponera",
                 "Documento con cupones o beneficios para servicios o compras relacionados con la implementación del departamento.",
                 "receipt",
-                "No hay nota corporativa"
+                NO_NOTE_CORPORATIVA
         ));
 
         entrega.getRequisitos().add(construirRequisito(
@@ -249,7 +253,7 @@ public class FlujoComercialFactory {
                 "Checklist de implementación",
                 "Lista de artículos recomendados para implementar en el departamento antes de la entrega final.",
                 "checklist",
-                "No hay nota corporativa"
+                NO_NOTE_CORPORATIVA
         ));
         etapas.add(entrega);
 
@@ -335,7 +339,7 @@ public class FlujoComercialFactory {
                 .descripcion(descripcion)
                 .icono(icono)
                 .notaCorporativa(notaCorp)
-                .estado(EtapaRequisitoDocumental.PENDIENTE) // Todo documento nace pendiente por subir
+                .estado(EtapaRequisitoDocumental.PENDIENTE)
                 .build();
     }
 }

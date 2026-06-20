@@ -190,8 +190,6 @@ class CP07E2ETest {
                     .andExpect(status().isOk());
         }
 
-        Usuario usuarioDB = usuarioRepository.findByEmail(crearReq.getEmail()).orElseThrow();
-
         // 2. Intenta acceder sin rol
         FirebaseAuthenticationToken token = new FirebaseAuthenticationToken(
                 firebaseUidGenerado,

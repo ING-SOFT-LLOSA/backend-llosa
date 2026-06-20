@@ -340,8 +340,6 @@ class ClienteAccessUnitTest {
         Usuario clienteSeparado = TestData.usuario();
         clienteSeparado.setId(60);
         clienteSeparado.setActivo(true);
-        String estadoUnidad = "SEPARADO";
-
         when(usuarioRepository.findById(60)).thenReturn(Optional.of(clienteSeparado));
 
         // When
