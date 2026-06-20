@@ -289,8 +289,7 @@ class TokenInvalidationUnitTest {
 
         when(usuarioRepository.findById(110)).thenReturn(Optional.of(usuario));
         when(usuarioRepository.save(any())).thenAnswer(inv -> {
-            Usuario u = (Usuario) inv.getArgument(0);
-            return u;
+            return (Usuario) inv.getArgument(0);
         });
 
         FirebaseAuth mockAuth = mock(FirebaseAuth.class);

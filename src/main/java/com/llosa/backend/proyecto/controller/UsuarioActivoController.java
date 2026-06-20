@@ -118,9 +118,9 @@ public class UsuarioActivoController {
      * Estado: funcional
      */
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
-    @GetMapping("/{id_usuario}")
-    public ResponseEntity<List<UsuarioActivoResponseDTO>> obtenerActivosPorUsuario(@PathVariable Integer id_usuario) {
-        List<UsuarioActivo> activos = usuarioActivoService.findByUsuario(id_usuario);
+    @GetMapping("/{idUsuario}")
+    public ResponseEntity<List<UsuarioActivoResponseDTO>> obtenerActivosPorUsuario(@PathVariable Integer idUsuario) {
+        List<UsuarioActivo> activos = usuarioActivoService.findByUsuario(idUsuario);
         List<UsuarioActivoResponseDTO> response = activos.stream()
                 .map(UsuarioActivoResponseDTO::fromEntity)
                 .toList();
@@ -132,10 +132,10 @@ public class UsuarioActivoController {
      * Estado: FUncional -> Posible probelma de N+1
      */
     @PreAuthorize("hasAuthority('CONTRATO_VER')")
-    @GetMapping("/usuario/{id_usuario}/activos")
-    public ResponseEntity<List<ActivoResponseDTO>> obtenerSoloActivosPorUsuario(@PathVariable Integer id_usuario) {
+    @GetMapping("/usuario/{idUsuario}/activos")
+    public ResponseEntity<List<ActivoResponseDTO>> obtenerSoloActivosPorUsuario(@PathVariable Integer idUsuario) {
         return ResponseEntity.ok(
-                usuarioActivoService.findByUsuarioId(id_usuario)
+                usuarioActivoService.findByUsuarioId(idUsuario)
                         .stream()
                         .map(ActivoResponseDTO::fromEntity)
                         .toList()
@@ -155,24 +155,23 @@ public class UsuarioActivoController {
 
     /** Asinar un asesor**/
 
-    @PostMapping("/usuarioActivo/{id_usuario_activo}/asesor/{id_asesor}")
+    @PostMapping("/usuarioActivo/{idUsuarioActivo}/asesor/{idAsesor}")
     @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
-    public ResponseEntity<UsuarioActivoResponseDTO> AsignarUnAsesorAlContrato(
-            @PathVariable UUID id_usuario_activo,
-            @PathVariable Integer id_asesor){
-        UsuarioActivo usuario = usuarioActivoService.asignarAsesorAContrato(id_usuario_activo, id_asesor);
+    public ResponseEntity<UsuarioActivoResponseDTO> asignarUnAsesorAlContrato(
+            @PathVariable UUID idUsuarioActivo,
+            @PathVariable Integer idAsesor){
+        UsuarioActivo usuario = usuarioActivoService.asignarAsesorAContrato(idUsuarioActivo, idAsesor);
         return ResponseEntity.ok().body(UsuarioActivoResponseDTO.fromEntity(usuario));
     }
 
-    @PutMapping("/usuarioActivo/{id_usuario_activo}/asesor/{id_asesor}")
+    @PutMapping("/usuarioActivo/{idUsuarioActivo}/asesor/{idAsesor}")
     @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
-    public ResponseEntity<UsuarioActivoResponseDTO> DesvincularAsesorDelContrato(
-            @PathVariable UUID id_usuario_activo,
-            @PathVariable Integer id_asesor){
-        UsuarioActivo usuario = usuarioActivoService.desasignarAsesorDelContrato(id_usuario_activo, id_asesor);
+    public ResponseEntity<UsuarioActivoResponseDTO> desvincularAsesorDelContrato(
+            @PathVariable UUID idUsuarioActivo,
+            @PathVariable Integer idAsesor){
+        UsuarioActivo usuario = usuarioActivoService.desasignarAsesorDelContrato(idUsuarioActivo, idAsesor);
         return ResponseEntity.ok().body(UsuarioActivoResponseDTO.fromEntity(usuario));
     }
 
-    // No se necesita un get, porque ya hay un get para ver un contrato
 
 }

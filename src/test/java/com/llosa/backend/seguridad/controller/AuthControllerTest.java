@@ -75,7 +75,7 @@ class AuthControllerTest {
         perfil.setActivo(true);
         perfil.setFunciones(List.of("PROY_VER", "DOCS_VER"));
 
-        when(authService.verificarYCargarPerfil("test-uid", "test@test.com")).thenReturn(perfil);
+        when(authService.verificarYCargarPerfil("test-uid")).thenReturn(perfil);
 
         FirebaseAuthenticationToken auth = new FirebaseAuthenticationToken(
                 "test-uid", "test@test.com",
@@ -91,7 +91,7 @@ class AuthControllerTest {
     @Test
     void getMe_usuarioNoRegistrado() throws Exception {
         // CP06: Usuario autenticado pero no en BD → 200 (sin error manejado)
-        when(authService.verificarYCargarPerfil("test-uid", "test@test.com"))
+        when(authService.verificarYCargarPerfil("test-uid"))
                 .thenThrow(new RecursoNoEncontradoException("Usuario no registrado en el sistema"));
 
         FirebaseAuthenticationToken auth = new FirebaseAuthenticationToken(
@@ -105,7 +105,7 @@ class AuthControllerTest {
     @Test
     void getMe_cuentaSuspendida() throws Exception {
         // CP08: Usuario suspendido (activo=false) → 200 (sin error manejado)
-        when(authService.verificarYCargarPerfil("test-uid", "test@test.com"))
+        when(authService.verificarYCargarPerfil("test-uid"))
                 .thenThrow(new AccesoDenegadoException("Cuenta suspendida. Contacte a la inmobiliaria."));
 
         FirebaseAuthenticationToken auth = new FirebaseAuthenticationToken(
@@ -119,7 +119,7 @@ class AuthControllerTest {
     @Test
     void getMe_empleadoDominioNoAutorizado() throws Exception {
         // CP06: Empleado con email NO corporativo → 200 (sin error manejado)
-        when(authService.verificarYCargarPerfil("test-uid", "test@test.com"))
+        when(authService.verificarYCargarPerfil("test-uid"))
                 .thenThrow(new AccesoDenegadoException("Acceso denegado: dominio no autorizado."));
 
         FirebaseAuthenticationToken auth = new FirebaseAuthenticationToken(

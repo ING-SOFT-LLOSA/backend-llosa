@@ -26,7 +26,6 @@ public class ProyectoServiceImpl implements ProyectoService {
     private final TorreService torreService;
     private final ActivoService activoService;
     private final PisoService pisoService;
-    private final HidratationService hidratacionService;
     private final FlujoConstruccionFactory flujoConstruccionFactory;
 
     @Override
@@ -77,7 +76,6 @@ public class ProyectoServiceImpl implements ProyectoService {
         Proyecto proyecto = proyectoRepository.findById(idProyecto)
                 .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
 
-        List<Activo> activosRecienCreados = new ArrayList<>();
 
         for (TorreRequestDTO torreRequestDTO : dto.torres()){
             Torre torre = Torre.builder()
@@ -99,7 +97,6 @@ public class ProyectoServiceImpl implements ProyectoService {
                             .descripcion(activoRequestDTO.descripcion())
                             .build();
                     Activo activoGuardado = activoService.saveFisico(pisoGuardado.getId(), activo);
-                    activosRecienCreados.add(activoGuardado);
                 }
             }
         }

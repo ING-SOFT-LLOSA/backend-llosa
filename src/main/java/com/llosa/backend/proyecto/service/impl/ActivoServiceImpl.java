@@ -1,5 +1,6 @@
 package com.llosa.backend.proyecto.service.impl;
 
+import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.proyecto.dto.response.ActivoResponseDTO;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.Piso;
@@ -36,9 +37,9 @@ public class ActivoServiceImpl implements ActivoService {
     @Override
     @Transactional
     public Activo saveIndividual(Long pisoId, Activo activo){
-        Activo nombre_activo_repetido = activoRepository.findByNro(activo.getNro());
-        if(nombre_activo_repetido != null){
-            throw new RuntimeException("El nombre del activo ya existe");
+        Activo nombreActivoRepetido = activoRepository.findByNro(activo.getNro());
+        if(nombreActivoRepetido != null){
+            throw new EntidadDuplicadaException("El nombre del activo ya existe");
         }
         return this.saveFisico(pisoId, activo);
     }

@@ -163,7 +163,6 @@ class PagosIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(6));
 
-        // 4. Obtener resumen (todo pendiente, al dia)
         mockMvc.perform(get("/api/cronogramas/{uuidCronograma}/resumen", uuidCronograma)
                         .with(securityContext(contextWithAuth())))
                 .andExpect(status().isOk())

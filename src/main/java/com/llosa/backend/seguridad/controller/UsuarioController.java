@@ -57,7 +57,7 @@ public class UsuarioController {
     // Paginado correo corectamente
     @GetMapping("/paginado")
     @PreAuthorize("hasAuthority('USER_GESTIONAR')")
-    public ResponseEntity<Page<UsuarioResponseFunciones>> listar_paginado(
+    public ResponseEntity<Page<UsuarioResponseFunciones>> listarPaginado(
             @RequestParam(required = false, defaultValue = "") String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {

@@ -22,7 +22,7 @@ public interface ActivoRepository extends JpaRepository<Activo, UUID> {
             Pageable pageable
     );
     Page<Activo> findByPisoTorreProyectoIdAndEstadoComercial(
-            UUID piso_torre_proyecto_id, EstadoComercialActivo estadoComercial, Pageable pageable
+            UUID pisoTorreProyectoId, EstadoComercialActivo estadoComercial, Pageable pageable
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

@@ -149,7 +149,7 @@ class ReporteFlowE2ETest {
     }
 
     @Test
-    void reporte_crearConProyectoInexistente_devuelveError() throws Exception {
+    void reporte_crearConProyectoInexistente_devuelveError() {
         String crearJson = """
                 {
                   "uuidProyecto": "%s",

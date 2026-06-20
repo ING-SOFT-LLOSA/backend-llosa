@@ -1,5 +1,6 @@
 package com.llosa.backend.proyecto.service.impl;
 
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.proyecto.dto.response.SeguimientoResponseDTO;
 import com.llosa.backend.proyecto.dto.shared.FaseActualDTO;
 import com.llosa.backend.proyecto.dto.shared.PasoStepperDTO;
@@ -30,7 +31,7 @@ public class SeguimientoServiceImpl implements SeguimientoService {
         List<HitoPiso> hitos = hitoPisoRepository.findByActivoIdOrderByHitoOrdenAsc(idActivo);
 
         if (hitos == null || hitos.isEmpty()) {
-            throw new RuntimeException("No se encontraron hitos de obra para el piso de este activo.");
+            throw new BusinessException("No se encontraron hitos de obra para el piso de este activo.");
         }
 
         List<PasoStepperDTO> stepper = new ArrayList<>();
@@ -41,7 +42,6 @@ public class SeguimientoServiceImpl implements SeguimientoService {
         for (HitoPiso hp : hitos) {
             String estadoVisual;
 
-            // Direct Enum comparison (Safer and faster than .name().equalsIgnoreCase)
             if (hp.getEstado() == EstadoHito.COMPLETADO) {
                 estadoVisual = "COMPLETADO";
             } else if (!hitoActualEncontrado) {
@@ -59,43 +59,56 @@ public class SeguimientoServiceImpl implements SeguimientoService {
                     .build());
         }
 
-        // 3. Build the response DTO
-        FaseActualDTO faseActualDTO;
-
-        if (hitoActualEnProgreso != null) {
-            long completadosTotales = hitos.stream()
-                    .filter(h -> h.getEstado() == EstadoHito.COMPLETADO)
-                    .count();
-
-            double porcentaje = ((double) completadosTotales / hitos.size()) * 100.0;
-
-            faseActualDTO = FaseActualDTO.builder()
-                    .uuidHitoU(hitoActualEnProgreso.getId())
-                    .titulo(hitoActualEnProgreso.getHito().getTitulo())
-                    .descripcion("Fase en progreso: " + hitoActualEnProgreso.getHito().getTitulo())
-                    .porcentajeEtapa(Math.round(porcentaje * 100.0) / 100.0) // Redondeo seguro a 2 decimales
-                    .fechaInicioFase(hitoActualEnProgreso.getUpdatedAt() != null ?
-                            hitoActualEnProgreso.getUpdatedAt() : LocalDateTime.now())
-                    .build();
-
-        } else {
-            // If all milestones are completed, return 100% complete
-            HitoPiso ultimoHito = hitos.getLast();
-
-            faseActualDTO = FaseActualDTO.builder()
-                    .uuidHitoU(ultimoHito.getId())
-                    .titulo("Obra Finalizada")
-                    .descripcion("El piso ha completado todas sus fases de construcción al 100%.")
-                    .porcentajeEtapa(100.0)
-                    .fechaInicioFase(ultimoHito.getFechaCompletado() != null ?
-                            ultimoHito.getFechaCompletado().atStartOfDay() :
-                            (ultimoHito.getUpdatedAt() != null ? ultimoHito.getUpdatedAt() : LocalDateTime.now()))
-                    .build();
-        }
+        // 3. Build the response DTO delegando la lógica
+        FaseActualDTO faseActualDTO = construirFaseActual(hitos, hitoActualEnProgreso);
 
         return SeguimientoResponseDTO.builder()
                 .stepper(stepper)
                 .faseActual(faseActualDTO)
                 .build();
+    }
+    private FaseActualDTO construirFaseActual(List<HitoPiso> hitos, HitoPiso hitoActualEnProgreso) {
+        if (hitoActualEnProgreso != null) {
+            return construirFaseEnProgreso(hitos, hitoActualEnProgreso);
+        }
+        return construirFaseFinalizada(hitos.getLast());
+    }
+
+    private FaseActualDTO construirFaseEnProgreso(List<HitoPiso> hitos, HitoPiso hitoActualEnProgreso) {
+        long completadosTotales = hitos.stream()
+                .filter(h -> h.getEstado() == EstadoHito.COMPLETADO)
+                .count();
+
+        double porcentaje = ((double) completadosTotales / hitos.size()) * 100.0;
+
+        return FaseActualDTO.builder()
+                .uuidHitoU(hitoActualEnProgreso.getId())
+                .titulo(hitoActualEnProgreso.getHito().getTitulo())
+                .descripcion("Fase en progreso: " + hitoActualEnProgreso.getHito().getTitulo())
+                .porcentajeEtapa(Math.round(porcentaje * 100.0) / 100.0)
+                .fechaInicioFase(hitoActualEnProgreso.getUpdatedAt() != null
+                        ? hitoActualEnProgreso.getUpdatedAt()
+                        : LocalDateTime.now())
+                .build();
+    }
+
+    private FaseActualDTO construirFaseFinalizada(HitoPiso ultimoHito) {
+        return FaseActualDTO.builder()
+                .uuidHitoU(ultimoHito.getId())
+                .titulo("Obra Finalizada")
+                .descripcion("El piso ha completado todas sus fases de construcción al 100%.")
+                .porcentajeEtapa(100.0)
+                .fechaInicioFase(determinarFechaFinalizada(ultimoHito))
+                .build();
+    }
+
+    private LocalDateTime determinarFechaFinalizada(HitoPiso ultimoHito) {
+        if (ultimoHito.getFechaCompletado() != null) {
+            return ultimoHito.getFechaCompletado().atStartOfDay();
+        }
+        if (ultimoHito.getUpdatedAt() != null) {
+            return ultimoHito.getUpdatedAt();
+        }
+        return LocalDateTime.now();
     }
 }

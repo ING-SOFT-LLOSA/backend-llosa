@@ -37,13 +37,12 @@ class SeguimientoServiceTest {
     }
 
     private HitoPiso buildHitoPiso(Hito hito, EstadoHito estado) {
-        HitoPiso hp = HitoPiso.builder()
+        return HitoPiso.builder()
                 .id(UUID.randomUUID())
                 .hito(hito)
                 .piso(Piso.builder().id(1L).nroPiso(1).build())
                 .estado(estado)
                 .build();
-        return hp;
     }
 
     @Test
