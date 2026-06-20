@@ -128,7 +128,7 @@ public class UsuarioService {
 
         // --- Email de bienvenida / reseteo de contraseña ---
         try {
-            sendPasswordResetEmail(request.getEmail());
+            sendPasswordResetEmail(request.getEmail(), request.getTipoUsuario());
         } catch (Exception e) {
             log.error("Usuario creado, pero falló el envío del email: {}", e.getMessage());
             // No se revierte la creación del usuario solo porque el email falló.
@@ -196,36 +196,31 @@ public class UsuarioService {
         return r;
     }
 
-    private void sendPasswordResetEmail(String email) {
+    private void sendPasswordResetEmail(String email, String tipoUsuario) {
         String apiKey = "AIzaSyDo_yQ7_tJ3kulCZXaqOcPXAzywtF4pAj0";
         String url = "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=" + apiKey;
 
-        String body = "{\"requestType\":\"PASSWORD_RESET\",\"email\":\"" + email + "\"}";
+        String continueUrl = "CLIENTE".equals(tipoUsuario)
+                ? "https://llosa-client.ingsoftware.lat/login"
+                : "https://llosa-admin.ingsoftware.lat/login";
+
+        String body = "{\"requestType\":\"PASSWORD_RESET\",\"email\":\"" + email + "\",\"continueUrl\":\"" + continueUrl + "\"}";
 
         try (java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient()) {
-
             java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
                     .uri(java.net.URI.create(url))
                     .header("Content-Type", "application/json")
                     .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
                     .build();
-
             java.net.http.HttpResponse<String> response = client.send(httpRequest,
                     java.net.http.HttpResponse.BodyHandlers.ofString());
-
             if (response.statusCode() != 200) {
                 throw new BusinessException("Error al enviar email de bienvenida: " + response.body());
             }
-
         } catch (java.io.IOException e) {
-            // CORRECCIÓN SONAR: Para errores de red, usamos una excepción estándar de estado o tu BusinessException
             throw new IllegalStateException("Error de comunicación con el servidor de correo: " + e.getMessage(), e);
-
         } catch (InterruptedException e) {
-            // CORRECCIÓN SONAR: Aquí SÍ corresponde restaurar el estado de interrupción del hilo
             Thread.currentThread().interrupt();
-
-            // Lanzamos una excepción que deje claro que el proceso fue cancelado/interrumpido
             throw new IllegalStateException("El envío de correo fue interrumpido", e);
         }
     }
