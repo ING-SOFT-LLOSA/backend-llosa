@@ -200,18 +200,24 @@ public class UsuarioService {
 
         String body = "{\"requestType\":\"PASSWORD_RESET\",\"email\":\"" + email + "\"}";
 
-        java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-        java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
-                .uri(java.net.URI.create(url))
-                .header("Content-Type", "application/json")
-                .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
-                .build();
+        try (java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient()) {
 
-        java.net.http.HttpResponse<String> response = client.send(httpRequest,
-                java.net.http.HttpResponse.BodyHandlers.ofString());
+            java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
+                    .build();
 
-        if (response.statusCode() != 200) {
-            throw new RuntimeException("Error al enviar email de bienvenida: " + response.body());
+            java.net.http.HttpResponse<String> response = client.send(httpRequest,
+                    java.net.http.HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                throw new RuntimeException("Error al enviar email de bienvenida: " + response.body());
+            }
+
+        } catch (java.io.IOException | InterruptedException e) {
+            Thread.currentThread().interrupt(); // Buena práctica si es InterruptedException
+            throw new RuntimeException("Error de comunicación con el servidor de correo: " + e.getMessage(), e);
         }
     }
 

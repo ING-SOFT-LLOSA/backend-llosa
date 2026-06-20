@@ -54,7 +54,7 @@ public class PagoFlujoFactory {
 
                 for (int i = 1; i <= numCuotas; i++) {
                     pagos.add(construirPago(cronograma, i, montoCuota,
-                            ConceptoPago.CUOTA, vencimientoBase.plusMonths(i - 1)));
+                            ConceptoPago.CUOTA, vencimientoBase.plusMonths((long)i - 1)));
                 }
             }
         }
