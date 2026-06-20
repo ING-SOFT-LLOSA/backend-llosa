@@ -20,8 +20,6 @@ public interface HitoProcesoCompraRepository extends JpaRepository<HitoProcesoCo
     /**
      * Verifica si existen hitos para un UsuarioActivo dado.
      */
-    boolean existsByEtapaExpediente_UuidEtapaExpediente(UUID uuidUsuarioActivo);
-
     Optional<HitoProcesoCompra> findByEtapaExpediente_UuidEtapaExpedienteAndOrden(
             UUID uuidUsuarioActivo,
             Integer orden

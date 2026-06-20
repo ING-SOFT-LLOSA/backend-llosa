@@ -1,6 +1,7 @@
 package com.llosa.backend.config;
 
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,7 +20,7 @@ public @interface WithFirebaseAuth {
 
 class WithFirebaseAuthSecurityContextFactory implements org.springframework.security.test.context.support.WithSecurityContextFactory<WithFirebaseAuth> {
     @Override
-    public SecurityContext createSecurityContext(WithFirebaseAuth annotation) {
+    public @NonNull SecurityContext createSecurityContext(WithFirebaseAuth annotation) {
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         FirebaseAuthenticationToken auth = new FirebaseAuthenticationToken(
                 annotation.uid(),

@@ -6,7 +6,7 @@ import com.llosa.backend.proyecto.entity.Torre;
 import java.util.UUID;
 
 public interface TorreService {
-    Torre save(UUID ProyectoId, Torre torre);
+    Torre save(UUID proyectoId, Torre torre);
     Torre findById(Long id);
     java.util.List<Torre> findByProyecto(UUID proyectoId, String search);
 }

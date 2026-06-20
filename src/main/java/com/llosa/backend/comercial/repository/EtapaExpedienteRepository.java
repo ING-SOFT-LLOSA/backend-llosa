@@ -12,14 +12,7 @@ import java.util.UUID;
 @Repository
 public interface EtapaExpedienteRepository extends JpaRepository<EtapaExpediente, UUID> {
 
-    List<EtapaExpediente> findByUsuarioActivo_UuidUsuarioActivo(UUID uuidUsuarioActivo);
-
     List<EtapaExpediente> findByUsuarioActivo_UuidUsuarioActivoOrderByEtapaProcesoAsc(UUID uuidUsuarioActivo);
-
-    Optional<EtapaExpediente> findByUuidEtapaExpedienteAndUsuarioActivo_UuidUsuarioActivo(
-            UUID uuidEtapaExpediente,
-            UUID uuidUsuarioActivo
-    );
 
     Optional<EtapaExpediente> findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(
             UUID uuidUsuarioActivo,
