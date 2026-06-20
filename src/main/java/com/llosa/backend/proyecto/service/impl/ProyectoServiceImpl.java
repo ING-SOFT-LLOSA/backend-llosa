@@ -96,7 +96,7 @@ public class ProyectoServiceImpl implements ProyectoService {
                             .precio(activoRequestDTO.precio())
                             .descripcion(activoRequestDTO.descripcion())
                             .build();
-                    Activo activoGuardado = activoService.saveFisico(pisoGuardado.getId(), activo);
+                    activoService.saveFisico(pisoGuardado.getId(), activo);
                 }
             }
         }

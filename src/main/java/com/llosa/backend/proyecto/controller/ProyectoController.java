@@ -97,7 +97,7 @@ public class ProyectoController {
      */
     @PreAuthorize("hasAuthority('PROY_EDITAR')")
     @PostMapping("/{uuid}/hitos")
-    public ResponseEntity<HitoResponseDTO> crearHito(@PathVariable("uuid") UUID id_proyecto,
+    public ResponseEntity<HitoResponseDTO> crearHito(@PathVariable("uuid") UUID idProyecto,
                                                        @Valid @RequestBody HitoCreateDTO dto) {
         Hito hito = Hito.builder()
                 .titulo(dto.titulo())
@@ -106,7 +106,7 @@ public class ProyectoController {
                 .build();
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(HitoResponseDTO.fromEntity(hitoService.save(id_proyecto, hito)));
+                .body(HitoResponseDTO.fromEntity(hitoService.save(idProyecto, hito)));
     }
 
     /*

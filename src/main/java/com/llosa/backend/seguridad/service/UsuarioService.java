@@ -37,11 +37,11 @@ public class UsuarioService {
     @org.springframework.beans.factory.annotation.Value("${app.dominio-corporativo}")
     private String dominioCorporativo;
 
-    static private final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado";
+    private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado";
 
     /**
      * NOTA (issue 0000315): Firebase NO participa de la transacción de Spring/JPA.
-     * Por eso el orden es importante: primero se intenta todo lo que es
+     * Por eso el orden es importante: primero se intenta
      * transaccional y reversible (validaciones + guardar en Postgres), y
      * RECIÉN AL FINAL se crea el usuario en Firebase, que es la operación
      * externa no transaccional.
@@ -217,9 +217,16 @@ public class UsuarioService {
                 throw new BusinessException("Error al enviar email de bienvenida: " + response.body());
             }
 
-        } catch (java.io.IOException | InterruptedException e) {
-            Thread.currentThread().interrupt(); // Buena práctica si es InterruptedException
-            throw new RuntimeException("Error de comunicación con el servidor de correo: " + e.getMessage(), e);
+        } catch (java.io.IOException e) {
+            // CORRECCIÓN SONAR: Para errores de red, usamos una excepción estándar de estado o tu BusinessException
+            throw new IllegalStateException("Error de comunicación con el servidor de correo: " + e.getMessage(), e);
+
+        } catch (InterruptedException e) {
+            // CORRECCIÓN SONAR: Aquí SÍ corresponde restaurar el estado de interrupción del hilo
+            Thread.currentThread().interrupt();
+
+            // Lanzamos una excepción que deje claro que el proceso fue cancelado/interrumpido
+            throw new IllegalStateException("El envío de correo fue interrumpido", e);
         }
     }
 

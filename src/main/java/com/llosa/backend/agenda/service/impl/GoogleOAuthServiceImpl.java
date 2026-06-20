@@ -57,9 +57,9 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
                     .setState(String.valueOf(idGestor)) // identificamos al gestor en el callback
                     .set("prompt", "consent")           // fuerza a Google a reenviar refresh_token
                     .build();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             log.error("[Google OAuth] Error al generar URL de autorización: {}", e.getMessage());
-            throw new RuntimeException("No se pudo generar la URL de autorización de Google", e);
+            throw new IllegalStateException("No se pudo generar la URL de autorización de Google", e);
         }
     }
 
@@ -101,10 +101,10 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
 
             log.info("[Google OAuth] Gestor {} conectó su Google Calendar exitosamente", idGestor);
 
-        } catch (Throwable e) {
+        } catch (Exception e) {
             log.error("[Google OAuth] Error al procesar callback para gestor {}: {}",
                     idGestor, e.getMessage());
-            throw new RuntimeException("No se pudo completar la autorización con Google", e);
+            throw new IllegalStateException("No se pudo completar la autorización con Google", e);
         }
     }
 

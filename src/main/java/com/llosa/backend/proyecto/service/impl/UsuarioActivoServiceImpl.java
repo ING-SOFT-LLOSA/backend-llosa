@@ -36,7 +36,7 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
     private final FlujoComercialFactory flujoComercialFactory;
     private final ActivoRepository activoRepository;
 
-    static private final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
+    private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
 
     @Override
     @Transactional(readOnly = true)

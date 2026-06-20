@@ -53,8 +53,8 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
     private final RequisitoDocumentalRepository requisitoDocumentalRepository;
     private final AgendaService agendaService;
 
-    static private final String CRONOGRAMA_NO_ENCONTRADO = "Cronograma no encontrado: ";
-    static private final String PAGADO = "PAGADO";
+    private static final String CRONOGRAMA_NO_ENCONTRADO = "Cronograma no encontrado: ";
+    private static final String PAGADO = "PAGADO";
 
 
     @Override
