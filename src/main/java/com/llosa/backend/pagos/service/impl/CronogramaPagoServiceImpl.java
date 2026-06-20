@@ -1,6 +1,5 @@
 package com.llosa.backend.pagos.service.impl;
 
-import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.comercial.entity.RequisitoDocumental;
 import com.llosa.backend.comercial.enums.EtapaProceso;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
