@@ -314,7 +314,7 @@ class StageServiceImplTest {
         var activo = Activo.builder().id(UUID.randomUUID()).nro("A-101")
                 .tipo(TipoActivo.DEPARTAMENTO)
                 .areaM2(new BigDecimal("80")).precio(new BigDecimal("300000"))
-                .descripcion("Descripcion").linkRecorridoVirtual("https://link.com")
+                .descripcion("Descripcion").tieneRecorridoVirtual(true)
                 .build();
         var ua = UsuarioActivo.builder()
                 .uuidUsuarioActivo(uuidUa)

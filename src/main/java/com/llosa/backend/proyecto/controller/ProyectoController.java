@@ -40,6 +40,7 @@ public class ProyectoController {
                 .nombre(proyecto.nombre())
                 .descripcion(proyecto.descripcion())
                 .precertificacionEdgeLeed(proyecto.precertificacionEdgeLeed())
+                .linkRecorridoVirtual(proyecto.linkRecorridoVirtual())
                 .departamento(proyecto.departamento())
                 .distrito(proyecto.distrito())
                 .direccion(proyecto.direccion())
@@ -59,6 +60,7 @@ public class ProyectoController {
         proyectoActualizado.setNombre(proyecto.nombre());
         proyectoActualizado.setDescripcion(proyecto.descripcion());
         proyectoActualizado.setPrecertificacionEdgeLeed(proyecto.precertificacionEdgeLeed());
+        proyectoActualizado.setLinkRecorridoVirtual(proyecto.linkRecorridoVirtual());
         proyectoActualizado.setDepartamento(proyecto.departamento());
         proyectoActualizado.setDistrito(proyecto.distrito());
         proyectoActualizado.setDireccion(proyecto.direccion());

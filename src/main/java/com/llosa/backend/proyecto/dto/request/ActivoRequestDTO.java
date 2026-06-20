@@ -32,5 +32,7 @@ public record ActivoRequestDTO(
         @PositiveOrZero(message = "El precio no puede ser negativo")
         BigDecimal precio,
 
-        String descripcion
+        String descripcion,
+
+        Boolean tieneRecorridoVirtual
 ) {}
