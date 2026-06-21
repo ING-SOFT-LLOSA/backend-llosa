@@ -41,6 +41,8 @@ public class UsuarioService {
     private String dominioCorporativo;
 
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado";
+    private static final String CLIENTE = "CLIENTE";
+    private static final String ADMIN = "ADMIN";
 
     /**
      * NOTA (issue 0000315): Firebase NO participa de la transacción de Spring/JPA.
@@ -83,8 +85,8 @@ public class UsuarioService {
         usuario.setTipoUsuario(request.getTipoUsuario());
         usuario.setActivo(true);
 
-        if ("CLIENTE".equals(request.getTipoUsuario())) {
-            Rol rolCliente = rolRepository.findByNombre("CLIENTE")
+        if (CLIENTE.equals(request.getTipoUsuario())) {
+            Rol rolCliente = rolRepository.findByNombre(CLIENTE)
                     .orElseThrow(() -> new RecursoNoEncontradoException("Rol CLIENTE no encontrado en la base de datos."));
             usuario.setRol(rolCliente);
         } else if (request.getIdRol() != null) {
@@ -145,8 +147,8 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException(USUARIO_NO_ENCONTRADO));
 
-        if (!activo && usuario.getRol() != null && "ADMIN".equals(usuario.getRol().getNombre())) {
-            long adminCount = usuarioRepository.countByRol_NombreAndActivoTrue("ADMIN");
+        if (!activo && usuario.getRol() != null && ADMIN.equals(usuario.getRol().getNombre())) {
+            long adminCount = usuarioRepository.countByRol_NombreAndActivoTrue(ADMIN);
             if (adminCount <= 1) {
                 throw new BusinessException("No se puede desactivar al unico administrador del sistema");
             }
@@ -159,7 +161,7 @@ public class UsuarioService {
             Usuario caller = usuarioRepository.findByFirebaseUuid(auth.getName())
                     .orElseThrow(() -> new AccesoDenegadoException("Solo un administrador puede desactivar a otro administrador"));
 
-            if (caller.getRol() == null || !"ADMIN".equals(caller.getRol().getNombre())) {
+            if (caller.getRol() == null || !ADMIN.equals(caller.getRol().getNombre())) {
                 throw new AccesoDenegadoException("Solo un administrador puede desactivar a otro administrador");
             }
         }
@@ -222,7 +224,7 @@ public class UsuarioService {
         String apiKey = "AIzaSyDo_yQ7_tJ3kulCZXaqOcPXAzywtF4pAj0";
         String url = "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=" + apiKey;
 
-        String continueUrl = "CLIENTE".equals(tipoUsuario)
+        String continueUrl = CLIENTE.equals(tipoUsuario)
                 ? "https://llosa-client.ingsoftware.lat/login"
                 : "https://llosa-admin.ingsoftware.lat/login";
 
