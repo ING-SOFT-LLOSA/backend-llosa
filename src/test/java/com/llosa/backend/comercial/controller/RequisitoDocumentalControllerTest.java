@@ -1,6 +1,7 @@
 package com.llosa.backend.comercial.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.llosa.backend.comercial.dto.RequisitoCreateRequest;
 import com.llosa.backend.comercial.dto.RequisitoUpdateRequest;
 import com.llosa.backend.comercial.entity.EtapaExpediente;
@@ -11,6 +12,7 @@ import com.llosa.backend.config.FirebaseConfig;
 import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.exception.GlobalExceptionHandler;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -43,6 +45,14 @@ class RequisitoDocumentalControllerTest {
     @MockitoBean RequisitoDocumentalService requisitoService;
     @MockitoBean FirebaseConfig firebaseConfig;
     @MockitoBean com.llosa.backend.seguridad.repository.UsuarioRepository usuarioRepository;
+
+    @BeforeEach
+    void setup() {
+        // =========================================================================
+        // SOLUCIÓN: Le enseñamos a Jackson a leer y escribir LocalDates de Java 8
+        // =========================================================================
+        objectMapper.registerModule(new JavaTimeModule  ());
+    }
 
     private static FirebaseAuthenticationToken docsAuthToken() {
         return new FirebaseAuthenticationToken("test-uid", "test@test.com",

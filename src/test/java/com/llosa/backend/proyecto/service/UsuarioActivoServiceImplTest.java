@@ -95,7 +95,7 @@ class UsuarioActivoServiceImplTest {
 
     @Test
     void crearContratoBase_exitoso() {
-        var dto = new CrearContratoDTO(List.of(1), "Credito Directo", "SEPARACION", null, null);
+        var dto = new CrearContratoDTO(List.of(1), "Credito Directo", "SEPARACION", null, null,null);
         var usuario = new Usuario();
         usuario.setId(1);
         usuario.setNombre("Test");
@@ -110,7 +110,7 @@ class UsuarioActivoServiceImplTest {
 
     @Test
     void crearContratoBase_usuarioNoExiste_lanzaEntityNotFound() {
-        var dto = new CrearContratoDTO(List.of(99), "Credito Directo", "SEPARACION", null, null);
+        var dto = new CrearContratoDTO(List.of(99), "Credito Directo", "SEPARACION", null, null,null);
         when(usuarioRepository.findById(99)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> usuarioActivoService.crearContratoBase(dto))
