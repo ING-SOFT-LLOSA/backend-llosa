@@ -22,5 +22,6 @@ class BackendApplicationTests {
 
     @Test
     void contextLoads() {
+        // No test, just to make sure the app starts
     }
 }

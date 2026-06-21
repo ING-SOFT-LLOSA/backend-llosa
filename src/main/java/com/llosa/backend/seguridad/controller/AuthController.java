@@ -24,11 +24,10 @@ public class AuthController {
     public ResponseEntity<PerfilConPermisosResponse> me() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !(authentication instanceof FirebaseAuthenticationToken)) {
+        if (!(authentication instanceof FirebaseAuthenticationToken auth)) {
             return ResponseEntity.status(403).build();
         }
 
-        FirebaseAuthenticationToken auth = (FirebaseAuthenticationToken) authentication;
         PerfilConPermisosResponse perfil = authService.verificarYCargarPerfil(auth.getUid());
         return ResponseEntity.ok(perfil);
     }

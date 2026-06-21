@@ -1,7 +1,5 @@
 package com.llosa.backend.stress;
 
-import com.google.api.services.storage.Storage;
-import com.google.firebase.FirebaseApp;
 import com.llosa.backend.config.SecurityTestConfiguration;
 import com.llosa.backend.config.TestData;
 import com.llosa.backend.seguridad.entity.Rol;
@@ -12,13 +10,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.annotation.DirtiesContext;
@@ -133,7 +127,7 @@ public class SeguridadConcurrencyTest {
         CountDownLatch fin = new CountDownLatch(hilos);
 
         ExecutorService executor = Executors.newFixedThreadPool(hilos);
-        List<Exception> errores = new CopyOnWriteArrayList<>();
+        List<Exception> errors = new CopyOnWriteArrayList<>();
 
         // 2. Ejecutamos la prueba de concurrencia
         for (int i = 0; i < hilos; i++) {
@@ -147,7 +141,7 @@ public class SeguridadConcurrencyTest {
                         usuarioRepository.save(u);
                     });
                 } catch (Exception e) {
-                    errores.add(e);
+                    errors.add(e);
                 } finally {
                     fin.countDown();
                 }
@@ -159,8 +153,10 @@ public class SeguridadConcurrencyTest {
         fin.await(30, TimeUnit.SECONDS);
         executor.shutdownNow();
 
+
         // 3. Verificamos consistencia
         Usuario resultado = usuarioRepository.findById(uid).orElseThrow();
+        assertThat(errors).isEmpty();
         assertThat(resultado.getRol()).isNotNull();
         assertThat(resultado.getRol().getNombre()).isIn("CLIENTE", "ASESOR");
     }
