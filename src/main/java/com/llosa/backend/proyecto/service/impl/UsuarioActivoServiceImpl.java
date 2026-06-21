@@ -67,6 +67,7 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
         UsuarioActivo usuarioActivo = UsuarioActivo.builder()
                 .tipoFinanciamiento(dto.tipoFinanciamiento())
                 .fechaAdquisicion(dto.fechaAdquisicion())
+                .fechaCompletado(dto.fechaCompletado())
                 .clientes(clientesValidos)
                 .activos(new ArrayList<>())
                 .build();
