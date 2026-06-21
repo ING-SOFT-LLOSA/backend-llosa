@@ -11,5 +11,6 @@ public record CrearContratoDTO(
         @NotBlank String tipoFinanciamiento,
         @NotBlank String faseComercial,
         String estadoTramiteLegal,
-        LocalDateTime fechaAdquisicion
+        LocalDateTime fechaAdquisicion,
+        LocalDateTime fechaCompletado
 ) {}

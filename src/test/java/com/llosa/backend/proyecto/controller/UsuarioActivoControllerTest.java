@@ -117,7 +117,7 @@ class UsuarioActivoControllerTest {
 
     @Test
     void crearContratoBase_devuelve201() throws Exception {
-        var dto = new CrearContratoDTO(List.of(1), "Credito Directo", "SEPARACION", null, null);
+        var dto = new CrearContratoDTO(List.of(1), "Credito Directo", "SEPARACION", null, null,null);
         var activo = buildActivo();
         var ua = UsuarioActivo.builder()
                 .uuidUsuarioActivo(UUID.randomUUID())

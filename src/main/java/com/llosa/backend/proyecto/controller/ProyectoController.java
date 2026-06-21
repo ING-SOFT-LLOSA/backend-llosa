@@ -36,7 +36,7 @@ public class ProyectoController {
     @PreAuthorize("hasAuthority('PROY_CREAR')")
     @PostMapping
     public ResponseEntity<ProyectoResponseDTO> crearProyecto(@Valid @RequestBody ProyectoCreateDTO proyecto) {
-        Proyecto nuevo_proyecto = Proyecto.builder()
+        Proyecto nuevoProyecto = Proyecto.builder()
                 .nombre(proyecto.nombre())
                 .descripcion(proyecto.descripcion())
                 .precertificacionEdgeLeed(proyecto.precertificacionEdgeLeed())
@@ -47,7 +47,7 @@ public class ProyectoController {
                 .fechaInicio(proyecto.fechaInicio())
                 .fechaFin(proyecto.fechaFin())
                 .build();
-        return ResponseEntity.status(HttpStatus.CREATED).body(ProyectoResponseDTO.fromEntity(proyectoService.save(nuevo_proyecto)));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ProyectoResponseDTO.fromEntity(proyectoService.save(nuevoProyecto)));
     }
     /*
     Endpoint para editar con put proyecto

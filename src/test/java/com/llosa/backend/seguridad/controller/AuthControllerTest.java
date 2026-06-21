@@ -9,6 +9,10 @@ import com.llosa.backend.seguridad.dto.PerfilConPermisosResponse;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.seguridad.service.AuthService;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -30,10 +34,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.securityContext;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 
 @WebMvcTest(AuthController.class)
 @Import({com.llosa.backend.config.SecurityConfig.class, AuthControllerTest.TestConfig.class, SecurityTestConfiguration.class, GlobalExceptionHandler.class})
@@ -54,13 +61,25 @@ class AuthControllerTest {
     @MockitoBean
     com.llosa.backend.seguridad.security.FirebaseTokenFilter firebaseTokenFilter;
 
+    @BeforeEach
+    void setupFilter() throws Exception {
+        // Le indicamos al mock del filtro que siempre continúe la cadena de ejecución
+        doAnswer(invocation -> {
+            ServletRequest request = invocation.getArgument(0);
+            ServletResponse response = invocation.getArgument(1);
+            FilterChain chain = invocation.getArgument(2);
+
+            chain.doFilter(request, response); // Deja pasar la petición al controlador
+            return null;
+        }).when(firebaseTokenFilter).doFilter(any(), any(), any());
+    }
     // ── GET /api/auth/me ──────────────────────────────────────────────────────
 
     @Test
     void getMe_sinAutenticar() throws Exception {
-        // CP06: Sin token - devuelve 200 con respuesta vacía (null)
+        // CP06: Sin token - el controlador devuelve explícitamente 403
         mockMvc.perform(get("/api/auth/me"))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden()); // <-- CORREGIDO
     }
 
     @Test
@@ -90,7 +109,6 @@ class AuthControllerTest {
 
     @Test
     void getMe_usuarioNoRegistrado() throws Exception {
-        // CP06: Usuario autenticado pero no en BD → 200 (sin error manejado)
         when(authService.verificarYCargarPerfil("test-uid"))
                 .thenThrow(new RecursoNoEncontradoException("Usuario no registrado en el sistema"));
 
@@ -99,12 +117,11 @@ class AuthControllerTest {
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
 
         mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(auth))))
-                .andExpect(status().isOk());
+                .andExpect(status().isNotFound()); // <-- CORREGIDO
     }
 
     @Test
     void getMe_cuentaSuspendida() throws Exception {
-        // CP08: Usuario suspendido (activo=false) → 200 (sin error manejado)
         when(authService.verificarYCargarPerfil("test-uid"))
                 .thenThrow(new AccesoDenegadoException("Cuenta suspendida. Contacte a la inmobiliaria."));
 
@@ -113,12 +130,11 @@ class AuthControllerTest {
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
 
         mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(auth))))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden()); // <-- CORREGIDO
     }
 
     @Test
     void getMe_empleadoDominioNoAutorizado() throws Exception {
-        // CP06: Empleado con email NO corporativo → 200 (sin error manejado)
         when(authService.verificarYCargarPerfil("test-uid"))
                 .thenThrow(new AccesoDenegadoException("Acceso denegado: dominio no autorizado."));
 
@@ -127,7 +143,7 @@ class AuthControllerTest {
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
 
         mockMvc.perform(get("/api/auth/me").with(securityContext(contextWithAuth(auth))))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden()); // <-- CORREGIDO
     }
 
     // ── GET /api/auth/email-exists ──────────────────────────────────────────────
@@ -138,6 +154,7 @@ class AuthControllerTest {
 
         mockMvc.perform(get("/api/auth/email-exists").param("email", "juan@test.com"))
                 .andExpect(status().isOk())
+                // CORRECCIÓN: Volvemos a jsonPath para leer la clave "exists" dentro del Map JSON
                 .andExpect(jsonPath("$.exists").value(true));
     }
 
@@ -147,6 +164,7 @@ class AuthControllerTest {
 
         mockMvc.perform(get("/api/auth/email-exists").param("email", "desconocido@test.com"))
                 .andExpect(status().isOk())
+                // CORRECCIÓN: Volvemos a jsonPath para leer la clave "exists" dentro del Map JSON
                 .andExpect(jsonPath("$.exists").value(false));
     }
 

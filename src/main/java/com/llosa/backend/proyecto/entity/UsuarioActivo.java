@@ -33,6 +33,9 @@ public class UsuarioActivo {
     @Column(name = "fecha_adquisicion")
     private LocalDateTime fechaAdquisicion;
 
+    @Column(name = "fecha_completado")
+    private LocalDateTime fechaCompletado;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
