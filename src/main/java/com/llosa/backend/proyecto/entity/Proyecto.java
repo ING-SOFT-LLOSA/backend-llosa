@@ -34,6 +34,10 @@ public class Proyecto {
     @Builder.Default
     private Boolean precertificacionEdgeLeed = false;
 
+    @Builder.Default
+    @Column(name = "link_recorrido_virtual")
+    private String linkRecorridoVirtual = "";
+
     private String departamento;
 
     private String distrito;

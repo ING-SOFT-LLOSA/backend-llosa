@@ -1,5 +1,8 @@
 package com.llosa.backend.pagos.service;
 
+import com.llosa.backend.agenda.dto.request.CrearCitaRequest;
+import com.llosa.backend.agenda.dto.response.CitaResponse;
+import com.llosa.backend.agenda.service.AgendaService;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.RequisitoDocumentalRepository;
 import com.llosa.backend.config.TestDataPagos;
@@ -19,8 +22,10 @@ import com.llosa.backend.pagos.entity.Pago;
 import com.llosa.backend.pagos.repository.CronogramaPagoRepository;
 import com.llosa.backend.pagos.repository.PagoRepository;
 import com.llosa.backend.pagos.service.impl.CronogramaPagoServiceImpl;
+import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
+import com.llosa.backend.seguridad.entity.Usuario;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -57,6 +62,9 @@ class CronogramaPagoServiceImplTest {
 
     @Mock
     RequisitoDocumentalRepository requisitoDocumentalRepository;
+
+    @Mock
+    AgendaService agendaService;
 
     @InjectMocks
     CronogramaPagoServiceImpl cronogramaPagoService;
@@ -495,5 +503,269 @@ class CronogramaPagoServiceImplTest {
                 .hasMessageContaining("no puede exceder el total pactado");
 
         verify(cronogramaPagoRepository, never()).save(any());
+    }
+
+    // ── actualizar: sincronización de pagos SEPARACION / INICIAL existentes ──
+
+    @Test
+    void actualizar_conPagoSeparacionExistente_sincronizaMonto() {
+        UUID uuidCp = UUID.randomUUID();
+        var request = TestDataPagos.crearCronogramaRequest();
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .usuarioActivo(UsuarioActivo.builder().uuidUsuarioActivo(request.uuidUsuarioActivo()).build())
+                .totalPactado(new BigDecimal("100000.00"))
+                .estado("ACTIVO")
+                .build();
+        var pagoSeparacion = Pago.builder().concepto(ConceptoPago.SEPARACION).build();
+
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
+        when(cronogramaPagoRepository.save(any())).thenReturn(cp);
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, ConceptoPago.SEPARACION))
+                .thenReturn(Optional.of(pagoSeparacion));
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, ConceptoPago.INICIAL))
+                .thenReturn(Optional.empty());
+
+        cronogramaPagoService.actualizar(uuidCp, request);
+
+        assertThat(pagoSeparacion.getMontoProgramado()).isEqualByComparingTo(cp.getPagoSeparacion());
+        verify(pagoRepository).save(pagoSeparacion);
+    }
+
+    @Test
+    void actualizar_conPagoInicialExistente_sincronizaMonto() {
+        UUID uuidCp = UUID.randomUUID();
+        var request = TestDataPagos.crearCronogramaRequest();
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .usuarioActivo(UsuarioActivo.builder().uuidUsuarioActivo(request.uuidUsuarioActivo()).build())
+                .totalPactado(new BigDecimal("100000.00"))
+                .estado("ACTIVO")
+                .build();
+        var pagoInicial = Pago.builder().concepto(ConceptoPago.INICIAL).build();
+
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
+        when(cronogramaPagoRepository.save(any())).thenReturn(cp);
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, ConceptoPago.SEPARACION))
+                .thenReturn(Optional.empty());
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, ConceptoPago.INICIAL))
+                .thenReturn(Optional.of(pagoInicial));
+
+        cronogramaPagoService.actualizar(uuidCp, request);
+
+        assertThat(pagoInicial.getMontoProgramado()).isEqualByComparingTo(cp.getPagoInicial());
+        verify(pagoRepository).save(pagoInicial);
+    }
+
+    // ── crear: vincularPagosARequisitos + crearRecordatorios ─────────────────
+
+    @Test
+    void crear_sinAsesor_noCreaRecordatorios() {
+        var request = TestDataPagos.crearCronogramaRequest();
+        var ua = UsuarioActivo.builder()
+                .uuidUsuarioActivo(request.uuidUsuarioActivo())
+                .asesor(null)
+                .build();
+
+        when(cronogramaPagoRepository.existsByUsuarioActivo_UuidUsuarioActivo(request.uuidUsuarioActivo()))
+                .thenReturn(false);
+        when(usuarioActivoRepository.findById(request.uuidUsuarioActivo())).thenReturn(Optional.of(ua));
+        when(cronogramaPagoRepository.save(any())).thenAnswer(inv -> {
+            CronogramaPago cp = inv.getArgument(0);
+            cp.setId(UUID.randomUUID());
+            return cp;
+        });
+
+        var pagoCuota = Pago.builder().concepto(ConceptoPago.CUOTA).nroCuota(1)
+                .fechaVencimiento(LocalDate.now().plusMonths(1)).build();
+        when(pagoFlujoFactory.generarPagos(any(), any())).thenReturn(List.of(pagoCuota));
+        when(pagoRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        cronogramaPagoService.crear(request);
+
+        verifyNoInteractions(etapaExpedienteRepository);
+    }
+
+    @Test
+    void crear_conAsesorClienteYActivo_creaRecordatorioParaCuotaFutura() {
+        var request = TestDataPagos.crearCronogramaRequest();
+        Usuario asesor = new Usuario();
+        asesor.setId(1);
+        asesor.setFirebaseUuid("uid-asesor");
+        Usuario cliente = new Usuario();
+        cliente.setId(2);
+        Activo activo = Activo.builder().id(UUID.randomUUID()).nro("A-101").build();
+
+        var ua = UsuarioActivo.builder()
+                .uuidUsuarioActivo(request.uuidUsuarioActivo())
+                .asesor(asesor)
+                .clientes(List.of(cliente))
+                .activos(List.of(activo))
+                .build();
+
+        when(cronogramaPagoRepository.existsByUsuarioActivo_UuidUsuarioActivo(request.uuidUsuarioActivo()))
+                .thenReturn(false);
+        when(usuarioActivoRepository.findById(request.uuidUsuarioActivo())).thenReturn(Optional.of(ua));
+        when(cronogramaPagoRepository.save(any())).thenAnswer(inv -> {
+            CronogramaPago cp = inv.getArgument(0);
+            cp.setId(UUID.randomUUID());
+            return cp;
+        });
+
+        var pagoCuota = Pago.builder().concepto(ConceptoPago.CUOTA).nroCuota(1)
+                .fechaVencimiento(LocalDate.now().plusMonths(1)).build();
+        when(pagoFlujoFactory.generarPagos(any(), any())).thenReturn(List.of(pagoCuota));
+        when(pagoRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        UUID citaId = UUID.randomUUID();
+        CitaResponse citaResponse = new CitaResponse(citaId, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        when(agendaService.crearCita(eq("uid-asesor"), any(CrearCitaRequest.class))).thenReturn(citaResponse);
+
+        cronogramaPagoService.crear(request);
+
+        assertThat(pagoCuota.getUuidCita()).isEqualTo(citaId);
+        verify(agendaService).crearCita(eq("uid-asesor"), any(CrearCitaRequest.class));
+    }
+
+    @Test
+    void crear_conAsesorPeroSinClienteNiActivo_noCreaCitaYNoLanzaExcepcion() {
+        var request = TestDataPagos.crearCronogramaRequest();
+        Usuario asesor = new Usuario();
+        asesor.setId(1);
+        asesor.setFirebaseUuid("uid-asesor");
+
+        var ua = UsuarioActivo.builder()
+                .uuidUsuarioActivo(request.uuidUsuarioActivo())
+                .asesor(asesor)
+                .build(); // sin clientes ni activos (listas vacías por @Builder.Default)
+
+        when(cronogramaPagoRepository.existsByUsuarioActivo_UuidUsuarioActivo(request.uuidUsuarioActivo()))
+                .thenReturn(false);
+        when(usuarioActivoRepository.findById(request.uuidUsuarioActivo())).thenReturn(Optional.of(ua));
+        when(cronogramaPagoRepository.save(any())).thenAnswer(inv -> {
+            CronogramaPago cp = inv.getArgument(0);
+            cp.setId(UUID.randomUUID());
+            return cp;
+        });
+
+        var pagoCuota = Pago.builder().concepto(ConceptoPago.CUOTA).nroCuota(1)
+                .fechaVencimiento(LocalDate.now().plusMonths(1)).build();
+        when(pagoFlujoFactory.generarPagos(any(), any())).thenReturn(List.of(pagoCuota));
+        when(pagoRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        cronogramaPagoService.crear(request);
+
+        verifyNoInteractions(agendaService);
+        assertThat(pagoCuota.getUuidCita()).isNull();
+    }
+
+    @Test
+    void crear_conPagoSeparacionEInicial_vinculaRequisitoDocumental() {
+        var request = TestDataPagos.crearCronogramaRequest();
+        var ua = UsuarioActivo.builder()
+                .uuidUsuarioActivo(request.uuidUsuarioActivo())
+                .build();
+
+        when(cronogramaPagoRepository.existsByUsuarioActivo_UuidUsuarioActivo(request.uuidUsuarioActivo()))
+                .thenReturn(false);
+        when(usuarioActivoRepository.findById(request.uuidUsuarioActivo())).thenReturn(Optional.of(ua));
+        when(cronogramaPagoRepository.save(any())).thenAnswer(inv -> {
+            CronogramaPago cp = inv.getArgument(0);
+            cp.setId(UUID.randomUUID());
+            return cp;
+        });
+
+        var pagoSeparacion = Pago.builder().concepto(ConceptoPago.SEPARACION).nroCuota(-1).build();
+        var pagoInicial = Pago.builder().concepto(ConceptoPago.INICIAL).nroCuota(0).build();
+        when(pagoFlujoFactory.generarPagos(any(), any())).thenReturn(List.of(pagoSeparacion, pagoInicial));
+        when(pagoRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        UUID uuidEtapaSeparacion = UUID.randomUUID();
+        UUID uuidEtapaContrato = UUID.randomUUID();
+        UUID uuidRequisitoSeparacion = UUID.randomUUID();
+        UUID uuidRequisitoInicial = UUID.randomUUID();
+
+        var etapaSeparacion = com.llosa.backend.comercial.entity.EtapaExpediente.builder()
+                .uuidEtapaExpediente(uuidEtapaSeparacion).build();
+        var etapaContrato = com.llosa.backend.comercial.entity.EtapaExpediente.builder()
+                .uuidEtapaExpediente(uuidEtapaContrato).build();
+        var requisitoSeparacion = com.llosa.backend.comercial.entity.RequisitoDocumental.builder()
+                .id(uuidRequisitoSeparacion).build();
+        var requisitoInicial = com.llosa.backend.comercial.entity.RequisitoDocumental.builder()
+                .id(uuidRequisitoInicial).build();
+
+        when(etapaExpedienteRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(
+                request.uuidUsuarioActivo(), com.llosa.backend.comercial.enums.EtapaProceso.SEPARACION))
+                .thenReturn(Optional.of(etapaSeparacion));
+        when(etapaExpedienteRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(
+                request.uuidUsuarioActivo(), com.llosa.backend.comercial.enums.EtapaProceso.CONTRATO))
+                .thenReturn(Optional.of(etapaContrato));
+        when(requisitoDocumentalRepository.findByEtapaExpediente_UuidEtapaExpedienteAndTitulo(
+                uuidEtapaSeparacion, "Comprobante de separación")).thenReturn(Optional.of(requisitoSeparacion));
+        when(requisitoDocumentalRepository.findByEtapaExpediente_UuidEtapaExpedienteAndTitulo(
+                uuidEtapaContrato, "Pago Inicial")).thenReturn(Optional.of(requisitoInicial));
+
+        cronogramaPagoService.crear(request);
+
+        assertThat(pagoSeparacion.getUuidRequisitoDocumental()).isEqualTo(uuidRequisitoSeparacion);
+        assertThat(pagoInicial.getUuidRequisitoDocumental()).isEqualTo(uuidRequisitoInicial);
+    }
+
+    @Test
+    void crear_sinEtapaExpedienteEncontrada_noVinculaRequisito() {
+        var request = TestDataPagos.crearCronogramaRequest();
+        var ua = UsuarioActivo.builder()
+                .uuidUsuarioActivo(request.uuidUsuarioActivo())
+                .build();
+
+        when(cronogramaPagoRepository.existsByUsuarioActivo_UuidUsuarioActivo(request.uuidUsuarioActivo()))
+                .thenReturn(false);
+        when(usuarioActivoRepository.findById(request.uuidUsuarioActivo())).thenReturn(Optional.of(ua));
+        when(cronogramaPagoRepository.save(any())).thenAnswer(inv -> {
+            CronogramaPago cp = inv.getArgument(0);
+            cp.setId(UUID.randomUUID());
+            return cp;
+        });
+
+        var pagoSeparacion = Pago.builder().concepto(ConceptoPago.SEPARACION).nroCuota(-1).build();
+        when(pagoFlujoFactory.generarPagos(any(), any())).thenReturn(List.of(pagoSeparacion));
+        when(pagoRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(etapaExpedienteRepository.findByUsuarioActivo_UuidUsuarioActivoAndEtapaProceso(any(), any()))
+                .thenReturn(Optional.empty());
+
+        cronogramaPagoService.crear(request);
+
+        assertThat(pagoSeparacion.getUuidRequisitoDocumental()).isNull();
+        verifyNoInteractions(requisitoDocumentalRepository);
+    }
+
+    // ── obtenerResumen: rama EN_RIESGO ───────────────────────────────────────
+
+    @Test
+    void obtenerResumen_cuotaPendienteProximaAVencer_devuelveEN_RIESGO() {
+        UUID uuidCp = UUID.randomUUID();
+        var ua = UsuarioActivo.builder().uuidUsuarioActivo(UUID.randomUUID()).build();
+        var cp = CronogramaPago.builder()
+                .id(uuidCp)
+                .usuarioActivo(ua)
+                .totalPactado(new BigDecimal("25000.00"))
+                .estado("ACTIVO")
+                .build();
+
+        var pagoProximo = Pago.builder()
+                .nroCuota(1)
+                .montoProgramado(new BigDecimal("25000.00"))
+                .fechaVencimiento(LocalDate.now().plusDays(3))
+                .estado("PENDIENTE")
+                .build();
+
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
+        when(pagoRepository.findByCronograma_IdOrderByNroCuotaAsc(uuidCp))
+                .thenReturn(List.of(pagoProximo));
+
+        ResumenResponse resumen = cronogramaPagoService.obtenerResumen(uuidCp);
+
+        assertThat(resumen.estadoGlobal()).isEqualTo("EN_RIESGO");
     }
 }

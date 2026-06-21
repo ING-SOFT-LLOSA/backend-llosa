@@ -76,6 +76,7 @@ public class ActivoController {
         activoExistente.setEstadoComercial(activoDTO.estadoComercial());
         activoExistente.setPrecio(activoDTO.precio());
         activoExistente.setDescripcion(activoDTO.descripcion());
+        activoExistente.setTieneRecorridoVirtual(activoDTO.tieneRecorridoVirtual());
 
         Activo actualizado = activoService.save(activoExistente);
 

@@ -8,6 +8,7 @@ public record ProyectoCreateDTO(
         @NotBlank String nombre,
         String descripcion,
         Boolean precertificacionEdgeLeed,
+        String linkRecorridoVirtual,
         String departamento,
         String distrito,
         String direccion,

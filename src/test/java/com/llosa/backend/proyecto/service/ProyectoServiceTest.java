@@ -160,7 +160,7 @@ class ProyectoServiceTest {
 
         ActivoRequestDTO activoDTO = new ActivoRequestDTO("101", TipoActivo.DEPARTAMENTO,
                 BigDecimal.valueOf(80), BigDecimal.valueOf(80), EstadoComercialActivo.DISPONIBLE,
-                BigDecimal.valueOf(200000), "Dpto 101");
+                BigDecimal.valueOf(200000), "Dpto 101", false);
         PisoRequestDTO pisoDTO = new PisoRequestDTO(1, List.of(activoDTO));
         TorreRequestDTO torreDTO = new TorreRequestDTO("Torre A", List.of(pisoDTO));
         ProyectoCargaDTO cargaDTO = new ProyectoCargaDTO(List.of(torreDTO));

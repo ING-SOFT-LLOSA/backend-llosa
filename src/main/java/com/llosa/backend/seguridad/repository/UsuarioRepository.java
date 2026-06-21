@@ -24,4 +24,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
             "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "u.documentoIdentidad LIKE CONCAT('%', :search, '%')")
     Page<Usuario> buscarUsuariosPaginados(@Param("search") String search, Pageable pageable);
+
+    long countByRol_NombreAndActivoTrue(String rolNombre);
 }

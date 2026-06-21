@@ -89,7 +89,7 @@ class ProyectoControllerTest {
         when(proyectoService.save(any(Proyecto.class))).thenReturn(proyecto);
 
         ProyectoCreateDTO dto = new ProyectoCreateDTO(
-                "Torre Sol", "Desc", false, "Lima", "Miraflores",
+                "Torre Sol", "Desc", false, null, "Lima", "Miraflores",
                 "Av. Test 123", null, null);
 
         mockMvc.perform(post("/api/proyectos")
@@ -104,7 +104,7 @@ class ProyectoControllerTest {
     @Test
     void crearProyecto_sinNombre_devuelve400() throws Exception {
         ProyectoCreateDTO dto = new ProyectoCreateDTO(
-                "", "Desc", false, "Lima", "Miraflores",
+                "", "Desc", false, null, "Lima", "Miraflores",
                 "Av. Test 123", null, null);
 
         mockMvc.perform(post("/api/proyectos")
@@ -124,7 +124,7 @@ class ProyectoControllerTest {
         when(proyectoService.save(proyecto)).thenReturn(proyecto);
 
         ProyectoCreateDTO dto = new ProyectoCreateDTO(
-                "Torre Sol Updated", "Desc", false, "Lima", "Miraflores",
+                "Torre Sol Updated", "Desc", false, null, "Lima", "Miraflores",
                 "Av. Test 456", null, null);
 
         mockMvc.perform(put("/api/proyectos/" + id)

@@ -130,6 +130,26 @@ class AuthControllerTest {
                 .andExpect(status().isOk());
     }
 
+    // ── GET /api/auth/email-exists ──────────────────────────────────────────────
+
+    @Test
+    void emailExists_correoRegistrado_devuelveTrue() throws Exception {
+        when(usuarioRepository.existsByEmail("juan@test.com")).thenReturn(true);
+
+        mockMvc.perform(get("/api/auth/email-exists").param("email", "juan@test.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.exists").value(true));
+    }
+
+    @Test
+    void emailExists_correoNoRegistrado_devuelveFalse() throws Exception {
+        when(usuarioRepository.existsByEmail("desconocido@test.com")).thenReturn(false);
+
+        mockMvc.perform(get("/api/auth/email-exists").param("email", "desconocido@test.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.exists").value(false));
+    }
+
     private SecurityContext contextWithAuth(FirebaseAuthenticationToken auth) {
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);

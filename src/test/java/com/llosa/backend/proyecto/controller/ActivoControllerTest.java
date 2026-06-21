@@ -95,7 +95,7 @@ class ActivoControllerTest {
 
         ActivoRequestDTO dto = new ActivoRequestDTO("DPTO 101", TipoActivo.DEPARTAMENTO,
                 BigDecimal.valueOf(80), BigDecimal.valueOf(80), EstadoComercialActivo.DISPONIBLE,
-                BigDecimal.valueOf(200000), "Test");
+                BigDecimal.valueOf(200000), "Test", false);
 
         mockMvc.perform(post("/api/activos/1/pisos")
                         .with(authentication(TestData.proyectoAuthToken()))
@@ -116,7 +116,7 @@ class ActivoControllerTest {
 
         ActivoRequestDTO dto = new ActivoRequestDTO("DPTO 102", TipoActivo.DEPARTAMENTO,
                 BigDecimal.valueOf(90), BigDecimal.valueOf(90), EstadoComercialActivo.DISPONIBLE,
-                BigDecimal.valueOf(220000), "Actualizado");
+                BigDecimal.valueOf(220000), "Actualizado", false);
 
         mockMvc.perform(put("/api/activos/" + id)
                         .with(authentication(TestData.proyectoAuthToken()))

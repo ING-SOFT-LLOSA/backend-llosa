@@ -222,14 +222,23 @@ public class StageServiceImpl implements StageService {
     private StageActivosResponse.ActivoItemResponse construirActivoResponse(Activo activo) {
         String tipoNombre = activo.getTipo() != null ? activo.getTipo().name() : null;
 
+        String linkRecorrido = "";
+        if (Boolean.TRUE.equals(activo.getTieneRecorridoVirtual())
+                && activo.getPiso() != null
+                && activo.getPiso().getTorre() != null
+                && activo.getPiso().getTorre().getProyecto() != null) {
+            String proyectoLink = activo.getPiso().getTorre().getProyecto().getLinkRecorridoVirtual();
+            linkRecorrido = proyectoLink != null ? proyectoLink : "";
+        }
+
         return new StageActivosResponse.ActivoItemResponse(
-                activo.getId(), // 'id' mapeado a uuid_activo
+                activo.getId(),
                 activo.getNro(),
                 tipoNombre,
                 activo.getAreaM2(),
                 activo.getPrecio(),
                 activo.getDescripcion(),
-                activo.getLinkRecorridoVirtual()
+                linkRecorrido
         );
     }
 

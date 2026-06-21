@@ -19,7 +19,8 @@ public record ActivoResponseDTO(
         BigDecimal areaTechada,
         EstadoComercialActivo estadoComercial,
         BigDecimal precio,
-        String descripcion
+        String descripcion,
+        Boolean tieneRecorridoVirtual
 ) {
     public static ActivoResponseDTO fromEntity(Activo a) {
         return new ActivoResponseDTO(
@@ -34,7 +35,8 @@ public record ActivoResponseDTO(
                 a.getAreaTechada(),
                 a.getEstadoComercial(),
                 a.getPrecio(),
-                a.getDescripcion()
+                a.getDescripcion(),
+                a.getTieneRecorridoVirtual()
         );
     }
 }

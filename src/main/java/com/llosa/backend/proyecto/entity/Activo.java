@@ -56,7 +56,8 @@ public class Activo {
     private String descripcion = "No existe descripcion todavia";
 
     @Builder.Default
-    private String linkRecorridoVirtual = "";
+    @Column(name = "tiene_recorrido_virtual", nullable = false)
+    private Boolean tieneRecorridoVirtual = false;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

@@ -7,6 +7,7 @@ import com.llosa.backend.exception.EmailDuplicadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.seguridad.dto.CrearUsuarioRequest;
 import com.llosa.backend.seguridad.dto.UsuarioResponse;
+import com.llosa.backend.seguridad.entity.Funcion;
 import com.llosa.backend.seguridad.entity.Rol;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.RolRepository;
@@ -34,6 +35,9 @@ class UsuarioServiceTest {
 
     @Mock
     RolRepository rolRepository;
+
+    @Mock
+    com.llosa.backend.seguridad.repository.FuncionRepository funcionRepository;
 
     @InjectMocks
     UsuarioService usuarioService;
@@ -330,5 +334,278 @@ class UsuarioServiceTest {
         when(usuarioRepository.findAll()).thenReturn(java.util.List.of());
 
         assertThat(usuarioService.listarTodos()).isEmpty();
+    }
+
+    // ── crearUsuario: validación de dominio corporativo / rol CLIENTE ────────
+
+    @Test
+    void crearUsuario_empleadoConDominioIncorrecto_lanzaBusinessException() {
+        CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        req.setTipoUsuario("EMPLEADO");
+        req.setEmail("ana.garcia@gmail.com");
+        when(usuarioRepository.existsByEmail(req.getEmail())).thenReturn(false);
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            assertThatThrownBy(() -> usuarioService.crearUsuario(req))
+                    .isInstanceOf(com.llosa.backend.exception.BusinessException.class)
+                    .hasMessageContaining("dominio corporativo");
+
+            ms.verifyNoInteractions();
+            verify(usuarioRepository, never()).save(any());
+        }
+    }
+
+    @Test
+    void crearUsuario_empleadoConDominioCorrecto_noLanzaExcepcionDeDominio() throws Exception {
+        CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        req.setTipoUsuario("EMPLEADO");
+        req.setEmail("empleado@test.com");
+        when(usuarioRepository.existsByEmail(req.getEmail())).thenReturn(false);
+
+        UserRecord mockRecord = mock(UserRecord.class);
+        when(mockRecord.getUid()).thenReturn("uid-empleado-dominio-ok");
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.createUser(any())).thenReturn(mockRecord);
+        when(usuarioRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            UsuarioResponse resultado = usuarioService.crearUsuario(req);
+
+            assertThat(resultado.getEmail()).isEqualTo("empleado@test.com");
+        }
+    }
+
+    @Test
+    void crearUsuario_cliente_asignaRolClienteAutomaticamente() throws Exception {
+        CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        req.setTipoUsuario("CLIENTE");
+        when(usuarioRepository.existsByEmail(req.getEmail())).thenReturn(false);
+
+        Rol rolCliente = TestData.rol();
+        when(rolRepository.findByNombre("CLIENTE")).thenReturn(Optional.of(rolCliente));
+
+        UserRecord mockRecord = mock(UserRecord.class);
+        when(mockRecord.getUid()).thenReturn("uid-cliente");
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.createUser(any())).thenReturn(mockRecord);
+
+        ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+        when(usuarioRepository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            usuarioService.crearUsuario(req);
+
+            assertThat(captor.getValue().getRol()).isEqualTo(rolCliente);
+        }
+    }
+
+    @Test
+    void crearUsuario_cliente_sinRolEnBD_lanzaRecursoNoEncontrado() {
+        CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        req.setTipoUsuario("CLIENTE");
+        when(usuarioRepository.existsByEmail(req.getEmail())).thenReturn(false);
+        when(rolRepository.findByNombre("CLIENTE")).thenReturn(Optional.empty());
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            assertThatThrownBy(() -> usuarioService.crearUsuario(req))
+                    .isInstanceOf(RecursoNoEncontradoException.class)
+                    .hasMessageContaining("Rol CLIENTE no encontrado");
+
+            ms.verifyNoInteractions();
+        }
+    }
+
+    // ── eliminarCompletamente ─────────────────────────────────────────────────
+
+    @Test
+    void eliminarCompletamente_exitoso_borraEnFirebaseYBD() throws Exception {
+        Usuario usuario = TestData.usuario();
+        usuario.setId(15);
+        when(usuarioRepository.findById(15)).thenReturn(Optional.of(usuario));
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            usuarioService.eliminarCompletamente(15);
+
+            verify(mockAuth).deleteUser(usuario.getFirebaseUuid());
+            verify(usuarioRepository).delete(usuario);
+        }
+    }
+
+    @Test
+    void eliminarCompletamente_usuarioNoEncontrado_lanzaExcepcion() {
+        when(usuarioRepository.findById(999)).thenReturn(Optional.empty());
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            assertThatThrownBy(() -> usuarioService.eliminarCompletamente(999))
+                    .isInstanceOf(RecursoNoEncontradoException.class);
+
+            ms.verifyNoInteractions();
+            verify(usuarioRepository, never()).delete(any());
+        }
+    }
+
+    // ── findById / findByFirebaseUuid ─────────────────────────────────────────
+
+    @Test
+    void findById_existente_retornaUsuario() {
+        Usuario usuario = TestData.usuario();
+        usuario.setId(3);
+        when(usuarioRepository.findById(3)).thenReturn(Optional.of(usuario));
+
+        assertThat(usuarioService.findById(3)).isEqualTo(usuario);
+    }
+
+    @Test
+    void findById_noExistente_lanzaExcepcion() {
+        when(usuarioRepository.findById(404)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioService.findById(404))
+                .isInstanceOf(RecursoNoEncontradoException.class);
+    }
+
+    @Test
+    void findByFirebaseUuid_existente_retornaUsuario() {
+        Usuario usuario = TestData.usuario();
+        when(usuarioRepository.findByFirebaseUuid("uid-1")).thenReturn(Optional.of(usuario));
+
+        assertThat(usuarioService.findByFirebaseUuid("uid-1")).isEqualTo(usuario);
+    }
+
+    @Test
+    void findByFirebaseUuid_noExistente_lanzaExcepcion() {
+        when(usuarioRepository.findByFirebaseUuid("uid-inexistente")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioService.findByFirebaseUuid("uid-inexistente"))
+                .isInstanceOf(RecursoNoEncontradoException.class);
+    }
+
+    // ── listarPaginadoYFiltrado ────────────────────────────────────────────────
+
+    @Test
+    void listarPaginadoYFiltrado_devuelvePaginaMapeada() {
+        Usuario usuario = TestData.usuario();
+        org.springframework.data.domain.Page<Usuario> pagina =
+                new org.springframework.data.domain.PageImpl<>(java.util.List.of(usuario));
+        when(usuarioRepository.buscarUsuariosPaginados(eq("juan"), any())).thenReturn(pagina);
+
+        var resultado = usuarioService.listarPaginadoYFiltrado("juan", 0, 10);
+
+        assertThat(resultado.getContent()).hasSize(1);
+        assertThat(resultado.getContent().get(0).email()).isEqualTo(usuario.getEmail());
+    }
+
+    // ── actualizarUsuario ──────────────────────────────────────────────────────
+
+    @Test
+    void actualizarUsuario_conTodosLosCampos_actualizaTodo() {
+        Usuario usuario = TestData.usuario();
+        usuario.setId(20);
+        when(usuarioRepository.findById(20)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any())).thenReturn(usuario);
+
+        com.llosa.backend.seguridad.dto.UpdateUsuarioDTO dto = new com.llosa.backend.seguridad.dto.UpdateUsuarioDTO();
+        dto.setNombre("NuevoNombre");
+        dto.setApellidos("NuevoApellido");
+        dto.setTelefono("999888777");
+        dto.setEmail("nuevo@test.com");
+        dto.setDocumentoIdentidad("87654321");
+        dto.setTipoUsuario("EMPLEADO");
+
+        UsuarioResponse resultado = usuarioService.actualizarUsuario(20, dto);
+
+        assertThat(resultado.getNombre()).isEqualTo("NuevoNombre");
+        assertThat(usuario.getApellidos()).isEqualTo("NuevoApellido");
+        assertThat(usuario.getTelefono()).isEqualTo("999888777");
+        assertThat(usuario.getEmail()).isEqualTo("nuevo@test.com");
+        assertThat(usuario.getDocumentoIdentidad()).isEqualTo("87654321");
+        assertThat(usuario.getTipoUsuario()).isEqualTo("EMPLEADO");
+        verify(usuarioRepository).save(usuario);
+    }
+
+    @Test
+    void actualizarUsuario_conCamposNulos_noModificaEsosCampos() {
+        Usuario usuario = TestData.usuario();
+        usuario.setId(21);
+        String nombreOriginal = usuario.getNombre();
+        String emailOriginal = usuario.getEmail();
+        when(usuarioRepository.findById(21)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any())).thenReturn(usuario);
+
+        com.llosa.backend.seguridad.dto.UpdateUsuarioDTO dto = new com.llosa.backend.seguridad.dto.UpdateUsuarioDTO();
+
+        usuarioService.actualizarUsuario(21, dto);
+
+        assertThat(usuario.getNombre()).isEqualTo(nombreOriginal);
+        assertThat(usuario.getEmail()).isEqualTo(emailOriginal);
+    }
+
+    @Test
+    void actualizarUsuario_noEncontrado_lanzaExcepcion() {
+        when(usuarioRepository.findById(404)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioService.actualizarUsuario(404, new com.llosa.backend.seguridad.dto.UpdateUsuarioDTO()))
+                .isInstanceOf(RecursoNoEncontradoException.class);
+    }
+
+    // ── modificarFunciones ─────────────────────────────────────────────────────
+
+    @Test
+    void modificarFunciones_exitoso_actualizaListaDeFunciones() {
+        Usuario usuario = TestData.usuario();
+        usuario.setId(30);
+        Rol rol = TestData.rol();
+        usuario.setRol(rol);
+        when(usuarioRepository.findById(30)).thenReturn(Optional.of(usuario));
+
+        Funcion f1 = TestData.funcion("PROY_VER");
+        Funcion f2 = TestData.funcion("DOCS_SUBIR");
+        when(funcionRepository.findAllById(java.util.List.of(1, 2))).thenReturn(java.util.List.of(f1, f2));
+        when(usuarioRepository.save(any())).thenReturn(usuario);
+
+        usuarioService.modificarFunciones(30, java.util.List.of(1, 2));
+
+        assertThat(rol.getFunciones()).containsExactly(f1, f2);
+        verify(usuarioRepository).save(usuario);
+    }
+
+    @Test
+    void modificarFunciones_usuarioSinRol_lanzaExcepcion() {
+        Usuario usuario = TestData.usuario();
+        usuario.setId(31);
+        usuario.setRol(null);
+        when(usuarioRepository.findById(31)).thenReturn(Optional.of(usuario));
+
+        assertThatThrownBy(() -> usuarioService.modificarFunciones(31, java.util.List.of(1)))
+                .isInstanceOf(RecursoNoEncontradoException.class)
+                .hasMessageContaining("no tiene un rol asignado");
+    }
+
+    @Test
+    void modificarFunciones_funcionesInexistentes_lanzaExcepcion() {
+        Usuario usuario = TestData.usuario();
+        usuario.setId(32);
+        usuario.setRol(TestData.rol());
+        when(usuarioRepository.findById(32)).thenReturn(Optional.of(usuario));
+        when(funcionRepository.findAllById(java.util.List.of(1, 2, 3)))
+                .thenReturn(java.util.List.of(TestData.funcion("PROY_VER")));
+
+        assertThatThrownBy(() -> usuarioService.modificarFunciones(32, java.util.List.of(1, 2, 3)))
+                .isInstanceOf(RecursoNoEncontradoException.class)
+                .hasMessageContaining("no existen");
+    }
+
+    @Test
+    void modificarFunciones_usuarioNoEncontrado_lanzaExcepcion() {
+        when(usuarioRepository.findById(999)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioService.modificarFunciones(999, java.util.List.of(1)))
+                .isInstanceOf(RecursoNoEncontradoException.class);
     }
 }

@@ -11,6 +11,8 @@ import com.llosa.backend.seguridad.entity.Rol;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.RolRepository;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
+import com.llosa.backend.exception.AccesoDenegadoException;
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EmailDuplicadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.seguridad.dto.UsuarioResponseFunciones;
@@ -19,12 +21,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import com.llosa.backend.seguridad.repository.FuncionRepository;
-import com.llosa.backend.exception.BusinessException;
 
 @Service
 @RequiredArgsConstructor
@@ -128,7 +131,7 @@ public class UsuarioService {
 
         // --- Email de bienvenida / reseteo de contraseña ---
         try {
-            sendPasswordResetEmail(request.getEmail());
+            sendPasswordResetEmail(request.getEmail(), request.getTipoUsuario());
         } catch (Exception e) {
             log.error("Usuario creado, pero falló el envío del email: {}", e.getMessage());
             // No se revierte la creación del usuario solo porque el email falló.
@@ -141,6 +144,25 @@ public class UsuarioService {
     public void cambiarEstado(Integer usuarioId, Boolean activo) throws Exception {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException(USUARIO_NO_ENCONTRADO));
+
+        if (!activo && usuario.getRol() != null && "ADMIN".equals(usuario.getRol().getNombre())) {
+            long adminCount = usuarioRepository.countByRol_NombreAndActivoTrue("ADMIN");
+            if (adminCount <= 1) {
+                throw new BusinessException("No se puede desactivar al unico administrador del sistema");
+            }
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || auth.getName() == null) {
+                throw new AccesoDenegadoException("Solo un administrador puede desactivar a otro administrador");
+            }
+
+            Usuario caller = usuarioRepository.findByFirebaseUuid(auth.getName())
+                    .orElseThrow(() -> new AccesoDenegadoException("Solo un administrador puede desactivar a otro administrador"));
+
+            if (caller.getRol() == null || !"ADMIN".equals(caller.getRol().getNombre())) {
+                throw new AccesoDenegadoException("Solo un administrador puede desactivar a otro administrador");
+            }
+        }
 
         FirebaseAuth.getInstance().revokeRefreshTokens(usuario.getFirebaseUuid());
         FirebaseAuth.getInstance().updateUser(
@@ -196,36 +218,31 @@ public class UsuarioService {
         return r;
     }
 
-    private void sendPasswordResetEmail(String email) {
+    private void sendPasswordResetEmail(String email, String tipoUsuario) {
         String apiKey = "AIzaSyDo_yQ7_tJ3kulCZXaqOcPXAzywtF4pAj0";
         String url = "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=" + apiKey;
 
-        String body = "{\"requestType\":\"PASSWORD_RESET\",\"email\":\"" + email + "\"}";
+        String continueUrl = "CLIENTE".equals(tipoUsuario)
+                ? "https://llosa-client.ingsoftware.lat/login"
+                : "https://llosa-admin.ingsoftware.lat/login";
+
+        String body = "{\"requestType\":\"PASSWORD_RESET\",\"email\":\"" + email + "\",\"continueUrl\":\"" + continueUrl + "\"}";
 
         try (java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient()) {
-
             java.net.http.HttpRequest httpRequest = java.net.http.HttpRequest.newBuilder()
                     .uri(java.net.URI.create(url))
                     .header("Content-Type", "application/json")
                     .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
                     .build();
-
             java.net.http.HttpResponse<String> response = client.send(httpRequest,
                     java.net.http.HttpResponse.BodyHandlers.ofString());
-
             if (response.statusCode() != 200) {
                 throw new BusinessException("Error al enviar email de bienvenida: " + response.body());
             }
-
         } catch (java.io.IOException e) {
-            // CORRECCIÓN SONAR: Para errores de red, usamos una excepción estándar de estado o tu BusinessException
             throw new IllegalStateException("Error de comunicación con el servidor de correo: " + e.getMessage(), e);
-
         } catch (InterruptedException e) {
-            // CORRECCIÓN SONAR: Aquí SÍ corresponde restaurar el estado de interrupción del hilo
             Thread.currentThread().interrupt();
-
-            // Lanzamos una excepción que deje claro que el proceso fue cancelado/interrumpido
             throw new IllegalStateException("El envío de correo fue interrumpido", e);
         }
     }

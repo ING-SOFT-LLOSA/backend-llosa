@@ -347,4 +347,235 @@ class PagoServiceImplTest {
                 .isInstanceOf(RecursoNoEncontradoException.class)
                 .hasMessageContaining("Pago no encontrado");
     }
+
+    // ── agregarCuota: duplicado por concepto único ────────────────────────────
+
+    @Test
+    void agregarCuota_conceptoDuplicado_lanzaEntidadDuplicadaException() {
+        UUID uuidCp = UUID.randomUUID();
+        var cp = CronogramaPago.builder().id(uuidCp).build();
+        var request = new PagoRequest(-1, new BigDecimal("5000.00"), LocalDate.now().plusMonths(1),
+                com.llosa.backend.pagos.ConceptoPago.SEPARACION, null);
+
+        when(cronogramaPagoRepository.findById(uuidCp)).thenReturn(Optional.of(cp));
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, com.llosa.backend.pagos.ConceptoPago.SEPARACION))
+                .thenReturn(Optional.of(mock(Pago.class)));
+
+        assertThatThrownBy(() -> pagoService.agregarCuota(uuidCp, request))
+                .isInstanceOf(EntidadDuplicadaException.class)
+                .hasMessageContaining("Ya existe un pago de tipo SEPARACION");
+
+        verify(pagoRepository, never()).save(any());
+    }
+
+    // ── actualizarCuota: duplicado por concepto único, sincronización y cita ─
+
+    @Test
+    void actualizarCuota_cambiaAConceptoDuplicado_lanzaEntidadDuplicadaException() {
+        UUID uuidPago = UUID.randomUUID();
+        UUID uuidCp = UUID.randomUUID();
+        var cp = CronogramaPago.builder().id(uuidCp).build();
+        var pago = TestDataPagos.pago(cp, 1); // concepto = CUOTA
+        pago.setId(uuidPago);
+
+        var request = new PagoRequest(1, new BigDecimal("5000.00"), LocalDate.now().plusMonths(1),
+                com.llosa.backend.pagos.ConceptoPago.SEPARACION, null);
+
+        when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, com.llosa.backend.pagos.ConceptoPago.SEPARACION))
+                .thenReturn(Optional.of(mock(Pago.class)));
+
+        assertThatThrownBy(() -> pagoService.actualizarCuota(uuidPago, request))
+                .isInstanceOf(EntidadDuplicadaException.class)
+                .hasMessageContaining("Ya existe un pago de tipo SEPARACION");
+
+        verify(pagoRepository, never()).save(any());
+    }
+
+    @Test
+    void actualizarCuota_cambiaAConceptoSeparacion_sincronizaCronograma() {
+        UUID uuidPago = UUID.randomUUID();
+        UUID uuidCp = UUID.randomUUID();
+        var cp = CronogramaPago.builder().id(uuidCp).build();
+        var pago = TestDataPagos.pago(cp, 1); // concepto = CUOTA
+        pago.setId(uuidPago);
+
+        var request = new PagoRequest(1, new BigDecimal("8000.00"), LocalDate.now().plusMonths(1),
+                com.llosa.backend.pagos.ConceptoPago.SEPARACION, "comentario nuevo");
+
+        when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, com.llosa.backend.pagos.ConceptoPago.SEPARACION))
+                .thenReturn(Optional.empty());
+        when(pagoRepository.save(any())).thenReturn(pago);
+
+        PagoResponse result = pagoService.actualizarCuota(uuidPago, request);
+
+        assertThat(result.concepto()).isEqualTo(com.llosa.backend.pagos.ConceptoPago.SEPARACION);
+        assertThat(pago.getComentario()).isEqualTo("comentario nuevo");
+        assertThat(cp.getPagoSeparacion()).isEqualByComparingTo(new BigDecimal("8000.00"));
+        verify(cronogramaPagoRepository).save(cp);
+    }
+
+    @Test
+    void actualizarCuota_cambiaAConceptoInicial_sincronizaCronograma() {
+        UUID uuidPago = UUID.randomUUID();
+        UUID uuidCp = UUID.randomUUID();
+        var cp = CronogramaPago.builder().id(uuidCp).build();
+        var pago = TestDataPagos.pago(cp, 1); // concepto = CUOTA
+        pago.setId(uuidPago);
+
+        var request = new PagoRequest(1, new BigDecimal("9000.00"), LocalDate.now().plusMonths(1),
+                com.llosa.backend.pagos.ConceptoPago.INICIAL, null);
+
+        when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
+        when(pagoRepository.findByCronograma_IdAndConcepto(uuidCp, com.llosa.backend.pagos.ConceptoPago.INICIAL))
+                .thenReturn(Optional.empty());
+        when(pagoRepository.save(any())).thenReturn(pago);
+
+        pagoService.actualizarCuota(uuidPago, request);
+
+        assertThat(cp.getPagoInicial()).isEqualByComparingTo(new BigDecimal("9000.00"));
+        verify(cronogramaPagoRepository).save(cp);
+    }
+
+    @Test
+    void actualizarCuota_conCitaVinculadaYFechaCambiada_actualizaCita() {
+        UUID uuidPago = UUID.randomUUID();
+        UUID uuidCp = UUID.randomUUID();
+        UUID uuidCita = UUID.randomUUID();
+        var cp = CronogramaPago.builder().id(uuidCp).build();
+        var pago = TestDataPagos.pago(cp, 1);
+        pago.setId(uuidPago);
+        pago.setUuidCita(uuidCita);
+
+        LocalDate nuevaFecha = pago.getFechaVencimiento().plusDays(5);
+        var request = new PagoRequest(1, pago.getMontoProgramado(), nuevaFecha, null, null);
+
+        when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
+        when(pagoRepository.save(any())).thenReturn(pago);
+
+        pagoService.actualizarCuota(uuidPago, request);
+
+        verify(agendaService).actualizarCita(eq(uuidCita), any());
+    }
+
+    @Test
+    void actualizarCuota_conCitaVinculadaSinCambioDeFecha_noActualizaCita() {
+        UUID uuidPago = UUID.randomUUID();
+        UUID uuidCp = UUID.randomUUID();
+        UUID uuidCita = UUID.randomUUID();
+        var cp = CronogramaPago.builder().id(uuidCp).build();
+        var pago = TestDataPagos.pago(cp, 1);
+        pago.setId(uuidPago);
+        pago.setUuidCita(uuidCita);
+
+        var request = new PagoRequest(1, pago.getMontoProgramado(), pago.getFechaVencimiento(), null, null);
+
+        when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
+        when(pagoRepository.save(any())).thenReturn(pago);
+
+        pagoService.actualizarCuota(uuidPago, request);
+
+        verify(agendaService, never()).actualizarCita(any(), any());
+    }
+
+    // ── eliminarCuota: cita vinculada ──────────────────────────────────────────
+
+    @Test
+    void eliminarCuota_conCitaVinculada_cancelaCita() {
+        UUID uuidPago = UUID.randomUUID();
+        UUID uuidCita = UUID.randomUUID();
+        var cp = CronogramaPago.builder().id(UUID.randomUUID()).build();
+        var pago = TestDataPagos.pago(cp, 1);
+        pago.setId(uuidPago);
+        pago.setUuidCita(uuidCita);
+
+        when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
+
+        pagoService.eliminarCuota(uuidPago);
+
+        verify(agendaService).cancelarCita(uuidCita, "Cuota eliminada del cronograma");
+        verify(pagoRepository).deleteById(uuidPago);
+    }
+
+    @Test
+    void eliminarCuota_conCitaVinculada_fallaCancelacion_noPropagaExcepcion() {
+        UUID uuidPago = UUID.randomUUID();
+        UUID uuidCita = UUID.randomUUID();
+        var cp = CronogramaPago.builder().id(UUID.randomUUID()).build();
+        var pago = TestDataPagos.pago(cp, 1);
+        pago.setId(uuidPago);
+        pago.setUuidCita(uuidCita);
+
+        when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
+        doThrow(new RuntimeException("Agenda no disponible"))
+                .when(agendaService).cancelarCita(uuidCita, "Cuota eliminada del cronograma");
+
+        assertThatCode(() -> pagoService.eliminarCuota(uuidPago)).doesNotThrowAnyException();
+
+        verify(pagoRepository).deleteById(uuidPago);
+    }
+
+    // ── subirComprobante: requisito documental vinculado y comentario ────────
+
+    @Test
+    void subirComprobante_conRequisitoDocumentalVinculado_completaRequisito() {
+        UUID uuidPago = UUID.randomUUID();
+        UUID uuidUa = UUID.randomUUID();
+        UUID docId = UUID.randomUUID();
+        UUID uuidRequisito = UUID.randomUUID();
+        var ua = UsuarioActivo.builder().uuidUsuarioActivo(uuidUa).build();
+        var cp = CronogramaPago.builder().id(UUID.randomUUID()).usuarioActivo(ua).build();
+        var pago = TestDataPagos.pago(cp, 1);
+        pago.setId(uuidPago);
+        pago.setEstado("PENDIENTE");
+        pago.setUuidRequisitoDocumental(uuidRequisito);
+
+        MultipartFile file = mock(MultipartFile.class);
+        DocumentoResponse docResponse = new DocumentoResponse(docId, null, null, null, null, null, null, null);
+        Documento documentoEntity = Documento.builder()
+                .id(docId)
+                .rutaGcs("gs://bucket/comprobante.pdf")
+                .nombreOriginal("comprobante.pdf")
+                .tipoMime("application/pdf")
+                .build();
+
+        when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
+        when(documentoService.subirDocumentoPolimorfico(
+                eq(file), eq(TipoDocumento.COMPROBANTE),
+                eq(uuidPago.toString()), eq("PAGO"), eq(1)))
+                .thenReturn(docResponse);
+        when(documentoRepository.findById(docId)).thenReturn(Optional.of(documentoEntity));
+        when(pagoRepository.save(any())).thenReturn(pago);
+
+        pagoService.subirComprobante(uuidPago, file, 1, "comentario del comprobante");
+
+        verify(requisitoDocumentalService).completarRequisitoConDocumento(
+                uuidRequisito, "gs://bucket/comprobante.pdf", "comprobante.pdf",
+                "application/pdf", 1, "comentario del comprobante");
+        assertThat(pago.getComentario()).isEqualTo("comentario del comprobante");
+    }
+
+    @Test
+    void subirComprobante_documentoNoEncontrado_lanzaRecursoNoEncontrado() {
+        UUID uuidPago = UUID.randomUUID();
+        UUID docId = UUID.randomUUID();
+        UUID uuidRequisito = UUID.randomUUID();
+        var cp = CronogramaPago.builder().id(UUID.randomUUID()).build();
+        var pago = TestDataPagos.pago(cp, 1);
+        pago.setId(uuidPago);
+        pago.setUuidRequisitoDocumental(uuidRequisito);
+
+        MultipartFile file = mock(MultipartFile.class);
+        DocumentoResponse docResponse = new DocumentoResponse(docId, null, null, null, null, null, null, null);
+
+        when(pagoRepository.findById(uuidPago)).thenReturn(Optional.of(pago));
+        when(documentoService.subirDocumentoPolimorfico(any(), any(), any(), any(), any()))
+                .thenReturn(docResponse);
+        when(documentoRepository.findById(docId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> pagoService.subirComprobante(uuidPago, file, 1, null))
+                .isInstanceOf(RecursoNoEncontradoException.class)
+                .hasMessageContaining("Documento no encontrado");
+    }
 }
