@@ -1,5 +1,6 @@
 package com.llosa.backend.proyecto.controller;
 
+import com.llosa.backend.proyecto.dto.request.UpdateContratoDTO;
 import com.llosa.backend.proyecto.dto.response.MisActivosResponseDTO;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.dto.request.CrearContratoDTO;
@@ -31,7 +32,6 @@ public class UsuarioActivoController {
 
     private final UsuarioActivoService usuarioActivoService;
     private final UsuarioService usuarioService;
-    /* Falta endpoint para poder actualizar un contrato*/
 
     /**
      * Retorna los activos del cliente autenticado.
@@ -80,7 +80,18 @@ public class UsuarioActivoController {
         UsuarioActivoResponseDTO response = UsuarioActivoResponseDTO.fromEntity(usuarioActivo);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+    /**
+     * Update un contrato
+     * Estado: FUNCIONAL
+     */
 
+    @PutMapping("/{uuidExpediente}")
+    @PreAuthorize("hasAuthority('CONTRAT_EDITAR')")
+    public ResponseEntity<UsuarioActivoResponseDTO> actualizarContrato(@PathVariable UUID uuidExpediente, @Valid @RequestBody UpdateContratoDTO dto) {
+        UsuarioActivo usuarioActivo = usuarioActivoService.actualizarCompleto(uuidExpediente,dto);
+        UsuarioActivoResponseDTO response = UsuarioActivoResponseDTO.fromEntity(usuarioActivo);
+        return ResponseEntity.ok(response);
+    }
 
     /**
     Endpoint Asignar un activo a un contrato

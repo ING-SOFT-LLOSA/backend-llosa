@@ -3,6 +3,7 @@ package com.llosa.backend.proyecto.service.impl;
 import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.proyecto.dto.request.CrearContratoDTO;
+import com.llosa.backend.proyecto.dto.request.UpdateContratoDTO;
 import com.llosa.backend.proyecto.dto.response.UsuarioActivoResponseDTO;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.factory.FlujoComercialFactory;
@@ -13,7 +14,6 @@ import com.llosa.backend.proyecto.dto.request.AsignarActivoDTO;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
-import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.UsuarioActivoService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -209,6 +209,30 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
         );
         usuarioActivo.setAsesor(null);
 
+        return usuarioActivoRepository.save(usuarioActivo);
+    }
+
+    @Override
+    @Transactional
+    public UsuarioActivo actualizarCompleto(UUID id, UpdateContratoDTO dto){
+        UsuarioActivo usuarioActivo = usuarioActivoRepository.findById(id).orElseThrow(
+                () -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + id)
+        );
+
+        if (dto.tipoFinanciamiento() != null) {
+            usuarioActivo.setTipoFinanciamiento(dto.tipoFinanciamiento());
+        }
+        if (dto.fechaAdquisicion() != null) {
+            usuarioActivo.setFechaAdquisicion(dto.fechaAdquisicion());
+        }
+        if (dto.fechaCompletado() != null) {
+            usuarioActivo.setFechaCompletado(dto.fechaCompletado());
+        }
+
+        if (dto.idsUsuarios() != null) {
+            List<Usuario> nuevosUsuarios = usuarioRepository.findAllById(dto.idsUsuarios());
+            usuarioActivo.setClientes(nuevosUsuarios);
+        }
         return usuarioActivoRepository.save(usuarioActivo);
     }
 
