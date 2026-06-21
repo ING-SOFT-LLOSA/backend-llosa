@@ -8,14 +8,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class GoogleCalendarServiceImplTest {
@@ -91,5 +88,65 @@ class GoogleCalendarServiceImplTest {
     @Test
     void actualizarRsvpInvitado_pathInvalido_retornaFalse() {
         assertThat(service.actualizarRsvpInvitado("google-event-123", "test@test.com", true)).isFalse();
+    }
+
+    // ── crearEvento: gestor null (rama no cubierta del log.warn) ─────────────
+
+    @Test
+    void crearEvento_sinGestor_retornaEmpty() {
+        var cita = buildCita();
+        cita.setGestor(null);
+
+        var result = service.crearEvento(cita);
+
+        assertThat(result).isEmpty();
+    }
+
+    // ── eliminarEvento(Cita) - sobrecarga con contexto del gestor ────────────
+
+    @Test
+    void eliminarEventoConCita_googleEventIdNull_retornaFalse() {
+        var cita = buildCita();
+        cita.setGoogleEventId(null);
+
+        assertThat(service.eliminarEvento(cita)).isFalse();
+    }
+
+    @Test
+    void eliminarEventoConCita_gestorSinGoogleConectado_retornaFalse() {
+        var cita = buildCita();
+
+        assertThat(service.eliminarEvento(cita)).isFalse();
+    }
+
+    @Test
+    void eliminarEventoConCita_sinGestor_retornaFalse() {
+        var cita = buildCita();
+        cita.setGestor(null);
+
+        assertThat(service.eliminarEvento(cita)).isFalse();
+    }
+
+    // ── actualizarRsvpInvitado(Usuario, ...) - sobrecarga con contexto ───────
+
+    @Test
+    void actualizarRsvpInvitadoConGestor_googleEventIdNull_retornaFalse() {
+        var gestor = new Usuario();
+        gestor.setNombre("Carlos");
+
+        assertThat(service.actualizarRsvpInvitado(gestor, null, "test@test.com", true)).isFalse();
+    }
+
+    @Test
+    void actualizarRsvpInvitadoConGestor_gestorSinGoogleConectado_retornaFalse() {
+        var gestor = new Usuario();
+        gestor.setNombre("Carlos");
+
+        assertThat(service.actualizarRsvpInvitado(gestor, "google-event-123", "test@test.com", true)).isFalse();
+    }
+
+    @Test
+    void actualizarRsvpInvitadoConGestor_sinGestor_retornaFalse() {
+        assertThat(service.actualizarRsvpInvitado(null, "google-event-123", "test@test.com", true)).isFalse();
     }
 }
