@@ -95,7 +95,7 @@ class FlujoComercialFactoryTest {
     }
 
     @Test
-    void generarEtapasPorDefecto_pago_pagoSeparacionCompletado() {
+    void generarEtapasPorDefecto_pago_pagoSeparacionPendiente() {
         var contrato = UsuarioActivo.builder()
                 .tipoFinanciamiento("Credito Directo")
                 .build();
@@ -103,8 +103,8 @@ class FlujoComercialFactoryTest {
         var etapas = factory.generarEtapasPorDefecto(contrato);
         var pago = etapas.get(2);
 
-        assertThat(pago.getHitosComerciales().get(0).getEstado()).isEqualTo(EstadoHitoComercial.COMPLETADO);
-        assertThat(pago.getHitosComerciales().get(0).getFechaCompletado()).isNotNull();
+        assertThat(pago.getHitosComerciales().get(0).getEstado()).isEqualTo(EstadoHitoComercial.PENDIENTE);
+        assertThat(pago.getHitosComerciales().get(0).getFechaCompletado()).isNull();
     }
 
     @Test

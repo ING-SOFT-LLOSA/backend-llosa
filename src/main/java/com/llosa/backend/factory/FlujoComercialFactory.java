@@ -10,7 +10,6 @@ import com.llosa.backend.comercial.enums.EtapaRequisitoDocumental;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -121,14 +120,8 @@ public class FlujoComercialFactory {
 
         if (tipoFinanciamiento.contains("HIPOT")) {
 
-            HitoProcesoCompra pagoSeparacion =
-                    construirHito(pago, "Pago de Separación", 1,
-                            "Pago de reserva de la unidad inmobiliaria.");
-
-            pagoSeparacion.setEstado(EstadoHitoComercial.COMPLETADO);
-            pagoSeparacion.setFechaCompletado(LocalDateTime.now());
-
-            pago.getHitosComerciales().add(pagoSeparacion);
+            pago.getHitosComerciales().add(construirHito(pago, "Pago de Separación", 1,
+                    "Pago de reserva de la unidad inmobiliaria."));
             pago.getHitosComerciales().add(construirHito(pago, PAGO_INCIAL, 2, "Abono inicial requerido para iniciar el proceso de compra."));
             pago.getHitosComerciales().add(construirHito(pago, "Inicio de Desembolso", 3, "El banco inicia el proceso de desembolso del crédito hipotecario."));
             pago.getHitosComerciales().add(construirHito(pago, "Minuta en Notaría", 4, "La minuta es revisada y procesada por la notaría."));
@@ -137,14 +130,8 @@ public class FlujoComercialFactory {
 
         } else {
 
-            HitoProcesoCompra pagoSeparacion =
-                    construirHito(pago, "Pago de Separación", 1,
-                            "Pago de reserva de la unidad inmobiliaria.");
-
-            pagoSeparacion.setEstado(EstadoHitoComercial.COMPLETADO);
-            pagoSeparacion.setFechaCompletado(LocalDateTime.now());
-
-            pago.getHitosComerciales().add(pagoSeparacion);
+            pago.getHitosComerciales().add(construirHito(pago, "Pago de Separación", 1,
+                    "Pago de reserva de la unidad inmobiliaria."));
             pago.getHitosComerciales().add(construirHito(pago, PAGO_INCIAL, 2, "Cuota inicial requerida para formalizar la compra."));
             pago.getHitosComerciales().add(construirHito(pago, "Pago en Proceso", 3, "El cliente continúa realizando los pagos acordados."));
             pago.getHitosComerciales().add(construirHito(pago, "Pago Completado", 4, "La totalidad del importe acordado ha sido cancelada."));
