@@ -70,22 +70,33 @@ public class FlujoComercialFactory {
 
         // 2. ETAPA: CONTRATO
         EtapaExpediente contratoEtapa = construirEtapa(contrato, EtapaProceso.CONTRATO);
-        contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Revisión del contrato", 1,
-                "El cliente recibe y revisa el borrador del contrato"));
-        contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Carta de aprobación del banco", 2,
-                "Solo aplica a crédito hipotecario"));
-        contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Aprobación del contrato", 3,
-                "El cliente confirma que está conforme con las condiciones"));
-        contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Pago de la cuota inicial", 4,
-                "Pago de la cuota inicial pactada al firmar el contrato"));
-        contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Firma del contrato", 5,
-                "Firma del contrato de compraventa"));
 
+        if (tipoFinanciamiento.contains("HIPOT")) {
+            contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Revisión del contrato", 1,
+                    "El cliente recibe y revisa el borrador del contrato"));
+            contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Carta de aprobación del banco", 2,
+                    "Documento emitido por la entidad bancaria que aprueba el crédito hipotecario del cliente."));
+            contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Aprobación del contrato", 3,
+                    "El cliente confirma que está conforme con las condiciones"));
+            contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Pago de la cuota inicial", 4,
+                    "Pago de la cuota inicial pactada al firmar el contrato"));
+            contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Firma del contrato", 5,
+                    "Firma del contrato de compraventa"));
+        } else {
+            contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Revisión del contrato", 1,
+                    "El cliente recibe y revisa el borrador del contrato"));
+            contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Aprobación del contrato", 2,
+                    "El cliente confirma que está conforme con las condiciones"));
+            contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Pago de la cuota inicial", 3,
+                    "Pago de la cuota inicial pactada al firmar el contrato"));
+            contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Firma del contrato", 4,
+                    "Firma del contrato de compraventa"));
+        }
 
         contratoEtapa.getRequisitos().add(construirRequisito(
                 contratoEtapa,
                 "Contrato de compraventa (CV)",
-                "Documento legal que formaliza la compra de la unidad inmobiliaria entre el cliente y Llosa Edificaciones.",
+                "Documento legal que formaliza la compra de la unidad inmobiliaria entre Llosa Edificaciones y el cliente.",
                 "gavel",
                 "Requiere la firma legal legalizada de ambas partes para iniciar la elevación a registros públicos."
         ));
@@ -113,6 +124,16 @@ public class FlujoComercialFactory {
                 "payments",
                 "El comprobante se sube desde la sección de pagos y se refleja automáticamente aquí."
         ));
+
+        if (tipoFinanciamiento.contains("HIPOT")) {
+            contratoEtapa.getRequisitos().add(construirRequisito(
+                    contratoEtapa,
+                    "Carta de aprobación del banco",
+                    "Documento emitido por la entidad bancaria que aprueba el crédito hipotecario del cliente.",
+                    "verified_user",
+                    "Solo aplica a crédito hipotecario. Debe ser entregada antes de la firma del contrato."
+            ));
+        }
         etapas.add(contratoEtapa);
 
         // 3. ETAPA: PAGO

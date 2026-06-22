@@ -63,8 +63,33 @@ class FlujoComercialFactoryTest {
         var etapas = factory.generarEtapasPorDefecto(contrato);
         var contratoEtapa = etapas.get(1);
 
-        assertThat(contratoEtapa.getHitosComerciales()).hasSize(5);
+        assertThat(contratoEtapa.getHitosComerciales()).hasSize(4);
         assertThat(contratoEtapa.getRequisitos()).hasSize(4);
+        assertThat(contratoEtapa.getHitosComerciales())
+                .extracting(com.llosa.backend.comercial.entity.HitoProcesoCompra::getNombreHito)
+                .doesNotContain("Carta de aprobación del banco");
+    }
+
+    @Test
+    void generarEtapasPorDefecto_contratoHipotecario_incluyeCartaBanco() {
+        var contrato = UsuarioActivo.builder()
+                .tipoFinanciamiento("Credito Hipotecario")
+                .build();
+
+        var etapas = factory.generarEtapasPorDefecto(contrato);
+        var contratoEtapa = etapas.get(1);
+
+        assertThat(contratoEtapa.getHitosComerciales()).hasSize(5);
+        assertThat(contratoEtapa.getHitosComerciales().get(0).getNombreHito()).isEqualTo("Revisión del contrato");
+        assertThat(contratoEtapa.getHitosComerciales().get(1).getNombreHito()).isEqualTo("Carta de aprobación del banco");
+        assertThat(contratoEtapa.getHitosComerciales().get(2).getNombreHito()).isEqualTo("Aprobación del contrato");
+        assertThat(contratoEtapa.getHitosComerciales().get(3).getNombreHito()).isEqualTo("Pago de la cuota inicial");
+        assertThat(contratoEtapa.getHitosComerciales().get(4).getNombreHito()).isEqualTo("Firma del contrato");
+
+        assertThat(contratoEtapa.getRequisitos()).hasSize(5);
+        assertThat(contratoEtapa.getRequisitos())
+                .extracting(com.llosa.backend.comercial.entity.RequisitoDocumental::getTitulo)
+                .contains("Carta de aprobación del banco");
     }
 
     @Test
