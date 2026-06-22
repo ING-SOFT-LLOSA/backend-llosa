@@ -86,7 +86,7 @@ public class UsuarioActivoController {
      */
 
     @PutMapping("/{uuidExpediente}")
-    @PreAuthorize("hasAuthority('CONTRAT_EDITAR')")
+    @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
     public ResponseEntity<UsuarioActivoResponseDTO> actualizarContrato(@PathVariable UUID uuidExpediente, @Valid @RequestBody UpdateContratoDTO dto) {
         UsuarioActivo usuarioActivo = usuarioActivoService.actualizarCompleto(uuidExpediente,dto);
         UsuarioActivoResponseDTO response = UsuarioActivoResponseDTO.fromEntity(usuarioActivo);
