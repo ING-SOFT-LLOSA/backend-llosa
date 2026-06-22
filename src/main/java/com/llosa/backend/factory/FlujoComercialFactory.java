@@ -22,6 +22,7 @@ public class FlujoComercialFactory {
 
     private static final String PAGO_INCIAL = "Pago Inicial";
     private static final String NO_NOTE_CORPORATIVA = "No hay nota corporativa";
+    private static final String HIPOT = "HIPOT";
 
     public List<EtapaExpediente> generarEtapasPorDefecto(UsuarioActivo contrato) {
 
@@ -71,7 +72,7 @@ public class FlujoComercialFactory {
         // 2. ETAPA: CONTRATO
         EtapaExpediente contratoEtapa = construirEtapa(contrato, EtapaProceso.CONTRATO);
 
-        if (tipoFinanciamiento.contains("HIPOT")) {
+        if (tipoFinanciamiento.contains(HIPOT)) {
             contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Revisión del contrato", 1,
                     "El cliente recibe y revisa el borrador del contrato"));
             contratoEtapa.getHitosComerciales().add(construirHito(contratoEtapa, "Carta de aprobación del banco", 2,
@@ -125,7 +126,7 @@ public class FlujoComercialFactory {
                 "El comprobante se sube desde la sección de pagos y se refleja automáticamente aquí."
         ));
 
-        if (tipoFinanciamiento.contains("HIPOT")) {
+        if (tipoFinanciamiento.contains(HIPOT)) {
             contratoEtapa.getRequisitos().add(construirRequisito(
                     contratoEtapa,
                     "Carta de aprobación del banco",
@@ -139,7 +140,7 @@ public class FlujoComercialFactory {
         // 3. ETAPA: PAGO
         EtapaExpediente pago = construirEtapa(contrato, EtapaProceso.PAGO);
 
-        if (tipoFinanciamiento.contains("HIPOT")) {
+        if (tipoFinanciamiento.contains(HIPOT)) {
 
             pago.getHitosComerciales().add(construirHito(pago, "Pago de Separación", 1,
                     "Pago de reserva de la unidad inmobiliaria."));
