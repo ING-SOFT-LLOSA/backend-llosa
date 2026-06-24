@@ -222,12 +222,6 @@ class GoogleCalendarServiceImplTest {
                 gestorConGoogle(), "google-event-123", "ana@gmail.com", false)).isFalse();
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Helpers privados vía reflexión: buildEvent, buildDescription, toGoogleDateTime.
-    // Cubren todas las ramas de construcción (titulo null, descripcion null/blank,
-    // ubicacion null/blank, recordatorios, etc.).
-    // ──────────────────────────────────────────────────────────────────────────
-
     @Test
     void buildEvent_citaCompleta_construyeEventoConTodo() throws Exception {
         var cita = buildCita(); // titulo, descripcion, ubicacion presentes

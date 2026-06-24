@@ -760,9 +760,6 @@ class UsuarioServiceTest {
 
     @Test
     void crearUsuario_emailDeBienvenidaFalla_noRevierteCreacionDeUsuario() throws Exception {
-        // sendPasswordResetEmail intenta contactar el identitytoolkit de Google;
-        // sin red lanza IllegalStateException, pero crearUsuario captura cualquier
-        // Exception del envío y NO revierte al usuario ya creado.
         CrearUsuarioRequest req = TestData.crearUsuarioRequest();
         req.setTipoUsuario("EMPLEADO");
         req.setEmail("empleado@test.com");
