@@ -150,13 +150,12 @@ class GoogleCalendarServiceImplTest {
         assertThat(service.actualizarRsvpInvitado(null, "google-event-123", "test@test.com", true)).isFalse();
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Gestor CON refresh token: ejecuta buildCalendarClient() completo (construye
-    // el flow + credential + Calendar.Builder) y buildEvent() dentro de crearEvento/
-    // actualizarEvento. La llamada externa .execute() falla sin red y cae en el
-    // catch (retorna empty/false), pero ya se cubrieron ~50 líneas de construcción.
-    // ──────────────────────────────────────────────────────────────────────────
-
+    /**
+     * Gestor con refresh token: al usarse en crearEvento/actualizarEvento ejecuta
+     * buildCalendarClient() completo (flow + credential + Calendar.Builder) y
+     * buildEvent(). La llamada externa .execute() falla sin red y cae en el catch
+     * (retorna empty/false), pero ya se cubren las lineas de construccion.
+     */
     private Usuario gestorConGoogle() {
         var g = new Usuario();
         g.setId(7);
