@@ -64,6 +64,22 @@ class GoogleOAuthServiceImplTest {
         verify(usuarioRepository, never()).save(any());
     }
 
+    @Test
+    void procesarCallback_usuarioEncontrado_fallaIntercambioTokenSinRed() {
+        Usuario gestor = new Usuario();
+        gestor.setId(99);
+        when(usuarioRepository.findById(99)).thenReturn(Optional.of(gestor));
+
+        // Con usuario válido entra al try: buildFlow() + newTokenRequest(code).execute()
+        // intenta contactar a Google y falla sin red, cayendo en el catch que relanza
+        // IllegalStateException. Cubre las líneas del flujo de intercambio de token.
+        assertThatThrownBy(() -> service.procesarCallback("fake-auth-code", "99"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("No se pudo completar la autorización");
+
+        verify(usuarioRepository, never()).save(any());
+    }
+
     // ── desconectar ──────────────────────────────────────────────────────────
 
     @Test

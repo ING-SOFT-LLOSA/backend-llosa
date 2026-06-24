@@ -276,4 +276,45 @@ class RequisitoDocumentalServiceImplTest {
         assertThatThrownBy(() -> requisitoDocumentalService.eliminarRequisitoTotalmente(requisitoId, "firebase-uid"))
                 .isInstanceOf(EntityNotFoundException.class);
     }
+
+    // ── completarRequisitoConDocumento ───────────────────────────────────────
+
+    @Test
+    void completarRequisitoConDocumento_conComentario_seteaNotaYCompleta() {
+        var requisito = buildRequisito();
+        when(requisitoRepository.findById(requisitoId)).thenReturn(Optional.of(requisito));
+
+        requisitoDocumentalService.completarRequisitoConDocumento(
+                requisitoId, "gs://bucket/file.pdf", "file.pdf", "application/pdf", 3, "Revisado OK");
+
+        assertThat(requisito.getEstado()).isEqualTo(EtapaRequisitoDocumental.COMPLETADO);
+        assertThat(requisito.getNotaCorporativa()).isEqualTo("Revisado OK");
+        assertThat(requisito.getFechaEmision()).isNotNull();
+        verify(documentoService).crearReferenciaDocumento(
+                eq("gs://bucket/file.pdf"), eq("file.pdf"), eq("application/pdf"),
+                eq(requisitoId.toString()), any(), eq(TipoDocumento.PDF_LEGAL), eq(3));
+        verify(requisitoRepository).save(requisito);
+    }
+
+    @Test
+    void completarRequisitoConDocumento_sinComentario_noSeteaNota() {
+        var requisito = buildRequisito();
+        when(requisitoRepository.findById(requisitoId)).thenReturn(Optional.of(requisito));
+
+        requisitoDocumentalService.completarRequisitoConDocumento(
+                requisitoId, "gs://bucket/file.pdf", "file.pdf", "application/pdf", 3, null);
+
+        assertThat(requisito.getEstado()).isEqualTo(EtapaRequisitoDocumental.COMPLETADO);
+        assertThat(requisito.getNotaCorporativa()).isNull();
+        verify(requisitoRepository).save(requisito);
+    }
+
+    @Test
+    void completarRequisitoConDocumento_noExiste_lanzaEntityNotFound() {
+        when(requisitoRepository.findById(requisitoId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> requisitoDocumentalService.completarRequisitoConDocumento(
+                requisitoId, "gs://b/f.pdf", "f.pdf", "application/pdf", 3, null))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
 }

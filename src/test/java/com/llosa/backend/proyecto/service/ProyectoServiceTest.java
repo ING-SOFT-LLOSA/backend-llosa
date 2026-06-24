@@ -31,6 +31,7 @@ class ProyectoServiceTest {
     @Mock ActivoService activoService;
     @Mock PisoService pisoService;
     @Mock HidratationService hidratacionService;
+    @Mock com.llosa.backend.factory.FlujoConstruccionFactory flujoConstruccionFactory;
 
     @InjectMocks ProyectoServiceImpl service;
 
@@ -171,6 +172,86 @@ class ProyectoServiceTest {
         verify(pisoService).save(eq(1L), any(Piso.class));
         verify(activoService).saveFisico(eq(1L), any(Activo.class));
         verify(proyectoRepository).save(proyecto);
+    }
+
+    @Test
+    void save_nuevoProyecto_generaHitosPorDefecto() {
+        Proyecto nuevo = Proyecto.builder().nombre("Nuevo").build(); // id == null
+        Hito h1 = Hito.builder().titulo("Cimentación").estado(EstadoHito.PENDIENTE).build();
+        when(flujoConstruccionFactory.generarHitosPorDefecto())
+                .thenReturn(new java.util.ArrayList<>(List.of(h1)));
+        when(proyectoRepository.save(nuevo)).thenReturn(nuevo);
+
+        Proyecto result = service.save(nuevo);
+
+        assertThat(result.getHitos()).hasSize(1);
+        assertThat(result.getHitos().get(0).getProyecto()).isEqualTo(nuevo);
+        verify(flujoConstruccionFactory).generarHitosPorDefecto();
+    }
+
+    @Test
+    void save_proyectoExistente_noGeneraHitos() {
+        Proyecto existente = buildProyecto(); // id != null
+        when(proyectoRepository.save(existente)).thenReturn(existente);
+
+        service.save(existente);
+
+        verify(flujoConstruccionFactory, never()).generarHitosPorDefecto();
+    }
+
+    @Test
+    void findHitosByProyecto_marcaCompletadoSiTodosHitoPisoCompletados() {
+        UUID idProyecto = UUID.randomUUID();
+        Proyecto proyecto = buildProyecto();
+        proyecto.setId(idProyecto);
+
+        HitoPiso hp = HitoPiso.builder().estado(EstadoHito.COMPLETADO).build();
+        Hito hito = Hito.builder().titulo("Acabados").estado(EstadoHito.PENDIENTE)
+                .hitosPiso(new java.util.ArrayList<>(List.of(hp))).build();
+        proyecto.setHitos(new java.util.ArrayList<>(List.of(hito)));
+
+        when(proyectoRepository.findById(idProyecto)).thenReturn(Optional.of(proyecto));
+
+        List<Hito> result = service.findHitosByProyecto(idProyecto);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getEstado()).isEqualTo(EstadoHito.COMPLETADO);
+        assertThat(result.get(0).getFechaCompletado()).isNotNull();
+    }
+
+    @Test
+    void findHitosByProyecto_noMarcaSiHitoPisoPendiente() {
+        UUID idProyecto = UUID.randomUUID();
+        Proyecto proyecto = buildProyecto();
+        proyecto.setId(idProyecto);
+
+        HitoPiso hp = HitoPiso.builder().estado(EstadoHito.PENDIENTE).build();
+        Hito hito = Hito.builder().titulo("Acabados").estado(EstadoHito.PENDIENTE)
+                .hitosPiso(new java.util.ArrayList<>(List.of(hp))).build();
+        proyecto.setHitos(new java.util.ArrayList<>(List.of(hito)));
+
+        when(proyectoRepository.findById(idProyecto)).thenReturn(Optional.of(proyecto));
+
+        List<Hito> result = service.findHitosByProyecto(idProyecto);
+
+        assertThat(result.get(0).getEstado()).isEqualTo(EstadoHito.PENDIENTE);
+    }
+
+    @Test
+    void findHitosByProyecto_hitoYaCompletado_seOmite() {
+        UUID idProyecto = UUID.randomUUID();
+        Proyecto proyecto = buildProyecto();
+        proyecto.setId(idProyecto);
+
+        Hito hito = Hito.builder().titulo("Listo").estado(EstadoHito.COMPLETADO)
+                .hitosPiso(new java.util.ArrayList<>()).build();
+        proyecto.setHitos(new java.util.ArrayList<>(List.of(hito)));
+
+        when(proyectoRepository.findById(idProyecto)).thenReturn(Optional.of(proyecto));
+
+        List<Hito> result = service.findHitosByProyecto(idProyecto);
+
+        assertThat(result.get(0).getEstado()).isEqualTo(EstadoHito.COMPLETADO);
     }
 
     @Test

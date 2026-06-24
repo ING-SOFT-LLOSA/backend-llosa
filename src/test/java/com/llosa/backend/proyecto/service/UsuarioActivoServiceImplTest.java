@@ -252,4 +252,108 @@ class UsuarioActivoServiceImplTest {
         var result = usuarioActivoService.listar(PageRequest.of(0, 10));
         assertThat(result).hasSize(1);
     }
+
+    // ── asignar/desasignar asesor ────────────────────────────────────────────
+
+    @Test
+    void asignarAsesorAContrato_exitoso() {
+        var ua = UsuarioActivo.builder().uuidUsuarioActivo(uuid).build();
+        var asesor = new Usuario(); asesor.setId(5);
+        when(usuarioActivoRepository.findById(uuid)).thenReturn(Optional.of(ua));
+        when(usuarioRepository.findById(5)).thenReturn(Optional.of(asesor));
+        when(usuarioActivoRepository.save(ua)).thenReturn(ua);
+
+        var result = usuarioActivoService.asignarAsesorAContrato(uuid, 5);
+
+        assertThat(result.getAsesor()).isEqualTo(asesor);
+        verify(usuarioActivoRepository).save(ua);
+    }
+
+    @Test
+    void asignarAsesorAContrato_contratoNoExiste_lanzaEntityNotFound() {
+        when(usuarioActivoRepository.findById(uuid)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioActivoService.asignarAsesorAContrato(uuid, 5))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void asignarAsesorAContrato_asesorNoExiste_lanzaEntityNotFound() {
+        var ua = UsuarioActivo.builder().uuidUsuarioActivo(uuid).build();
+        when(usuarioActivoRepository.findById(uuid)).thenReturn(Optional.of(ua));
+        when(usuarioRepository.findById(5)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioActivoService.asignarAsesorAContrato(uuid, 5))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void desasignarAsesorDelContrato_exitoso() {
+        var asesor = new Usuario(); asesor.setId(5);
+        var ua = UsuarioActivo.builder().uuidUsuarioActivo(uuid).asesor(asesor).build();
+        when(usuarioActivoRepository.findById(uuid)).thenReturn(Optional.of(ua));
+        when(usuarioActivoRepository.save(ua)).thenReturn(ua);
+
+        var result = usuarioActivoService.desasignarAsesorDelContrato(uuid, 5);
+
+        assertThat(result.getAsesor()).isNull();
+    }
+
+    @Test
+    void desasignarAsesorDelContrato_contratoNoExiste_lanzaEntityNotFound() {
+        when(usuarioActivoRepository.findById(uuid)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> usuarioActivoService.desasignarAsesorDelContrato(uuid, 5))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    // ── actualizarCompleto ───────────────────────────────────────────────────
+
+    @Test
+    void actualizarCompleto_actualizaTodosLosCampos() {
+        var ua = UsuarioActivo.builder().uuidUsuarioActivo(uuid).build();
+        var cliente = new Usuario(); cliente.setId(3);
+        when(usuarioActivoRepository.findById(uuid)).thenReturn(Optional.of(ua));
+        when(usuarioRepository.findAllById(List.of(3))).thenReturn(List.of(cliente));
+        when(usuarioActivoRepository.save(ua)).thenReturn(ua);
+
+        var dto = new com.llosa.backend.proyecto.dto.request.UpdateContratoDTO(
+                List.of(3), "Credito Hipotecario",
+                java.time.LocalDateTime.of(2026, 1, 1, 0, 0),
+                java.time.LocalDateTime.of(2026, 12, 31, 0, 0));
+
+        var result = usuarioActivoService.actualizarCompleto(uuid, dto);
+
+        assertThat(result.getTipoFinanciamiento()).isEqualTo("Credito Hipotecario");
+        assertThat(result.getFechaAdquisicion()).isNotNull();
+        assertThat(result.getFechaCompletado()).isNotNull();
+        assertThat(result.getClientes()).containsExactly(cliente);
+    }
+
+    @Test
+    void actualizarCompleto_dtoConNulls_noModificaCampos() {
+        var ua = UsuarioActivo.builder().uuidUsuarioActivo(uuid)
+                .tipoFinanciamiento("Credito Directo").build();
+        when(usuarioActivoRepository.findById(uuid)).thenReturn(Optional.of(ua));
+        when(usuarioActivoRepository.save(ua)).thenReturn(ua);
+
+        var dto = new com.llosa.backend.proyecto.dto.request.UpdateContratoDTO(
+                null, null, null, null);
+
+        var result = usuarioActivoService.actualizarCompleto(uuid, dto);
+
+        assertThat(result.getTipoFinanciamiento()).isEqualTo("Credito Directo");
+        verify(usuarioRepository, never()).findAllById(any());
+    }
+
+    @Test
+    void actualizarCompleto_contratoNoExiste_lanzaEntityNotFound() {
+        when(usuarioActivoRepository.findById(uuid)).thenReturn(Optional.empty());
+
+        var dto = new com.llosa.backend.proyecto.dto.request.UpdateContratoDTO(
+                null, null, null, null);
+
+        assertThatThrownBy(() -> usuarioActivoService.actualizarCompleto(uuid, dto))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
 }

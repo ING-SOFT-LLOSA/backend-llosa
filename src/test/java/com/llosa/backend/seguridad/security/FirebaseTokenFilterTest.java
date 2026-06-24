@@ -217,4 +217,94 @@ class FirebaseTokenFilterTest {
         assertThat(auth.getUid()).isEqualTo("uid-nuevo");
         assertThat(auth.getEmail()).isEqualTo("nuevo@test.com");
     }
+
+    // ── Usuario suspendido (activo = false) ──────────────────────────────────
+
+    @Test
+    void usuarioSuspendido_limpiaContextoYContinua() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-suspendido");
+
+        FirebaseToken mockToken = mock(FirebaseToken.class);
+        when(mockToken.getUid()).thenReturn("uid-susp");
+        when(mockToken.getEmail()).thenReturn("susp@test.com");
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.verifyIdToken("token-suspendido")).thenReturn(mockToken);
+
+        Usuario suspendido = new Usuario();
+        suspendido.setFirebaseUuid("uid-susp");
+        suspendido.setActivo(false); // -> BadCredentialsException "Usuario suspendido"
+        when(usuarioRepository.findByFirebaseUuid("uid-susp")).thenReturn(Optional.of(suspendido));
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+            filter.doFilterInternal(request, response, filterChain);
+        }
+
+        verify(filterChain).doFilter(request, response);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    // ── Usuario verificado en Firebase pero no existe en BD ──────────────────
+
+    @Test
+    void usuarioNoExisteEnBD_limpiaContextoYContinua() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-sin-usuario");
+
+        FirebaseToken mockToken = mock(FirebaseToken.class);
+        when(mockToken.getUid()).thenReturn("uid-fantasma");
+        when(mockToken.getEmail()).thenReturn("fantasma@test.com");
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.verifyIdToken("token-sin-usuario")).thenReturn(mockToken);
+        when(usuarioRepository.findByFirebaseUuid("uid-fantasma")).thenReturn(Optional.empty());
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+            filter.doFilterInternal(request, response, filterChain);
+        }
+
+        verify(filterChain).doFilter(request, response);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    // ── Error crítico inesperado -> HTTP 500 (manejarErrorCritico) ───────────
+
+    @Test
+    void errorRuntimeInesperado_devuelve500() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-explota");
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        // RuntimeException SIN "Token"/"expirado" en el mensaje -> manejarErrorCritico (500)
+        when(mockAuth.verifyIdToken("token-explota"))
+                .thenThrow(new RuntimeException("NullPointer inesperado en parsing"));
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+            filter.doFilterInternal(request, response, filterChain);
+        }
+
+        assertThat(response.getStatus()).isEqualTo(500);
+        assertThat(response.getContentAsString()).contains("Internal server error");
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+    // ── shouldNotFilter: rutas públicas (swagger / api-docs) ─────────────────
+
+    @Test
+    void shouldNotFilter_rutasPublicas_true() throws Exception {
+        var req1 = new MockHttpServletRequest(); req1.setRequestURI("/v3/api-docs");
+        var req2 = new MockHttpServletRequest(); req2.setRequestURI("/swagger-ui/index.html");
+        var req3 = new MockHttpServletRequest(); req3.setRequestURI("/swagger-ui.html");
+        var reqProtegida = new MockHttpServletRequest(); reqProtegida.setRequestURI("/api/users");
+
+        assertThat(filter.shouldNotFilter(req1)).isTrue();
+        assertThat(filter.shouldNotFilter(req2)).isTrue();
+        assertThat(filter.shouldNotFilter(req3)).isTrue();
+        assertThat(filter.shouldNotFilter(reqProtegida)).isFalse();
+    }
 }
