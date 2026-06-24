@@ -608,4 +608,180 @@ class UsuarioServiceTest {
         assertThatThrownBy(() -> usuarioService.modificarFunciones(999, java.util.List.of(1)))
                 .isInstanceOf(RecursoNoEncontradoException.class);
     }
+
+    // ── cambiarEstado: gobernanza de administradores ──────────────────────────
+
+    private Usuario adminUsuario(int id) {
+        Usuario u = TestData.usuario();
+        u.setId(id);
+        Rol rolAdmin = new Rol();
+        rolAdmin.setNombre("ADMIN");
+        u.setRol(rolAdmin);
+        return u;
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void limpiarSecurityContext() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void cambiarEstado_desactivarUnicoAdmin_lanzaBusinessException() {
+        Usuario admin = adminUsuario(10);
+        when(usuarioRepository.findById(10)).thenReturn(Optional.of(admin));
+        when(usuarioRepository.countByRol_NombreAndActivoTrue("ADMIN")).thenReturn(1L);
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            assertThatThrownBy(() -> usuarioService.cambiarEstado(10, false))
+                    .isInstanceOf(com.llosa.backend.exception.BusinessException.class)
+                    .hasMessageContaining("unico administrador");
+
+            ms.verifyNoInteractions();
+            verify(usuarioRepository, never()).save(any());
+            assertThat(admin.getActivo()).isTrue();
+        }
+    }
+
+    @Test
+    void cambiarEstado_desactivarAdmin_sinAutenticacion_lanzaAccesoDenegado() {
+        Usuario admin = adminUsuario(10);
+        when(usuarioRepository.findById(10)).thenReturn(Optional.of(admin));
+        when(usuarioRepository.countByRol_NombreAndActivoTrue("ADMIN")).thenReturn(3L);
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            assertThatThrownBy(() -> usuarioService.cambiarEstado(10, false))
+                    .isInstanceOf(com.llosa.backend.exception.AccesoDenegadoException.class)
+                    .hasMessageContaining("administrador");
+
+            ms.verifyNoInteractions();
+            verify(usuarioRepository, never()).save(any());
+        }
+    }
+
+    @Test
+    void cambiarEstado_desactivarAdmin_callerNoExisteEnBD_lanzaAccesoDenegado() {
+        Usuario admin = adminUsuario(10);
+        when(usuarioRepository.findById(10)).thenReturn(Optional.of(admin));
+        when(usuarioRepository.countByRol_NombreAndActivoTrue("ADMIN")).thenReturn(3L);
+        when(usuarioRepository.findByFirebaseUuid("caller-uid")).thenReturn(Optional.empty());
+
+        org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .setAuthentication(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        "caller-uid", null, java.util.List.of()));
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            assertThatThrownBy(() -> usuarioService.cambiarEstado(10, false))
+                    .isInstanceOf(com.llosa.backend.exception.AccesoDenegadoException.class);
+
+            ms.verifyNoInteractions();
+            verify(usuarioRepository, never()).save(any());
+        }
+    }
+
+    @Test
+    void cambiarEstado_desactivarAdmin_callerNoEsAdmin_lanzaAccesoDenegado() {
+        Usuario admin = adminUsuario(10);
+        when(usuarioRepository.findById(10)).thenReturn(Optional.of(admin));
+        when(usuarioRepository.countByRol_NombreAndActivoTrue("ADMIN")).thenReturn(3L);
+
+        Usuario caller = TestData.usuario();   // rol no-ADMIN (TestData.usuario sin rol ADMIN)
+        Rol rolAsesor = new Rol();
+        rolAsesor.setNombre("ASESOR");
+        caller.setRol(rolAsesor);
+        when(usuarioRepository.findByFirebaseUuid("caller-uid")).thenReturn(Optional.of(caller));
+
+        org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .setAuthentication(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        "caller-uid", null, java.util.List.of()));
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            assertThatThrownBy(() -> usuarioService.cambiarEstado(10, false))
+                    .isInstanceOf(com.llosa.backend.exception.AccesoDenegadoException.class);
+
+            ms.verifyNoInteractions();
+            verify(usuarioRepository, never()).save(any());
+        }
+    }
+
+    @Test
+    void cambiarEstado_desactivarAdmin_callerEsAdmin_permiteDesactivar() throws Exception {
+        Usuario admin = adminUsuario(10);
+        when(usuarioRepository.findById(10)).thenReturn(Optional.of(admin));
+        when(usuarioRepository.countByRol_NombreAndActivoTrue("ADMIN")).thenReturn(3L);
+        when(usuarioRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Usuario caller = adminUsuario(20);
+        when(usuarioRepository.findByFirebaseUuid("caller-uid")).thenReturn(Optional.of(caller));
+
+        org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .setAuthentication(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        "caller-uid", null, java.util.List.of()));
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            usuarioService.cambiarEstado(10, false);
+
+            assertThat(admin.getActivo()).isFalse();
+            verify(usuarioRepository).save(admin);
+        }
+    }
+
+    // ── asignarRol: fallo al revocar token (catch FirebaseAuthException) ───────
+
+    @Test
+    void asignarRol_revokeLanzaFirebaseAuthException_seManejaYDevuelveRespuesta() throws Exception {
+        Usuario usuario = TestData.usuario();
+        Rol rol = TestData.rol();
+        when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
+        when(rolRepository.findById(1)).thenReturn(Optional.of(rol));
+        when(usuarioRepository.save(any())).thenReturn(usuario);
+
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        com.google.firebase.auth.FirebaseAuthException ex =
+                mock(com.google.firebase.auth.FirebaseAuthException.class);
+        when(ex.getMessage()).thenReturn("token revoke fallo");
+        doThrow(ex).when(mockAuth).revokeRefreshTokens(usuario.getFirebaseUuid());
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            // El catch traga la excepción: el cambio de rol se completa igual.
+            UsuarioResponse resultado = usuarioService.asignarRol(1, 1);
+
+            assertThat(resultado.getRol()).isEqualTo(rol.getNombre());
+            verify(usuarioRepository).save(usuario);
+        }
+    }
+
+    // ── sendPasswordResetEmail (via crearUsuario): rama de error de envío ──────
+
+    @Test
+    void crearUsuario_emailDeBienvenidaFalla_noRevierteCreacionDeUsuario() throws Exception {
+        // sendPasswordResetEmail intenta contactar el identitytoolkit de Google;
+        // sin red lanza IllegalStateException, pero crearUsuario captura cualquier
+        // Exception del envío y NO revierte al usuario ya creado.
+        CrearUsuarioRequest req = TestData.crearUsuarioRequest();
+        req.setTipoUsuario("EMPLEADO");
+        req.setEmail("empleado@test.com");
+        when(usuarioRepository.existsByEmail(req.getEmail())).thenReturn(false);
+
+        UserRecord mockRecord = mock(UserRecord.class);
+        when(mockRecord.getUid()).thenReturn("uid-email-falla");
+        FirebaseAuth mockAuth = mock(FirebaseAuth.class);
+        when(mockAuth.createUser(any())).thenReturn(mockRecord);
+        when(usuarioRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        try (MockedStatic<FirebaseAuth> ms = mockStatic(FirebaseAuth.class)) {
+            ms.when(FirebaseAuth::getInstance).thenReturn(mockAuth);
+
+            UsuarioResponse resultado = usuarioService.crearUsuario(req);
+
+            assertThat(resultado.getEmail()).isEqualTo("empleado@test.com");
+            // El usuario se persiste (save invocado), aunque el correo haya fallado.
+            verify(usuarioRepository, atLeastOnce()).save(any());
+        }
+    }
 }

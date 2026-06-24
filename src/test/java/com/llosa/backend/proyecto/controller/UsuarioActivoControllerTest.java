@@ -31,6 +31,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import com.llosa.backend.proyecto.dto.request.UpdateContratoDTO;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -259,6 +260,46 @@ class UsuarioActivoControllerTest {
         mockMvc.perform(put("/api/expedientes/usuarioActivo/" + contratoId + "/asesor/" + asesorId)
                         .with(authentication(TestData.proyectoAuthToken()))
                         .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.uuidUsuarioActivo").value(contratoId.toString()));
+    }
+
+    @Test
+    void actualizarContrato_devuelve200() throws Exception {
+        UUID contratoId = UUID.randomUUID();
+        var dto = new UpdateContratoDTO(List.of(1), "Contado", null, null);
+
+        var activo = buildActivo();
+        var ua = UsuarioActivo.builder()
+                .uuidUsuarioActivo(contratoId)
+                .activos(List.of(activo))
+                .clientes(List.of())
+                .tipoFinanciamiento("Contado")
+                .build();
+        when(usuarioActivoService.actualizarCompleto(eq(contratoId), any())).thenReturn(ua);
+
+        mockMvc.perform(put("/api/expedientes/" + contratoId)
+                        .with(authentication(TestData.proyectoAuthToken()))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tipoFinanciamiento").value("Contado"));
+    }
+
+    @Test
+    void obtenerContratoPorId_devuelve200() throws Exception {
+        UUID contratoId = UUID.randomUUID();
+        var activo = buildActivo();
+        var ua = UsuarioActivo.builder()
+                .uuidUsuarioActivo(contratoId)
+                .activos(List.of(activo))
+                .clientes(List.of())
+                .build();
+        when(usuarioActivoService.findById(contratoId)).thenReturn(ua);
+
+        mockMvc.perform(get("/api/expedientes/contrato/" + contratoId)
+                        .with(authentication(TestData.proyectoAuthToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.uuidUsuarioActivo").value(contratoId.toString()));
     }

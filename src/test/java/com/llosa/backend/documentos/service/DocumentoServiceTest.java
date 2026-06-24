@@ -393,4 +393,67 @@ class DocumentoServiceTest {
         var result = documentoService.obtenerDetalleEtapa(EtapaProceso.CONTRATO, uuid);
         assertThat(result.documents().get(0).title()).contains("Cochera");
     }
+
+    @Test
+    void obtenerDetalleEtapa_contrato_tipoDepositoMapeo() {
+        var activo = Activo.builder().id(uuid).nro("D-01").tipo(TipoActivo.DEPOSITO)
+                .areaM2(new BigDecimal("5.0")).precio(new BigDecimal("8000"))
+                .estadoComercial(EstadoComercialActivo.VENDIDO)
+                .piso(buildPiso()).build();
+        var ua = UsuarioActivo.builder()
+                .uuidUsuarioActivo(uuid).activos(List.of(activo))
+                .fechaAdquisicion(LocalDateTime.now()).tipoFinanciamiento("Contado").build();
+        when(usuarioActivoRepository.findById(uuid)).thenReturn(Optional.of(ua));
+
+        var result = documentoService.obtenerDetalleEtapa(EtapaProceso.CONTRATO, uuid);
+
+        // DEPOSITO mapea título = nro tal cual, icono="file".
+        assertThat(result.documents().get(0).title()).isEqualTo("D-01");
+        assertThat(result.documents().get(0).icon()).isEqualTo("file");
+    }
+
+    @Test
+    void obtenerDetalleEtapa_contrato_tipoNulo_mapeaComoDeposito() {
+        var activo = Activo.builder().id(uuid).nro("X-99").tipo(null)
+                .areaM2(new BigDecimal("3.0")).precio(new BigDecimal("1000"))
+                .estadoComercial(EstadoComercialActivo.VENDIDO)
+                .piso(buildPiso()).build();
+        var ua = UsuarioActivo.builder()
+                .uuidUsuarioActivo(uuid).activos(List.of(activo))
+                .fechaAdquisicion(LocalDateTime.now()).tipoFinanciamiento("Contado").build();
+        when(usuarioActivoRepository.findById(uuid)).thenReturn(Optional.of(ua));
+
+        var result = documentoService.obtenerDetalleEtapa(EtapaProceso.CONTRATO, uuid);
+
+        // tipo nulo cae en la rama por defecto (DEPOSITO): icono="file", título = nro.
+        assertThat(result.documents().get(0).icon()).isEqualTo("file");
+        assertThat(result.documents().get(0).title()).isEqualTo("X-99");
+    }
+
+    // ─── crearReferenciaDocumento ────────────────────────────────────────────
+
+    @Test
+    void crearReferenciaDocumento_persisteDocumentoConAccesoRestringido() {
+        ArgumentCaptor<Documento> captor = ArgumentCaptor.forClass(Documento.class);
+        when(documentoRepository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+
+        DocumentoResponse resp = documentoService.crearReferenciaDocumento(
+                "gcs://bucket/ruta/archivo.pdf",
+                "archivo.pdf",
+                "application/pdf",
+                "ref-123",
+                "RequisitoDocumental",
+                TipoDocumento.PDF_LEGAL,
+                7);
+
+        assertThat(resp).isNotNull();
+        Documento guardado = captor.getValue();
+        assertThat(guardado.getRutaGcs()).isEqualTo("gcs://bucket/ruta/archivo.pdf");
+        assertThat(guardado.getNombreOriginal()).isEqualTo("archivo.pdf");
+        assertThat(guardado.getIdReferencia()).isEqualTo("ref-123");
+        assertThat(guardado.getEntidadReferencia()).isEqualTo("RequisitoDocumental");
+        assertThat(guardado.getTipoMime()).isEqualTo("application/pdf");
+        assertThat(guardado.isAccesoRestringido()).isTrue();
+        assertThat(guardado.getSubidoPor()).isEqualTo(7);
+    }
 }

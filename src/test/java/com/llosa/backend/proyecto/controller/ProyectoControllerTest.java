@@ -200,4 +200,27 @@ class ProyectoControllerTest {
                         .content(objectMapper.writeValueAsString(cargaDTO)))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void getHitosByProyecto_devuelveListaMapeada() throws Exception {
+        UUID proyectoId = UUID.randomUUID();
+        Proyecto proyecto = buildProyecto();
+        proyecto.setId(proyectoId);
+
+        Hito hito = Hito.builder()
+                .id(UUID.randomUUID())
+                .orden(1)
+                .titulo("Excavación")
+                .estado(EstadoHito.COMPLETADO)
+                .proyecto(proyecto)
+                .build();
+
+        when(proyectoService.findHitosByProyecto(proyectoId)).thenReturn(List.of(hito));
+
+        mockMvc.perform(get("/api/proyectos/" + proyectoId + "/hitos")
+                        .with(authentication(TestData.proyectoAuthToken())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].titulo").value("Excavación"));
+    }
 }
