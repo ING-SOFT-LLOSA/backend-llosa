@@ -88,7 +88,7 @@ public class RequisitoDocumentalController {
     }
 
     /**
-     * ELIMINAR REQUISITO COMPLETO: El administrador borra el requisito del negocio.
+     * ELIMINAR REQUISITO DESEMBOLSO_COMPLETADO: El administrador borra el requisito del negocio.
      * NOTA: La lógica del servicio asegura que si había un archivo físico en GCS,
      * se borre primero para no dejar archivos basura huérfanos.
      */
