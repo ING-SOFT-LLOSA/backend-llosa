@@ -59,7 +59,7 @@ public class PagoFlujoFactory {
         BigDecimal completo = cronograma.getTotalPactado().subtract(pagado);
 
         if (completo.compareTo(BigDecimal.ZERO) > 0) {
-            pagos.add(construirPago(cronograma, 1, completo, ConceptoPago.COMPLETO));
+            pagos.add(construirPago(cronograma, 1, completo, ConceptoPago.DESEMBOLSO_COMPLETADO));
         }
     }
 

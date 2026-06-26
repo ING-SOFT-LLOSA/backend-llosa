@@ -61,7 +61,7 @@ public class PagoServiceImpl implements PagoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Cronograma no encontrado: " + uuidCronograma));
 
-        // Validar que no exista duplicado por concepto único (SEPARACION, INICIAL, COMPLETO)
+        // Validar que no exista duplicado por concepto único (SEPARACION, INICIAL, DESEMBOLSO_COMPLETADO)
         if (request.concepto() != null && request.concepto() != ConceptoPago.CUOTA
                 && pagoRepository.findByCronograma_IdAndConcepto(uuidCronograma, request.concepto()).isPresent()) {
             throw new EntidadDuplicadaException(

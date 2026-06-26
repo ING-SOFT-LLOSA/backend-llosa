@@ -66,7 +66,7 @@ class PagoFlujoFactoryTest {
 
         List<Pago> pagos = factory.generarPagos(cronograma, "CREDITO HIPOTECARIO");
 
-        Pago completo = pagos.stream().filter(p -> p.getConcepto() == ConceptoPago.COMPLETO).findFirst().orElseThrow();
+        Pago completo = pagos.stream().filter(p -> p.getConcepto() == ConceptoPago.DESEMBOLSO_COMPLETADO).findFirst().orElseThrow();
         assertThat(completo.getNroCuota()).isEqualTo(1);
         assertThat(completo.getMontoProgramado()).isEqualTo(new BigDecimal("90000.00"));
     }
@@ -77,7 +77,7 @@ class PagoFlujoFactoryTest {
 
         List<Pago> pagos = factory.generarPagos(cronograma, "credito hipotecario");
 
-        assertThat(pagos).anyMatch(p -> p.getConcepto() == ConceptoPago.COMPLETO);
+        assertThat(pagos).anyMatch(p -> p.getConcepto() == ConceptoPago.DESEMBOLSO_COMPLETADO);
     }
 
     @Test
@@ -86,7 +86,7 @@ class PagoFlujoFactoryTest {
 
         List<Pago> pagos = factory.generarPagos(cronograma, "HIPOTECARIO");
 
-        Pago completo = pagos.stream().filter(p -> p.getConcepto() == ConceptoPago.COMPLETO).findFirst().orElseThrow();
+        Pago completo = pagos.stream().filter(p -> p.getConcepto() == ConceptoPago.DESEMBOLSO_COMPLETADO).findFirst().orElseThrow();
         assertThat(completo.getMontoProgramado()).isEqualTo(new BigDecimal("100000.00"));
     }
 
@@ -99,7 +99,7 @@ class PagoFlujoFactoryTest {
 
         List<Pago> pagos = factory.generarPagos(cronograma, "HIPOTECARIO");
 
-        assertThat(pagos).noneMatch(p -> p.getConcepto() == ConceptoPago.COMPLETO);
+        assertThat(pagos).noneMatch(p -> p.getConcepto() == ConceptoPago.DESEMBOLSO_COMPLETADO);
     }
 
     @Test
@@ -111,7 +111,7 @@ class PagoFlujoFactoryTest {
 
         List<Pago> pagos = factory.generarPagos(cronograma, "HIPOTECARIO");
 
-        assertThat(pagos).noneMatch(p -> p.getConcepto() == ConceptoPago.COMPLETO);
+        assertThat(pagos).noneMatch(p -> p.getConcepto() == ConceptoPago.DESEMBOLSO_COMPLETADO);
     }
 
     @Test
@@ -122,7 +122,7 @@ class PagoFlujoFactoryTest {
 
         List<Pago> pagos = factory.generarPagos(cronograma, null);
 
-        assertThat(pagos).noneMatch(p -> p.getConcepto() == ConceptoPago.COMPLETO);
+        assertThat(pagos).noneMatch(p -> p.getConcepto() == ConceptoPago.DESEMBOLSO_COMPLETADO);
         assertThat(pagos).filteredOn(p -> p.getConcepto() == ConceptoPago.CUOTA).hasSize(2);
     }
 

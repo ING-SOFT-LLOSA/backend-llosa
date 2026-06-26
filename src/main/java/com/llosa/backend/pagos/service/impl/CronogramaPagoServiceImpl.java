@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -55,6 +56,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
 
     private static final String CRONOGRAMA_NO_ENCONTRADO = "Cronograma no encontrado: ";
     private static final String PAGADO = "PAGADO";
+    private static final ZoneId ZONA_PERU = ZoneId.of("America/Lima");
 
 
     @Override
@@ -273,6 +275,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
         long cuotasPendientes = 0;
         long cuotasVencidas = 0;
         LocalDate proximoVencimiento = null;
+        LocalDate hoy = hoyPeru();
 
         for (Pago p : pagos) {
             switch (p.getEstado()) {
@@ -285,15 +288,14 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
                     totalPagado = totalPagado.add(p.getMontoPagado());
                 }
                 default -> {
-                    cuotasPendientes++;
-                    // =========================================================================
-                    // CORRECCIÓN SONAR: Se combinan los dos 'if' anidados en una sola evaluación
-                    // =========================================================================
-                    if (p.getEstado().equals("PENDIENTE")
-                            && (proximoVencimiento == null || p.getFechaVencimiento().isBefore(proximoVencimiento))
-                            && !p.getFechaVencimiento().isBefore(LocalDate.now())) {
-
-                        proximoVencimiento = p.getFechaVencimiento();
+                    if (p.getFechaVencimiento().isBefore(hoy)) {
+                        cuotasVencidas++;
+                        totalPagado = totalPagado.add(p.getMontoPagado());
+                    } else {
+                        cuotasPendientes++;
+                        if (proximoVencimiento == null || p.getFechaVencimiento().isBefore(proximoVencimiento)) {
+                            proximoVencimiento = p.getFechaVencimiento();
+                        }
                     }
                 }
             }
@@ -314,6 +316,10 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
         );
     }
 
+    private LocalDate hoyPeru() {
+        return LocalDate.now(ZONA_PERU);
+    }
+
     private String calcularEstadoGlobal(CronogramaPago cp, long cuotasVencidas, long cuotasPagadas, int totalCuotas) {
         if (totalCuotas == 0) return "ACTIVO";
         if (cuotasPagadas == totalCuotas) return "LIQUIDADO";
@@ -324,7 +330,7 @@ public class CronogramaPagoServiceImpl implements CronogramaPagoService {
 
     private boolean hayCuotasProximasAVencer(CronogramaPago cp) {
         List<Pago> pagos = pagoRepository.findByCronograma_IdOrderByNroCuotaAsc(cp.getId());
-        LocalDate hoy = LocalDate.now();
+        LocalDate hoy = hoyPeru();
         for (Pago p : pagos) {
             if ("PENDIENTE".equals(p.getEstado())
                     && !p.getFechaVencimiento().isBefore(hoy)

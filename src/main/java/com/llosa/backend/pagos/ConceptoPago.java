@@ -4,5 +4,5 @@ public enum ConceptoPago {
     SEPARACION,
     INICIAL,
     CUOTA,
-    COMPLETO
+    DESEMBOLSO_COMPLETADO
 }
