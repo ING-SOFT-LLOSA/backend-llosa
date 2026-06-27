@@ -11,6 +11,8 @@ REST API Spring Boot 3.3 / Java 21 para la inmobiliaria Llosa Edificaciones. Imp
 - **Docker** (para PostgreSQL y Testcontainers)
 - **Maven 3.9+**
 
+
+
 ### Configuración
 ```bash
 # 1. Copiar credenciales Firebase
