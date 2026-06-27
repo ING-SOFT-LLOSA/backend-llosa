@@ -13,16 +13,20 @@ import com.llosa.backend.documentos.entity.Documento;
 import com.llosa.backend.documentos.enums.TipoDocumento;
 import com.llosa.backend.documentos.repository.DocumentoRepository;
 import com.llosa.backend.documentos.service.DocumentoService;
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.apache.tika.Tika;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 
+import java.io.IOException;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -39,9 +43,14 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
     private static final String USUARIO_NO_ENCONTRADO_MSG = "Usuario no encontrado";
     private static final String ENTIDAD_REFERENCIA_REQUSITO = "REQUISITO";
 
+    private final Tika tika = new Tika();
+
 
     @Transactional
     public RequisitoDocumental asociarArchivoARequisito(UUID requisitoId, MultipartFile file, String firebaseUid) {
+
+        validarFormatoArchivo(file);
+
         RequisitoDocumental requisito = requisitoRepository.findById(requisitoId)
                 .orElseThrow(() -> new EntityNotFoundException(REQUISITO_NO_ENCONTRADO_MSG));
 
@@ -148,4 +157,31 @@ public class RequisitoDocumentalServiceImpl implements RequisitoDocumentalServic
 
         requisitoRepository.delete(requisito);
     }
+
+    private void validarFormatoArchivo(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new BusinessException("El archivo está vacío.");
+        }
+
+        try {
+            // Tika lee los primeros bytes del InputStream para descubrir su verdadera identidad
+            String mimeType = tika.detect(file.getInputStream());
+
+            // Definimos los formatos permitidos (Ajusta según lo que necesites, ej. solo PDF)
+            List<String> formatosPermitidos = List.of(
+                    "application/pdf",
+                    "image/jpeg",
+                    "image/png"
+            );
+
+            if (!formatosPermitidos.contains(mimeType)) {
+                throw new BusinessException("Formato de archivo inválido. El sistema detectó un archivo: "
+                        + mimeType + ". Solo se permiten PDFs o imágenes reales.");
+            }
+
+        } catch (IOException e) {
+            throw new BusinessException("Ocurrió un error al analizar el contenido del archivo.");
+        }
+    }
+
 }

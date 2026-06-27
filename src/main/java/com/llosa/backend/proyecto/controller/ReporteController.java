@@ -11,9 +11,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -27,9 +31,15 @@ public class ReporteController {
     /**
      * Crea un nuevo reporte de avance de obra.
      */
-    @PostMapping
-    public ResponseEntity<ReporteResponse> crear(@Valid @RequestBody ReporteCreateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(reporteService.crear(request));
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ReporteResponse> crearReporte(
+            @RequestPart("reporte") ReporteCreateRequest request,
+            @RequestPart(value = "archivos", required = false) List<MultipartFile> archivos,
+            Authentication authentication // Para sacar el ID del usuario
+    ) {
+        Integer usuarioId = (Integer) authentication.getPrincipal();
+        ReporteResponse response = reporteService.crear(request, archivos, usuarioId);
+        return ResponseEntity.ok(response);
     }
 
     /**

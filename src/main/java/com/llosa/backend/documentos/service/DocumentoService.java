@@ -305,4 +305,15 @@ public class DocumentoService {
         if (nombreArchivo == null || !nombreArchivo.contains(".")) return "bin";
         return nombreArchivo.substring(nombreArchivo.lastIndexOf('.') + 1).toLowerCase();
     }
+
+    @Transactional
+    public void eliminarDocumentosPorReferencia(String entidadReferencia, String idReferencia) {
+        // Buscamos todos los documentos asociados a este Reporte (o cualquier entidad)
+        List<Documento> documentos = documentoRepository.findByIdReferenciaAndEntidadReferencia(idReferencia, entidadReferencia);
+
+        // Iteramos y reutilizamos tu mé existente que ya se encarga de borrar el Blob en GCS
+        for (Documento doc : documentos) {
+            eliminarDocumento(doc.getId());
+        }
+    }
 }
