@@ -5,8 +5,12 @@ import com.llosa.backend.comercial.dto.EtapaExpedienteRequest;
 import com.llosa.backend.comercial.dto.EtapaExpedienteResponse;
 import com.llosa.backend.comercial.entity.EtapaExpediente;
 import com.llosa.backend.comercial.enums.EstadoEtapaExpediente;
+import com.llosa.backend.comercial.enums.EstadoHitoComercial;
+import com.llosa.backend.comercial.enums.EtapaProceso;
+import com.llosa.backend.comercial.enums.EtapaRequisitoDocumental;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.service.EtapaExpedienteService;
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -98,7 +102,21 @@ public class EtapaExpedienteServiceImpl implements EtapaExpedienteService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         ETAPA_NO_ENCONTRADA_MSG + uuidEtapaExpediente
                 ));
-
+        boolean tieneRequisitosPendientes = etapa.getRequisitos().stream().anyMatch(
+                requisito -> requisito.getEstado() == EtapaRequisitoDocumental.PENDIENTE
+        );
+        if (tieneRequisitosPendientes) {
+            throw new BusinessException("No se puede completar la etapa porque existen requisitos pendientes.");
+        }
+        // Si estamos cerrando la etapa de PAGO, verificar cuotas/hitos
+        if (etapa.getEtapaProceso() == EtapaProceso.PAGO) {
+            boolean tieneCuotasPendientes = etapa.getHitosComerciales().stream().anyMatch(
+                hito -> hito.getEstado() == EstadoHitoComercial.PENDIENTE
+            );
+            if (tieneCuotasPendientes) {
+                throw new BusinessException("No se puede cerrar la etapa de PAGO porque existen cuotas pendientes.");
+            }
+        }
         etapa.setEstado(request.estado());
 
         EtapaExpediente actualizada = etapaExpedienteRepository.save(etapa);

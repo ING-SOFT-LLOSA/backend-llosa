@@ -196,6 +196,11 @@ public class UsuarioActivoServiceImpl implements UsuarioActivoService {
         Usuario usuario = usuarioRepository.findById(idUsuario).orElseThrow(
                 () -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + idUsuario)
         );
+
+        if (!"ASESOR".equals(usuario.getRol().getNombre())) {
+            throw new BusinessException("El usuario seleccionado no cuenta con el rol de ASESOR comercial.");
+        }
+
         usuarioActivo.setAsesor(usuario);
 
         return usuarioActivoRepository.save(usuarioActivo);

@@ -1,14 +1,18 @@
 package com.llosa.backend.proyecto.service.impl;
 
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.EntidadDuplicadaException;
 import com.llosa.backend.proyecto.dto.response.ActivoResponseDTO;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.entity.Piso;
+import com.llosa.backend.proyecto.entity.UsuarioActivo;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.repository.ActivoRepository;
 
+import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.PisoService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -25,6 +30,7 @@ public class ActivoServiceImpl implements ActivoService {
 
     private final ActivoRepository activoRepository;
     private final PisoService pisoService;
+    private final UsuarioActivoRepository usuarioActivoRepository;
 
     @Override
     @Transactional
@@ -53,6 +59,10 @@ public class ActivoServiceImpl implements ActivoService {
     @Override
     @Transactional
     public void deleteById(UUID id){
+        Optional<UsuarioActivo> expedienteAsociado = usuarioActivoRepository.findByActivos_Id(id);
+        if (expedienteAsociado.isPresent()) {
+            throw new BusinessException("No se puede eliminar la unidad porque está asociada al expediente comercial activo del cliente.");
+        }
         activoRepository.deleteById(id);
     }
 
