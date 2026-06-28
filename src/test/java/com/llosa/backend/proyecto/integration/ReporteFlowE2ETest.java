@@ -19,9 +19,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -31,12 +34,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.List;
 import java.util.UUID;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.securityContext;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -84,68 +83,79 @@ class ReporteFlowE2ETest {
 
     @Test
     void reporte_flujoCompletoCrud() throws Exception {
-        // 1. CREAR
-        String crearJson = """
-                {
-                  "uuidProyecto": "%s",
-                  "tituloPeriodo": "Avance Enero 2026",
-                  "descripcion": "Reporte mensual",
-                  "fecha": "2026-01-31",
-                  "hitosConsolidados": ["Cimentacion"]
-                }
-                """.formatted(proyecto.getId());
+        // Generamos un token artificial limpio donde el principal es un Integer (1)
+        // Extraemos los roles/authorities de tu método auth() original para no perder los permisos
+        var authCorrecta = new TestingAuthenticationToken(1, null, auth().getAuthorities());
+        authCorrecta.setAuthenticated(true);
+        var contextoCorrecto = new SecurityContextImpl(authCorrecta);
 
-        String creado = mockMvc.perform(post("/api/reportes")
-                        .with(securityContext(contextWithAuth(auth())))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(crearJson))
+        // ─── 1. CREAR ──────────────────────────────────────────────────────────
+        String crearJson = """
+        {
+          "uuidProyecto": "%s",
+          "tituloPeriodo": "Avance Enero 2026",
+          "descripcion": "Reporte mensual",
+          "fecha": "2026-01-31",
+          "hitosConsolidados": ["Cimentacion"]
+        }
+        """.formatted(proyecto.getId());
+
+        MockMultipartFile reportePart = new MockMultipartFile(
+                "reporte",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                crearJson.getBytes()
+        );
+
+        // Ejecutamos usando el mé estándar .with(authentication(...))
+        String creado = mockMvc.perform(multipart("/api/reportes")
+                        .file(reportePart)
+                        .with(authentication(authCorrecta)) // <-- ¡Úsalo así en todos los pasos del CRUD!
+                        .with(csrf()))
                 .andExpect(status().is2xxSuccessful())
                 .andExpect(jsonPath("$.tituloPeriodo").value("Avance Enero 2026"))
                 .andReturn().getResponse().getContentAsString();
 
         String reporteId = objectMapper.readTree(creado).get("id").asText();
 
-        // 2. OBTENER POR ID
+        // ─── 2. OBTENER POR ID ──────────────────────────────────────────────────
         mockMvc.perform(get("/api/reportes/{id}", reporteId)
-                        .with(securityContext(contextWithAuth(auth()))))
+                        .with(securityContext(contextoCorrecto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(reporteId));
 
-        // 3. LISTAR POR PROYECTO (paginado)
+        // ─── 3. LISTAR POR PROYECTO ─────────────────────────────────────────────
         mockMvc.perform(get("/api/reportes/proyecto/{uuid}", proyecto.getId())
-                        .with(securityContext(contextWithAuth(auth()))))
+                        .with(securityContext(contextoCorrecto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray());
 
-        // 4. ACTUALIZAR
+        // ─── 4. ACTUALIZAR ──────────────────────────────────────────────────────
         String updateJson = """
-                {
-                  "tituloPeriodo": "Avance Febrero 2026",
-                  "descripcion": "Reporte actualizado",
-                  "fecha": "2026-02-28",
-                  "hitosConsolidados": ["Cimentacion", "Acabados"]
-                }
-                """;
+        {
+          "tituloPeriodo": "Avance Febrero 2026",
+          "descripcion": "Reporte actualizado",
+          "fecha": "2026-02-28",
+          "hitosConsolidados": ["Cimentacion", "Acabados"]
+        }
+        """;
         mockMvc.perform(put("/api/reportes/{id}", reporteId)
-                        .with(securityContext(contextWithAuth(auth())))
+                        .with(securityContext(contextoCorrecto))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tituloPeriodo").value("Avance Febrero 2026"));
 
-        // 5. ELIMINAR
+        // ─── 5. ELIMINAR ────────────────────────────────────────────────────────
         mockMvc.perform(delete("/api/reportes/{id}", reporteId)
-                        .with(securityContext(contextWithAuth(auth())))
+                        .with(securityContext(contextoCorrecto))
                         .with(csrf()))
                 .andExpect(status().is2xxSuccessful());
 
-        // 6. OBTENER ELIMINADO => no debe encontrarlo (error).
-        //    NOTA: EntityNotFoundException no esta mapeada en GlobalExceptionHandler,
-        //    por lo que se propaga en vez de devolver 404 limpio (defecto menor a Mantis).
+        // ─── 6. OBTENER ELIMINADO ───────────────────────────────────────────────
         assertOperacionFalla(() -> mockMvc.perform(get("/api/reportes/{id}", reporteId)
-                .with(securityContext(contextWithAuth(auth())))));
+                .with(securityContext(contextoCorrecto))));
     }
 
     @Test

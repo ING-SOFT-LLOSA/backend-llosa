@@ -33,7 +33,7 @@ public class ReporteController {
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ReporteResponse> crearReporte(
-            @RequestPart("reporte") ReporteCreateRequest request,
+            @RequestPart("reporte") @Valid ReporteCreateRequest request,
             @RequestPart(value = "archivos", required = false) List<MultipartFile> archivos,
             Authentication authentication // Para sacar el ID del usuario
     ) {

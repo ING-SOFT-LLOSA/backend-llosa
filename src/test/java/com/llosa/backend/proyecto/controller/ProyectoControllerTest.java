@@ -16,6 +16,9 @@ import com.llosa.backend.proyecto.service.ProyectoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -64,23 +67,32 @@ class ProyectoControllerTest {
     @Test
     void findAll_autenticado_devuelveListaProyectos() throws Exception {
         Proyecto proyecto = buildProyecto();
-        when(proyectoService.findAll(null)).thenReturn(List.of(proyecto));
+        // 1. Envolvemos la respuesta en un PageImpl
+        Page<Proyecto> pageMock = new PageImpl<>(List.of(proyecto));
+
+        // 2. Ajustamos el mock para que acepte el Pageable como segundo parámetro
+        when(proyectoService.findAll(isNull(), any(Pageable.class))).thenReturn(pageMock);
 
         mockMvc.perform(get("/api/proyectos")
                         .with(authentication(TestData.proyectoAuthToken())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nombre").value("Torre Sol"));
+                // 3. Buscamos dentro del arreglo 'content' que genera la paginación
+                .andExpect(jsonPath("$.content[0].nombre").value("Torre Sol"));
     }
 
     @Test
     void findAll_conSearch_lllamaBusquedaFiltrada() throws Exception {
         Proyecto proyecto = buildProyecto();
-        when(proyectoService.findAll("sol")).thenReturn(List.of(proyecto));
+        Page<Proyecto> pageMock = new PageImpl<>(List.of(proyecto));
+
+        // Usamos eq("sol") para el string y any() para el pageable
+        when(proyectoService.findAll(eq("sol"), any(Pageable.class))).thenReturn(pageMock);
 
         mockMvc.perform(get("/api/proyectos?search=sol")
                         .with(authentication(TestData.proyectoAuthToken())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                // Verificamos el tamaño del arreglo 'content'
+                .andExpect(jsonPath("$.content.length()").value(1));
     }
 
     @Test

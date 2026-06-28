@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -76,7 +77,15 @@ class RequisitoDocumentalServiceImplTest {
 
     @Test
     void asociarArchivoARequisito_exitoso() {
-        var file = mock(MultipartFile.class);
+        // 1. Creamos un archivo simulado con los "Magic Bytes" de un PDF real (%PDF-1.4...)
+        byte[] pdfBytes = "%PDF-1.4\n%...\n%%EOF".getBytes();
+        var file = new MockMultipartFile(
+                "file",
+                "contrato.pdf",
+                "application/pdf",
+                pdfBytes
+        );
+
         var requisito = buildRequisito();
         var usuario = buildUsuario();
 
@@ -84,30 +93,44 @@ class RequisitoDocumentalServiceImplTest {
         when(usuarioRepository.findByFirebaseUuid("firebase-uid")).thenReturn(Optional.of(usuario));
         when(requisitoRepository.save(any())).thenReturn(requisito);
 
+        // Act
         var result = requisitoDocumentalService.asociarArchivoARequisito(requisitoId, file, "firebase-uid");
 
+        // Assert
         assertThat(result.getEstado()).isEqualTo(EtapaRequisitoDocumental.COMPLETADO);
         assertThat(result.getFechaEmision()).isNotNull();
+
+        // Verificamos usando el objeto 'file' real que creamos arriba
         verify(documentoService).subirDocumentoPolimorfico(file, TipoDocumento.PDF_LEGAL,
                 requisitoId.toString(), "REQUISITO", 1);
     }
 
     @Test
     void asociarArchivoARequisito_requisitoNoExiste_lanzaEntityNotFound() {
+        // 1. Creamos un archivo simulado con Magic Bytes válidos de PDF
+        byte[] pdfBytes = "%PDF-1.4\n%...\n%%EOF".getBytes();
+        var file = new MockMultipartFile("file", "contrato.pdf", "application/pdf", pdfBytes);
+
         when(requisitoRepository.findById(requisitoId)).thenReturn(Optional.empty());
 
+        // 2. Pasamos el 'file' simulado en lugar del mock vacío
         assertThatThrownBy(() -> requisitoDocumentalService.asociarArchivoARequisito(
-                requisitoId, mock(MultipartFile.class), "firebase-uid"))
+                requisitoId, file, "firebase-uid"))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
     @Test
     void asociarArchivoARequisito_usuarioNoExiste_lanzaRecursoNoEncontrado() {
+        // 1. Creamos un archivo simulado con Magic Bytes válidos de PDF
+        byte[] pdfBytes = "%PDF-1.4\n%...\n%%EOF".getBytes();
+        var file = new MockMultipartFile("file", "contrato.pdf", "application/pdf", pdfBytes);
+
         when(requisitoRepository.findById(requisitoId)).thenReturn(Optional.of(buildRequisito()));
         when(usuarioRepository.findByFirebaseUuid("firebase-uid")).thenReturn(Optional.empty());
 
+        // 2. Pasamos el 'file' simulado en lugar del mock vacío
         assertThatThrownBy(() -> requisitoDocumentalService.asociarArchivoARequisito(
-                requisitoId, mock(MultipartFile.class), "firebase-uid"))
+                requisitoId, file, "firebase-uid"))
                 .isInstanceOf(RecursoNoEncontradoException.class);
     }
 

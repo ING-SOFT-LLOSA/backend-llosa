@@ -56,7 +56,6 @@ class ReporteServiceImplTest {
                 .fecha(LocalDate.now())
                 .build();
     }
-
     @Test
     void crear_exitoso() {
         var request = new ReporteCreateRequest(proyectoId, "Enero 2026", "Desc", LocalDate.now(), List.of("Hito1"));
@@ -70,8 +69,12 @@ class ReporteServiceImplTest {
             idField.set(r, reporteId);
             return r;
         });
+        // Agregamos el mock de documentoService para que no devuelva NullPointerException
+        when(documentoService.obtenerPorReferencia(eq("REPORTE"), anyString())).thenReturn(List.of());
 
-        var result = reporteService.crear(request);
+        // Agregamos null para archivos y 1 para el usuarioId
+        var result = reporteService.crear(request, null, 1);
+
         assertThat(result.id()).isEqualTo(reporteId);
         assertThat(result.tituloPeriodo()).isEqualTo("Enero 2026");
         assertThat(result.porcentajeAvance()).isEqualByComparingTo(new BigDecimal("50.00"));
@@ -82,7 +85,8 @@ class ReporteServiceImplTest {
         var request = new ReporteCreateRequest(proyectoId, "Enero 2026", null, null, null);
         when(proyectoRepository.findById(proyectoId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> reporteService.crear(request))
+        // Agregamos null, 1
+        assertThatThrownBy(() -> reporteService.crear(request, null, 1))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
@@ -98,8 +102,10 @@ class ReporteServiceImplTest {
             idField.set(r, reporteId);
             return r;
         });
+        when(documentoService.obtenerPorReferencia(eq("REPORTE"), anyString())).thenReturn(List.of());
 
-        var result = reporteService.crear(request);
+        // Agregamos null, 1
+        var result = reporteService.crear(request, null, 1);
         assertThat(result.porcentajeAvance()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
@@ -109,9 +115,17 @@ class ReporteServiceImplTest {
         when(proyectoRepository.findById(proyectoId)).thenReturn(Optional.of(buildProyecto()));
         when(hitoRepository.countByProyectoId(proyectoId)).thenReturn(1L);
         when(hitoRepository.countByProyectoIdAndEstado(proyectoId, EstadoHito.COMPLETADO)).thenReturn(0L);
-        when(reporteRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(reporteRepository.save(any())).thenAnswer(inv -> {
+            Reporte r = inv.getArgument(0);
+            var idField = Reporte.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(r, reporteId); // Añadido para evitar nulos en el ID al consultar referencias
+            return r;
+        });
+        when(documentoService.obtenerPorReferencia(eq("REPORTE"), anyString())).thenReturn(List.of());
 
-        var result = reporteService.crear(request);
+        // Agregamos null, 1
+        var result = reporteService.crear(request, null, 1);
         assertThat(result.hitosConsolidados()).isEmpty();
     }
 

@@ -55,10 +55,4 @@ public class GlobalExceptionHandler {
     public Map<String, String> handleEntidadDuplicada(EntidadDuplicadaException ex) {
         return Map.of(ERROR, ex.getMessage());
     }
-
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<Map<String, String>> handleBusinessException2(BusinessException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT) // Esto devuelve el código 409
-                .body(Map.of("error", ex.getMessage()));
-    }
 }
