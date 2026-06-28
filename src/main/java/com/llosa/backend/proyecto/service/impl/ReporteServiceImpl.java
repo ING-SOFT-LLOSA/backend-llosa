@@ -65,14 +65,14 @@ public class ReporteServiceImpl implements ReporteService {
                         archivo,
                         TipoDocumento.FOTO_OBRA, // Usa el Enum válido que tengas configurado
                         guardado.getId().toString(),
-                        "REPORTE",
+                        ENTIDAD_REPORTE,
                         usuarioId
                 );
             }
         }
 
         // Retornamos el reporte junto con sus imágenes firmadas
-        List<DocumentoResponse> multimedia = documentoService.obtenerPorReferencia("REPORTE", guardado.getId().toString());
+        List<DocumentoResponse> multimedia = documentoService.obtenerPorReferencia(ENTIDAD_REPORTE, guardado.getId().toString());
         return ReporteResponse.fromEntity(guardado, multimedia);
     }
 
