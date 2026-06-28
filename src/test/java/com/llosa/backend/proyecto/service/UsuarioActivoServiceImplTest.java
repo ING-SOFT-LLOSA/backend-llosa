@@ -14,6 +14,7 @@ import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.repository.ActivoRepository;
 import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import com.llosa.backend.proyecto.service.impl.UsuarioActivoServiceImpl;
+import com.llosa.backend.seguridad.entity.Rol;
 import com.llosa.backend.seguridad.entity.Usuario;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -258,7 +259,15 @@ class UsuarioActivoServiceImplTest {
     @Test
     void asignarAsesorAContrato_exitoso() {
         var ua = UsuarioActivo.builder().uuidUsuarioActivo(uuid).build();
-        var asesor = new Usuario(); asesor.setId(5);
+
+        // CORRECCIÓN: Creamos el rol y se lo asignamos al usuario
+        var rolAsesor = new Rol();
+        rolAsesor.setNombre("ASESOR"); // O el nombre exacto que valide tu lógica (ej: "ROLE_ASESOR")
+
+        var asesor = new Usuario();
+        asesor.setId(5);
+        asesor.setRol(rolAsesor); // <-- Aquí asociamos el rol para evitar el NullPointerException
+
         when(usuarioActivoRepository.findById(uuid)).thenReturn(Optional.of(ua));
         when(usuarioRepository.findById(5)).thenReturn(Optional.of(asesor));
         when(usuarioActivoRepository.save(ua)).thenReturn(ua);
