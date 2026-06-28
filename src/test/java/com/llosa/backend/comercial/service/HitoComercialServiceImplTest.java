@@ -133,7 +133,7 @@ class HitoComercialServiceImplTest {
     }
 
     @Test
-    void actualizarEstado_hitoAnteriorNoCompletado_lanzaIllegalState() {
+    void actualizarEstado_hitoAnteriorNoCompletado_lanzaIllegalState() { // Puedes renombrar el método a ..._lanzaBusinessException
         var hito = buildHito(2, EstadoHitoComercial.PENDIENTE);
         var hitoAnterior = buildHito(1, EstadoHitoComercial.PENDIENTE);
 
@@ -142,7 +142,8 @@ class HitoComercialServiceImplTest {
                 .thenReturn(Optional.of(hitoAnterior));
 
         assertThatThrownBy(() -> hitoComercialService.actualizarEstado(uuidHito, EstadoHitoComercial.COMPLETADO))
-                .isInstanceOf(IllegalStateException.class)
+                // CORRECCIÓN: Cambiar IllegalStateException por BusinessException
+                .isInstanceOf(com.llosa.backend.exception.BusinessException.class)
                 .hasMessageContaining("Debe completar primero");
     }
 

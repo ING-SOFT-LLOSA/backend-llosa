@@ -12,6 +12,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -70,34 +74,46 @@ class ProyectoServiceTest {
     @Test
     void findAll_sinSearch_devuelveTodos() {
         Proyecto p = buildProyecto();
-        when(proyectoRepository.findAll()).thenReturn(List.of(p));
+        Pageable pageable = PageRequest.of(0, 10);
+        // Envolvemos la lista en un PageImpl
+        Page<Proyecto> pageMock = new PageImpl<>(List.of(p), pageable, 1);
 
-        List<Proyecto> result = service.findAll(null);
+        when(proyectoRepository.findAll(pageable)).thenReturn(pageMock);
 
-        assertThat(result).hasSize(1);
-        verify(proyectoRepository).findAll();
+        Page<Proyecto> result = service.findAll(null, pageable); // <-- Se pasa pageable
+
+        assertThat(result.getContent()).hasSize(1); // <-- Validamos sobre el contenido de la página
+        verify(proyectoRepository).findAll(pageable);
         verify(proyectoRepository, never())
-                .findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase(any(), any());
+                .findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase(any(), any(), any());
     }
 
     @Test
     void findAll_searchBlanco_devuelveTodos() {
-        when(proyectoRepository.findAll()).thenReturn(List.of());
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Proyecto> pageMock = new PageImpl<>(List.of(), pageable, 0);
 
-        service.findAll("   ");
+        when(proyectoRepository.findAll(pageable)).thenReturn(pageMock);
 
-        verify(proyectoRepository).findAll();
+        service.findAll("   ", pageable); // <-- Se pasa pageable
+
+        verify(proyectoRepository).findAll(pageable);
     }
 
     @Test
     void findAll_conSearch_devuelveFiltrado() {
         Proyecto p = buildProyecto();
-        when(proyectoRepository.findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase("sol", "sol"))
-                .thenReturn(List.of(p));
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Proyecto> pageMock = new PageImpl<>(List.of(p), pageable, 1);
 
-        List<Proyecto> result = service.findAll("sol");
+        // El repositorio ahora debe recibir el pageable como tercer argumento
+        when(proyectoRepository.findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase("sol", "sol", pageable))
+                .thenReturn(pageMock);
 
-        assertThat(result).hasSize(1);
+        Page<Proyecto> result = service.findAll("sol", pageable); // <-- Se pasa pageable
+
+        assertThat(result.getContent()).hasSize(1);
+        verify(proyectoRepository).findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase("sol", "sol", pageable);
     }
 
     @Test

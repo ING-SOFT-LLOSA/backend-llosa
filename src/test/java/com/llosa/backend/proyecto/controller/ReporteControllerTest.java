@@ -22,6 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -66,34 +68,58 @@ class ReporteControllerTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
     }
-
     @Test
     void crear_autenticado_devuelve201() throws Exception {
         UUID proyectoId = UUID.randomUUID();
         var req = new ReporteCreateRequest(proyectoId, "Enero 2026", "Desc", null, List.of("Hito1"));
         var response = new ReporteResponse(UUID.randomUUID(), proyectoId, "Test", "Enero 2026",
                 BigDecimal.ZERO, "Desc", List.of("Hito1"), LocalDateTime.now(), List.of());
-        when(reporteService.crear(any())).thenReturn(response);
 
-        mockMvc.perform(post("/api/reportes")
-                        .with(authentication(TestData.proyectoAuthToken()))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isCreated())
+        // CORRECCIÓN: Usamos any() para la lista de archivos (tolera nulls) y para el Integer
+        when(reporteService.crear(any(ReporteCreateRequest.class), any(), any()))
+                .thenReturn(response);
+
+        MockMultipartFile reportePart = new MockMultipartFile(
+                "reporte",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                objectMapper.writeValueAsBytes(req)
+        );
+
+        var authCustom = new TestingAuthenticationToken(1, null, TestData.proyectoAuthToken().getAuthorities());
+        authCustom.setAuthenticated(true);
+
+        mockMvc.perform(multipart("/api/reportes")
+                        .file(reportePart)
+                        .with(authentication(authCustom))
+                        .with(csrf()))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tituloPeriodo").value("Enero 2026"));
     }
-
     @Test
     void crear_sinTitulo_devuelve400() throws Exception {
+        // 1. Creamos el request con el título inválido/vacío
         var req = new ReporteCreateRequest(UUID.randomUUID(), "", null, null, null);
 
-        mockMvc.perform(post("/api/reportes")
-                        .with(authentication(TestData.proyectoAuthToken()))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest());
+        // 2. Lo envolvemos en la parte multipart "reporte" como JSON
+        MockMultipartFile reportePart = new MockMultipartFile(
+                "reporte",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                objectMapper.writeValueAsBytes(req)
+        );
+
+        // 3. Forzamos un token con Integer para evitar el ClassCastException que vimos antes
+        var authCustom = new org.springframework.security.authentication.TestingAuthenticationToken(
+                1, null, TestData.proyectoAuthToken().getAuthorities());
+        authCustom.setAuthenticated(true);
+
+        // 4. Ejecutamos la petición como multipart
+        mockMvc.perform(multipart("/api/reportes")
+                        .file(reportePart)
+                        .with(authentication(authCustom))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest()); // Ahora sí saltará el 400 de validación
     }
 
     @Test

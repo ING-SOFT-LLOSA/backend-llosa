@@ -8,6 +8,7 @@ import com.llosa.backend.proyecto.entity.Torre;
 import com.llosa.backend.proyecto.enums.EstadoComercialActivo;
 import com.llosa.backend.proyecto.enums.TipoActivo;
 import com.llosa.backend.proyecto.repository.ActivoRepository;
+import com.llosa.backend.proyecto.repository.UsuarioActivoRepository;
 import com.llosa.backend.proyecto.service.impl.ActivoServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,8 +33,8 @@ class ActivoServiceTest {
 
     @Mock ActivoRepository activoRepository;
     @Mock PisoService pisoService;
-    @Mock HidratationService hidratationService;
-
+    @Mock
+    private UsuarioActivoRepository usuarioActivoRepository; // <-- 1. Agrega este Mock si no estaba
     @InjectMocks ActivoServiceImpl service;
 
     private Piso buildPiso() {
@@ -99,8 +100,17 @@ class ActivoServiceTest {
 
     @Test
     void deleteById_llamaRepository() {
-        UUID id = UUID.randomUUID();
+        UUID id = UUID.fromString("40123d5e-8618-4158-bbb8-aad1df5d6239");
+
+        // ELIMINADO: Se quitó el findById redundante porque tu servicio no lo consume aquí.
+
+        // 1. Simulamos la validación que SÍ consume tu servicio
+        when(usuarioActivoRepository.findByActivos_Id(id)).thenReturn(Optional.empty());
+
+        // Act
         service.deleteById(id);
+
+        // Assert
         verify(activoRepository).deleteById(id);
     }
 

@@ -1,6 +1,7 @@
 package com.llosa.backend.proyecto.service.impl;
 
 import com.llosa.backend.documentos.dto.DocumentoResponse;
+import com.llosa.backend.documentos.enums.TipoDocumento;
 import com.llosa.backend.documentos.service.DocumentoService;
 import com.llosa.backend.proyecto.dto.request.ReporteCreateRequest;
 import com.llosa.backend.proyecto.dto.request.ReporteUpdateRequest;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -38,7 +40,7 @@ public class ReporteServiceImpl implements ReporteService {
 
     @Override
     @Transactional
-    public ReporteResponse crear(ReporteCreateRequest request) {
+    public ReporteResponse crear(ReporteCreateRequest request, List<MultipartFile> archivos, Integer usuarioId) {
         Proyecto proyecto = proyectoRepository.findById(request.uuidProyecto())
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Proyecto no encontrado: " + request.uuidProyecto()));
@@ -54,7 +56,24 @@ public class ReporteServiceImpl implements ReporteService {
                         : new ArrayList<>())
                 .build();
 
-        return ReporteResponse.fromEntity(reporteRepository.save(reporte));
+        Reporte guardado = reporteRepository.save(reporte);
+
+        // ── SUBIDA DE MULTIMEDIA A GCS ──
+        if (archivos != null && !archivos.isEmpty()) {
+            for (MultipartFile archivo : archivos) {
+                documentoService.subirDocumentoPolimorfico(
+                        archivo,
+                        TipoDocumento.FOTO_OBRA, // Usa el Enum válido que tengas configurado
+                        guardado.getId().toString(),
+                        "REPORTE",
+                        usuarioId
+                );
+            }
+        }
+
+        // Retornamos el reporte junto con sus imágenes firmadas
+        List<DocumentoResponse> multimedia = documentoService.obtenerPorReferencia("REPORTE", guardado.getId().toString());
+        return ReporteResponse.fromEntity(guardado, multimedia);
     }
 
     @Override
@@ -98,8 +117,9 @@ public class ReporteServiceImpl implements ReporteService {
         if (request.hitosConsolidados() != null) {
             reporte.getHitosConsolidados().addAll(request.hitosConsolidados());
         }
-
-        return ReporteResponse.fromEntity(reporteRepository.save(reporte));
+        Reporte actualizado = reporteRepository.save(reporte);
+        List<DocumentoResponse> multimedia = documentoService.obtenerPorReferencia("REPORTE", actualizado.getId().toString());
+        return ReporteResponse.fromEntity(actualizado, multimedia);
     }
 
     @Override
@@ -108,6 +128,7 @@ public class ReporteServiceImpl implements ReporteService {
         if (!reporteRepository.existsById(id)) {
             throw new EntityNotFoundException("Reporte no encontrado: " + id);
         }
+        documentoService.eliminarDocumentosPorReferencia("REPORTE", id.toString());
         reporteRepository.deleteById(id);
     }
 

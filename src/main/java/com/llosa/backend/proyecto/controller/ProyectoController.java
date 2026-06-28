@@ -13,6 +13,9 @@ import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.service.HitoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -85,13 +88,16 @@ public class ProyectoController {
      */
     @PreAuthorize("hasAuthority('PROY_VER')")
     @GetMapping
-    public ResponseEntity<List<ProyectoResponseDTO>> findAll(@RequestParam(required = false) String search) {
-        List<ProyectoResponseDTO> response = proyectoService.findAll(search)
-                .stream()
-                .map(ProyectoResponseDTO::fromEntity)
-                .toList();
+    public ResponseEntity<Page<ProyectoResponseDTO>> findAll(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 10, sort = "id") Pageable pageable) {
+
+        Page<ProyectoResponseDTO> response = proyectoService.findAll(search, pageable)
+                .map(ProyectoResponseDTO::fromEntity); // Page ya maneja el mapeo internamente de forma perezosa
+
         return ResponseEntity.ok(response);
     }
+
 
     /*
     Endpoint para crear hito con el uuid del proyecto

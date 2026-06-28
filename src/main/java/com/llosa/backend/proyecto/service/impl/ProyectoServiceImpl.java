@@ -9,6 +9,8 @@ import com.llosa.backend.proyecto.repository.ProyectoRepository;
 import com.llosa.backend.proyecto.service.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,9 @@ public class ProyectoServiceImpl implements ProyectoService {
     public Proyecto save(Proyecto proyecto) {
         boolean esNuevoProyecto = proyecto.getId() == null;
         if (esNuevoProyecto) {
+            if (proyectoRepository.existsByNombre(proyecto.getNombre())) {
+                throw new IllegalArgumentException("No se pueden crear proyectos duplicados en el sistema.");
+            }
             List<Hito> hitosPorDefecto = flujoConstruccionFactory.generarHitosPorDefecto();
             hitosPorDefecto.forEach(hito -> hito.setProyecto(proyecto));
             proyecto.setHitos(hitosPorDefecto);
@@ -47,11 +52,13 @@ public class ProyectoServiceImpl implements ProyectoService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Proyecto> findAll(String search) {
-        if (search == null || search.isBlank()) {
-            return proyectoRepository.findAll();
+    public Page<Proyecto> findAll(String search, Pageable pageable) {
+        if (search != null && !search.isBlank()) {
+            return proyectoRepository.findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase(
+                    search, search, pageable
+            );
         }
-        return proyectoRepository.findByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCase(search, search);
+        return proyectoRepository.findAll(pageable);
     }
 
     @Override

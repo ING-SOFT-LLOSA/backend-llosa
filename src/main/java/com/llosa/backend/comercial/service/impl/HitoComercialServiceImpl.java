@@ -10,6 +10,7 @@ import com.llosa.backend.comercial.enums.EstadoHitoComercial;
 import com.llosa.backend.comercial.repository.EtapaExpedienteRepository;
 import com.llosa.backend.comercial.repository.HitoProcesoCompraRepository;
 import com.llosa.backend.comercial.service.HitoComercialService;
+import com.llosa.backend.exception.BusinessException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.pagos.entity.CronogramaPago;
 import com.llosa.backend.pagos.repository.CronogramaPagoRepository;
@@ -99,7 +100,7 @@ public class HitoComercialServiceImpl implements HitoComercialService {
                                 ));
 
                 if (hitoAnterior.getEstado() != EstadoHitoComercial.COMPLETADO) {
-                    throw new IllegalStateException(
+                    throw new BusinessException(
                             "Debe completar primero el hito anterior: "
                                     + hitoAnterior.getNombreHito()
                     );
