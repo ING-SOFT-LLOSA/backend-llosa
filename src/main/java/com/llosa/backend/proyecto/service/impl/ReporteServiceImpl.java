@@ -118,7 +118,7 @@ public class ReporteServiceImpl implements ReporteService {
             reporte.getHitosConsolidados().addAll(request.hitosConsolidados());
         }
         Reporte actualizado = reporteRepository.save(reporte);
-        List<DocumentoResponse> multimedia = documentoService.obtenerPorReferencia("REPORTE", actualizado.getId().toString());
+        List<DocumentoResponse> multimedia = documentoService.obtenerPorReferencia(ENTIDAD_REPORTE, actualizado.getId().toString());
         return ReporteResponse.fromEntity(actualizado, multimedia);
     }
 
@@ -128,7 +128,7 @@ public class ReporteServiceImpl implements ReporteService {
         if (!reporteRepository.existsById(id)) {
             throw new EntityNotFoundException("Reporte no encontrado: " + id);
         }
-        documentoService.eliminarDocumentosPorReferencia("REPORTE", id.toString());
+        documentoService.eliminarDocumentosPorReferencia(ENTIDAD_REPORTE, id.toString());
         reporteRepository.deleteById(id);
     }
 
