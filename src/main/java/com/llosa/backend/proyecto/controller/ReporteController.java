@@ -6,6 +6,8 @@ import com.llosa.backend.proyecto.dto.response.ReporteResponse;
 import com.llosa.backend.proyecto.entity.Activo;
 import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.ReporteService;
+import com.llosa.backend.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +30,8 @@ public class ReporteController {
 
     private final ReporteService reporteService;
     private final ActivoService activoService;
+    private final UsuarioService usuarioService;
+
 
     /**
      * Crea un nuevo reporte de avance de obra.
@@ -39,7 +43,10 @@ public class ReporteController {
             @RequestPart(value = "archivos", required = false) List<MultipartFile> archivos,
             Authentication authentication // Para sacar el ID del usuario
     ) {
-        Integer usuarioId = (Integer) authentication.getPrincipal();
+        // 1. Obtenemos el UID de Firebase (String)
+        String firebaseUid = (String) authentication.getPrincipal();
+        Usuario usuario = usuarioService.findByFirebaseUuid(firebaseUid);
+        Integer usuarioId = usuario.getId();
         ReporteResponse response = reporteService.crear(request, archivos, usuarioId);
         return ResponseEntity.ok(response);
     }
