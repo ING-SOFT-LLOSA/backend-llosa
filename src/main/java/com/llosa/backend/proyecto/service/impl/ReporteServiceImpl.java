@@ -56,7 +56,7 @@ public class ReporteServiceImpl implements ReporteService {
                         : new ArrayList<>())
                 .build();
 
-        Reporte guardado = reporteRepository.save(reporte);
+        Reporte guardado = reporteRepository.saveAndFlush(reporte);
 
         // ── SUBIDA DE MULTIMEDIA A GCS ──
         if (archivos != null && !archivos.isEmpty()) {
