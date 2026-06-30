@@ -130,12 +130,13 @@ public class UsuarioService {
         UserRecord userRecord;
         try {
             userRecord = FirebaseAuth.getInstance().createUser(firebaseRequest);
-        } catch (FirebaseAuthException e) {
-            // Rollback manual: Firebase falló, así que eliminamos el registro
-            // que ya habíamos guardado en Postgres para no dejar un usuario
-            // fantasma sin identidad de autenticación.
+         } catch (FirebaseAuthException e) {
             usuarioRepository.delete(usuario);
-            throw new BusinessException("Error al crear usuario en Firebase: " + e.getMessage());
+            // FIX 0000815: antes se propagaba el código crudo de la API de
+            // Firebase (p.ej. "EMAIL_EXISTS") directo en el mensaje de error,
+            // en inglés y nada amigable. Lo traducimos a un mensaje en
+            // español comprensible para quien usa el sistema.
+            throw new BusinessException(mensajeAmigableErrorFirebase(e));
         }
 
         // 4. Reemplazar el placeholder con el UID real de Firebase
@@ -349,5 +350,31 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
 
         return toResponse(usuario);
+    }
+
+    /**
+     * FIX 0000815: traduce los códigos de error crudos que devuelve la API de
+     * Firebase Auth (en inglés, pensados para debugging, no para usuarios) a
+     * mensajes en español comprensibles. Usamos AuthErrorCode cuando está
+     * disponible (más confiable) y, como respaldo, inspeccionamos el mensaje
+     * crudo por si el SDK no llegó a mapearlo a un AuthErrorCode conocido.
+     */
+    private String mensajeAmigableErrorFirebase(FirebaseAuthException e) {
+        String codigo = e.getAuthErrorCode() != null ? e.getAuthErrorCode().name() : "";
+        String mensajeCrudo = e.getMessage() != null ? e.getMessage() : "";
+
+        if (codigo.equals("EMAIL_ALREADY_EXISTS") || mensajeCrudo.contains("EMAIL_EXISTS")) {
+            return "Ya existe una cuenta de autenticación asociada a este correo electrónico. " +
+                    "Verifica el correo ingresado o contacta a soporte si el problema persiste.";
+        }
+        if (codigo.equals("INVALID_EMAIL") || mensajeCrudo.contains("INVALID_EMAIL")) {
+            return "El correo electrónico ingresado no es válido.";
+        }
+        if (codigo.equals("PHONE_NUMBER_ALREADY_EXISTS") || mensajeCrudo.contains("PHONE_NUMBER_EXISTS")) {
+            return "Ya existe una cuenta asociada a este número de teléfono.";
+        }
+
+        log.error("Error no mapeado al crear usuario en Firebase: {}", mensajeCrudo);
+        return "No se pudo crear la cuenta del usuario. Por favor intenta nuevamente más tarde.";
     }
 }
