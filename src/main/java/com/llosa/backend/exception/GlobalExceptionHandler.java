@@ -1,11 +1,12 @@
 package com.llosa.backend.exception;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.Map;
 
@@ -20,10 +21,43 @@ public class GlobalExceptionHandler {
         return Map.of(ERROR, ex.getMessage());
     }
 
+    // FIX 0000850: cuando el archivo supera el límite configurado en
+    // application.properties, el contenedor/servlet aborta la subida antes de
+    // completarla. Sin este handler, el error llegaba como un 500 genérico.
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
+        return Map.of(ERROR, "El archivo enviado supera el tamaño máximo permitido por el servidor.");
+    }
+
     @ExceptionHandler(EmailDuplicadoException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public Map<String, String> handleEmailDuplicado(EmailDuplicadoException ex) {
         return Map.of(ERROR, ex.getMessage());
+    }
+
+    // FIX 0000799: devuelve 409 con mensaje legible cuando se intenta registrar
+    // o actualizar un usuario con un documento de identidad ya existente.
+    @ExceptionHandler(DocumentoIdentidadDuplicadoException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> handleDocumentoIdentidadDuplicado(DocumentoIdentidadDuplicadoException ex) {
+        return Map.of(ERROR, ex.getMessage());
+    }
+
+    // FIX 0000799: red de seguridad para violaciones de constraint de BD que
+    // escapen al chequeo explícito previo (p.ej. condición de carrera entre
+    // dos peticiones concurrentes). Evita que lleguen al cliente como HTTP 500.
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        String causa = ex.getMostSpecificCause().getMessage();
+        if (causa != null && causa.contains("documento_identidad")) {
+            return Map.of(ERROR, "Ya existe un usuario registrado con ese documento de identidad.");
+        }
+        if (causa != null && causa.contains("email")) {
+            return Map.of(ERROR, "Ya existe un usuario registrado con ese correo electrónico.");
+        }
+        return Map.of(ERROR, "No se pudo completar la operación por un conflicto de datos únicos.");
     }
 
     @ExceptionHandler(RecursoNoEncontradoException.class)

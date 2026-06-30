@@ -18,6 +18,12 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     Optional<Usuario> findByEmail(String email);
     boolean existsByEmail(String email);
 
+    // FIX 0000799: verificar documento de identidad duplicado antes de persistir,
+    // tanto en creación como en edición (la variante "AndIdNot" excluye al propio
+    // usuario para no bloquearlo cuando actualiza otros campos sin cambiar el DNI).
+    boolean existsByDocumentoIdentidad(String documentoIdentidad);
+    boolean existsByDocumentoIdentidadAndIdNot(String documentoIdentidad, Integer id);
+
     @Query("SELECT u FROM Usuario u WHERE " +
             "LOWER(u.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(u.apellidos) LIKE LOWER(CONCAT('%', :search, '%')) OR " +

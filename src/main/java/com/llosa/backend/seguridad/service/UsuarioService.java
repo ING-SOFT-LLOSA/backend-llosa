@@ -13,6 +13,7 @@ import com.llosa.backend.seguridad.repository.RolRepository;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.exception.AccesoDenegadoException;
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.exception.DocumentoIdentidadDuplicadoException;
 import com.llosa.backend.exception.EmailDuplicadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.seguridad.dto.UsuarioResponseFunciones;
@@ -63,6 +64,16 @@ public class UsuarioService {
 
         if (usuarioRepository.existsByEmail(request.getEmail())) {
             throw new EmailDuplicadoException(request.getEmail());
+        }
+
+        // FIX 0000799: verificar documento de identidad duplicado de forma
+        // explícita antes de llegar a la BD, para devolver un mensaje claro
+        // (409 Conflict) en lugar de dejar que PostgreSQL lance una excepción
+        // de constraint violation que se propagaba como HTTP 500.
+        if (request.getDocumentoIdentidad() != null
+                && !request.getDocumentoIdentidad().isBlank()
+                && usuarioRepository.existsByDocumentoIdentidad(request.getDocumentoIdentidad())) {
+            throw new DocumentoIdentidadDuplicadoException(request.getDocumentoIdentidad());
         }
 
         // Validación de dominio corporativo para empleados (issue 0000116)
@@ -299,6 +310,15 @@ public class UsuarioService {
             usuario.setEmail(request.getEmail());
         }
         if (request.getDocumentoIdentidad() != null) {
+            // FIX 0000799: al editar, verificamos que el nuevo documentoIdentidad
+            // no esté ya en uso por OTRO usuario (excluimos al propio usuario con
+            // "AndIdNot" para no bloquearlo cuando actualiza otros campos sin
+            // cambiar su propio documento de identidad).
+            if (!request.getDocumentoIdentidad().isBlank()
+                    && usuarioRepository.existsByDocumentoIdentidadAndIdNot(
+                    request.getDocumentoIdentidad(), id)) {
+                throw new DocumentoIdentidadDuplicadoException(request.getDocumentoIdentidad());
+            }
             usuario.setDocumentoIdentidad(request.getDocumentoIdentidad());
         }
         if (request.getTipoUsuario() != null) {

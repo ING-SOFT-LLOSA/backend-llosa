@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -135,6 +136,13 @@ public class DocumentoService {
             SubirDocumentoRequest request,
             Integer subidoPor
     ) {
+        // FIX 0000850: validamos el archivo (extensión, mime, tamaño) ANTES de
+        // resolver la entidad. La resolución de entidad implica hasta 9 consultas
+        // secuenciales a la base de datos; si el archivo es inválido no tiene
+        // sentido pagar ese costo. Esto permite responder con el error de forma
+        // inmediata en lugar de "intentar la carga" antes de fallar.
+        validarArchivo(file, request.tipoDocumento());
+
         String entidad = entidadResolver.resolverEntidad(idReferencia);
 
         // CORRECCIÓN: Llamamos a la versión limpia sin parámetros fantasma
@@ -283,6 +291,17 @@ public class DocumentoService {
 
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
+    // FIX 0000850: tabla de extensiones válidas por cada mime permitido. Se usa
+    // para poder rechazar un archivo por su extensión usando solo el nombre del
+    // archivo (sin leer ni transferir su contenido), de forma instantánea.
+    private static final Map<String, List<String>> EXTENSIONES_POR_MIME = Map.of(
+            "application/pdf", List.of("pdf"),
+            "image/jpeg", List.of("jpg", "jpeg"),
+            "image/png", List.of("png"),
+            "image/tiff", List.of("tif", "tiff"),
+            "video/mp4", List.of("mp4")
+    );
+
     private void validarArchivo(MultipartFile file, TipoDocumento tipo) {
         if (file.isEmpty()) throw new BusinessException("El archivo no puede estar vacío.");
 
@@ -290,6 +309,21 @@ public class DocumentoService {
                 .orElseThrow(() -> new BusinessException("Tipo de documento no configurado: " + tipo));
 
         List<String> mimesPermitidos = Arrays.asList(config.getMimePermitidos().split(","));
+
+        // FIX 0000850: validamos primero la EXTENSIÓN del archivo. Es la
+        // comprobación más barata posible (solo mira el nombre del archivo) y
+        // permite devolver el error de inmediato, sin esperar a que termine de
+        // "cargarse" el archivo ni de tocar la base de datos o GCS.
+        List<String> extensionesPermitidas = mimesPermitidos.stream()
+                .flatMap(mime -> EXTENSIONES_POR_MIME.getOrDefault(mime.trim(), List.of()).stream())
+                .toList();
+
+        String extension = obtenerExtension(file.getOriginalFilename());
+        if (!extensionesPermitidas.contains(extension)) {
+            throw new BusinessException("Extensión de archivo no permitida: ." + extension +
+                    ". Extensiones permitidas: " + String.join(", ", extensionesPermitidas));
+        }
+
         if (!mimesPermitidos.contains(file.getContentType())) {
             throw new BusinessException("Tipo de archivo no permitido para " + tipo +
                     ". Permitidos: " + config.getMimePermitidos());
