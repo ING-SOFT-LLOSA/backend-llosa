@@ -13,6 +13,7 @@ import com.llosa.backend.seguridad.repository.RolRepository;
 import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.exception.AccesoDenegadoException;
 import com.llosa.backend.exception.BusinessException;
+import com.llosa.backend.exception.DocumentoIdentidadDuplicadoException;
 import com.llosa.backend.exception.EmailDuplicadoException;
 import com.llosa.backend.exception.RecursoNoEncontradoException;
 import com.llosa.backend.seguridad.dto.UsuarioResponseFunciones;
@@ -63,6 +64,16 @@ public class UsuarioService {
 
         if (usuarioRepository.existsByEmail(request.getEmail())) {
             throw new EmailDuplicadoException(request.getEmail());
+        }
+
+        // FIX 0000799: verificar documento de identidad duplicado de forma
+        // explícita antes de llegar a la BD, para devolver un mensaje claro
+        // (409 Conflict) en lugar de dejar que PostgreSQL lance una excepción
+        // de constraint violation que se propagaba como HTTP 500.
+        if (request.getDocumentoIdentidad() != null
+                && !request.getDocumentoIdentidad().isBlank()
+                && usuarioRepository.existsByDocumentoIdentidad(request.getDocumentoIdentidad())) {
+            throw new DocumentoIdentidadDuplicadoException(request.getDocumentoIdentidad());
         }
 
         // Validación de dominio corporativo para empleados (issue 0000116)
@@ -119,12 +130,13 @@ public class UsuarioService {
         UserRecord userRecord;
         try {
             userRecord = FirebaseAuth.getInstance().createUser(firebaseRequest);
-        } catch (FirebaseAuthException e) {
-            // Rollback manual: Firebase falló, así que eliminamos el registro
-            // que ya habíamos guardado en Postgres para no dejar un usuario
-            // fantasma sin identidad de autenticación.
+         } catch (FirebaseAuthException e) {
             usuarioRepository.delete(usuario);
-            throw new BusinessException("Error al crear usuario en Firebase: " + e.getMessage());
+            // FIX 0000815: antes se propagaba el código crudo de la API de
+            // Firebase (p.ej. "EMAIL_EXISTS") directo en el mensaje de error,
+            // en inglés y nada amigable. Lo traducimos a un mensaje en
+            // español comprensible para quien usa el sistema.
+            throw new BusinessException(mensajeAmigableErrorFirebase(e));
         }
 
         // 4. Reemplazar el placeholder con el UID real de Firebase
@@ -299,6 +311,15 @@ public class UsuarioService {
             usuario.setEmail(request.getEmail());
         }
         if (request.getDocumentoIdentidad() != null) {
+            // FIX 0000799: al editar, verificamos que el nuevo documentoIdentidad
+            // no esté ya en uso por OTRO usuario (excluimos al propio usuario con
+            // "AndIdNot" para no bloquearlo cuando actualiza otros campos sin
+            // cambiar su propio documento de identidad).
+            if (!request.getDocumentoIdentidad().isBlank()
+                    && usuarioRepository.existsByDocumentoIdentidadAndIdNot(
+                    request.getDocumentoIdentidad(), id)) {
+                throw new DocumentoIdentidadDuplicadoException(request.getDocumentoIdentidad());
+            }
             usuario.setDocumentoIdentidad(request.getDocumentoIdentidad());
         }
         if (request.getTipoUsuario() != null) {
@@ -329,5 +350,31 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
 
         return toResponse(usuario);
+    }
+
+    /**
+     * FIX 0000815: traduce los códigos de error crudos que devuelve la API de
+     * Firebase Auth (en inglés, pensados para debugging, no para usuarios) a
+     * mensajes en español comprensibles. Usamos AuthErrorCode cuando está
+     * disponible (más confiable) y, como respaldo, inspeccionamos el mensaje
+     * crudo por si el SDK no llegó a mapearlo a un AuthErrorCode conocido.
+     */
+    private String mensajeAmigableErrorFirebase(FirebaseAuthException e) {
+        String codigo = e.getAuthErrorCode() != null ? e.getAuthErrorCode().name() : "";
+        String mensajeCrudo = e.getMessage() != null ? e.getMessage() : "";
+
+        if (codigo.equals("EMAIL_ALREADY_EXISTS") || mensajeCrudo.contains("EMAIL_EXISTS")) {
+            return "Ya existe una cuenta de autenticación asociada a este correo electrónico. " +
+                    "Verifica el correo ingresado o contacta a soporte si el problema persiste.";
+        }
+        if (codigo.equals("INVALID_EMAIL") || mensajeCrudo.contains("INVALID_EMAIL")) {
+            return "El correo electrónico ingresado no es válido.";
+        }
+        if (codigo.equals("PHONE_NUMBER_ALREADY_EXISTS") || mensajeCrudo.contains("PHONE_NUMBER_EXISTS")) {
+            return "Ya existe una cuenta asociada a este número de teléfono.";
+        }
+
+        log.error("Error no mapeado al crear usuario en Firebase: {}", mensajeCrudo);
+        return "No se pudo crear la cuenta del usuario. Por favor intenta nuevamente más tarde.";
     }
 }

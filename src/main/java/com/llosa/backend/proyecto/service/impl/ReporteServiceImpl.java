@@ -56,14 +56,26 @@ public class ReporteServiceImpl implements ReporteService {
                         : new ArrayList<>())
                 .build();
 
-        Reporte guardado = reporteRepository.save(reporte);
+        Reporte guardado = reporteRepository.saveAndFlush(reporte);
 
         // ── SUBIDA DE MULTIMEDIA A GCS ──
         if (archivos != null && !archivos.isEmpty()) {
             for (MultipartFile archivo : archivos) {
+
+                // 1. Detectamos qué tipo de archivo es
+                String contentType = archivo.getContentType();
+                TipoDocumento tipoAsignado = TipoDocumento.FOTO_OBRA; // Por defecto
+
+                if (contentType != null) {
+                    if (contentType.startsWith("video/")) {
+                        tipoAsignado = TipoDocumento.VIDEO_OBRA; // Asegúrate de tener este Enum
+                    } else if (contentType.equals("application/pdf")) {
+                        tipoAsignado = TipoDocumento.PDF_LEGAL; // Asegúrate de tener este Enum
+                    }
+                }
                 documentoService.subirDocumentoPolimorfico(
                         archivo,
-                        TipoDocumento.FOTO_OBRA, // Usa el Enum válido que tengas configurado
+                        tipoAsignado,
                         guardado.getId().toString(),
                         ENTIDAD_REPORTE,
                         usuarioId

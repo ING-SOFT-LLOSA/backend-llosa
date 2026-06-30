@@ -59,7 +59,7 @@ public class Pago {
     private Integer actualizadoPor;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "concepto", nullable = false, length = 20)
+    @Column(name = "concepto", nullable = false, length = 30)
     private ConceptoPago concepto;
 
     @Column(columnDefinition = "TEXT")
