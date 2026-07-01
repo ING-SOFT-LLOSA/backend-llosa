@@ -241,7 +241,7 @@ class PagosIntegrationTest {
                 "test-uid", "test@test.com",
                 List.of(
                         new SimpleGrantedAuthority("CONTRATO_EDITAR"),
-                        new SimpleGrantedAuthority("CONTRATO_VER"),
+                        new SimpleGrantedAuthority("PAGOS_VER"),
                         new SimpleGrantedAuthority("PAGO_EDITAR"),
                         new SimpleGrantedAuthority("PAGO_VER")
                 )));

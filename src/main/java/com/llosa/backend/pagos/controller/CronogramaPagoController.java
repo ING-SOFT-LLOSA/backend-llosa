@@ -28,7 +28,7 @@ public class CronogramaPagoController {
     }
 
     @GetMapping("/{uuidUsuarioActivo}")
-    @PreAuthorize("hasAuthority('CONTRATO_VER')")
+    @PreAuthorize("hasAuthority('PAGOS_VER')")
     public ResponseEntity<CronogramaPagoResponse> obtenerPorExpediente(@PathVariable UUID uuidUsuarioActivo) {
         return ResponseEntity.ok(cronogramaPagoService.obtenerPorUsuarioActivo(uuidUsuarioActivo));
     }
@@ -49,13 +49,13 @@ public class CronogramaPagoController {
     }
 
     @GetMapping("/{uuidCronograma}/resumen")
-    @PreAuthorize("hasAuthority('CONTRATO_VER')")
+    @PreAuthorize("hasAuthority('PAGOS_VER')")
     public ResponseEntity<ResumenResponse> obtenerResumen(@PathVariable UUID uuidCronograma) {
         return ResponseEntity.ok(cronogramaPagoService.obtenerResumen(uuidCronograma));
     }
 
     @GetMapping("/{uuidCronograma}/resumen/credito-hipo")
-    @PreAuthorize("hasAuthority('CONTRATO_VER')")
+    @PreAuthorize("hasAuthority('PAGOS_VER')")
     public ResponseEntity<ResumenResponseHipotecarioDTO> obtenerResumenHitpotecario(@PathVariable UUID uuidCronograma) {
         return ResponseEntity.ok(cronogramaPagoService.obtenerResumenHipotecario(uuidCronograma));
     }
