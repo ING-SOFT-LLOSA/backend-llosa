@@ -10,6 +10,8 @@ import com.llosa.backend.proyecto.enums.EstadoHito;
 import com.llosa.backend.proyecto.repository.HitoRepository;
 import com.llosa.backend.proyecto.repository.ProyectoRepository;
 import com.llosa.backend.proyecto.repository.ReporteRepository;
+import com.llosa.backend.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.repository.UsuarioRepository;
 import com.llosa.backend.seguridad.security.FirebaseAuthenticationToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -21,6 +23,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,6 +34,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -63,18 +67,36 @@ class ReporteFlowE2ETest {
     @Autowired ProyectoRepository proyectoRepository;
     @Autowired HitoRepository hitoRepository;
     @Autowired ReporteRepository reporteRepository;
+    @Autowired
+    UsuarioRepository usuarioRepository;
 
     private Proyecto proyecto;
+    private final String FIREBASE_UID_TEST = "firebase-test-uid-123";
 
     @BeforeEach
     void setup() {
         reporteRepository.deleteAll();
         hitoRepository.deleteAll();
         proyectoRepository.deleteAll();
+        usuarioRepository.deleteAll(); // Limpieza previa
 
+        // 1. CREAMOS EL USUARIO CON SUS CAMPOS OBLIGATORIOS
+        Usuario usuarioReal = new Usuario();
+        usuarioReal.setFirebaseUuid(FIREBASE_UID_TEST);
+        usuarioReal.setNombre("Usuario Test");
+        usuarioReal.setApellidos("Apellido Test");
+        usuarioReal.setEmail("test@llosa.com");
+        usuarioReal.setActivo(true);
+        usuarioReal.setCreatedAt(LocalDateTime.now());
+
+        usuarioReal.setTipoUsuario("ADMIN");
+
+        usuarioRepository.save(usuarioReal);
+
+        // 2. Guardamos el proyecto e hitos
         proyecto = proyectoRepository.save(
                 Proyecto.builder().nombre("Proy Reporte " + UUID.randomUUID()).build());
-        // Dos hitos: uno completado, uno pendiente => avance 50%.
+
         hitoRepository.save(Hito.builder().orden(1).titulo("Cimentacion")
                 .estado(EstadoHito.COMPLETADO).proyecto(proyecto).build());
         hitoRepository.save(Hito.builder().orden(2).titulo("Acabados")
@@ -83,10 +105,15 @@ class ReporteFlowE2ETest {
 
     @Test
     void reporte_flujoCompletoCrud() throws Exception {
-        // Generamos un token artificial limpio donde el principal es un Integer (1)
-        // Extraemos los roles/authorities de tu método auth() original para no perder los permisos
-        var authCorrecta = new TestingAuthenticationToken(1, null, auth().getAuthorities());
-        authCorrecta.setAuthenticated(true);
+        // 👈 2. LE ASIGNAMOS EL PERMISO EXACTO QUE PIDE TU CONTROLADOR
+        var authCorrecta = new UsernamePasswordAuthenticationToken(
+                FIREBASE_UID_TEST,
+                null,
+                List.of(
+                        new SimpleGrantedAuthority("CONTRATO_EDITAR"),
+                        new SimpleGrantedAuthority("CONTRATO_VER")   // ← add this
+                )
+        );
         var contextoCorrecto = new SecurityContextImpl(authCorrecta);
 
         // ─── 1. CREAR ──────────────────────────────────────────────────────────
@@ -107,11 +134,10 @@ class ReporteFlowE2ETest {
                 crearJson.getBytes()
         );
 
-        // Ejecutamos usando el mé estándar .with(authentication(...))
         String creado = mockMvc.perform(multipart("/api/reportes")
                         .file(reportePart)
-                        .with(authentication(authCorrecta)) // <-- ¡Úsalo así en todos los pasos del CRUD!
-                        .with(csrf()))
+                        .with(authentication(authCorrecta))
+                        .with(csrf().asHeader()))
                 .andExpect(status().is2xxSuccessful())
                 .andExpect(jsonPath("$.tituloPeriodo").value("Avance Enero 2026"))
                 .andReturn().getResponse().getContentAsString();
@@ -141,7 +167,7 @@ class ReporteFlowE2ETest {
         """;
         mockMvc.perform(put("/api/reportes/{id}", reporteId)
                         .with(securityContext(contextoCorrecto))
-                        .with(csrf())
+                        .with(csrf().asHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateJson))
                 .andExpect(status().isOk())
@@ -150,14 +176,13 @@ class ReporteFlowE2ETest {
         // ─── 5. ELIMINAR ────────────────────────────────────────────────────────
         mockMvc.perform(delete("/api/reportes/{id}", reporteId)
                         .with(securityContext(contextoCorrecto))
-                        .with(csrf()))
+                        .with(csrf().asHeader()))
                 .andExpect(status().is2xxSuccessful());
 
         // ─── 6. OBTENER ELIMINADO ───────────────────────────────────────────────
         assertOperacionFalla(() -> mockMvc.perform(get("/api/reportes/{id}", reporteId)
                 .with(securityContext(contextoCorrecto))));
     }
-
     @Test
     void reporte_crearConProyectoInexistente_devuelveError() {
         String crearJson = """

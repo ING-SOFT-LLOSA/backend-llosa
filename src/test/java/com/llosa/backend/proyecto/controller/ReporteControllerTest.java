@@ -14,6 +14,8 @@ import com.llosa.backend.proyecto.entity.Proyecto;
 import com.llosa.backend.proyecto.entity.Torre;
 import com.llosa.backend.proyecto.service.ActivoService;
 import com.llosa.backend.proyecto.service.ReporteService;
+import com.llosa.backend.seguridad.entity.Usuario;
+import com.llosa.backend.seguridad.service.UsuarioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -31,6 +33,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -51,6 +54,8 @@ class ReporteControllerTest {
     @MockitoBean ActivoService activoService;
     @MockitoBean FirebaseConfig firebaseConfig;
     @MockitoBean com.llosa.backend.seguridad.repository.UsuarioRepository usuarioRepository;
+
+    @MockitoBean UsuarioService usuarioService;
 
     private Piso buildPiso() {
         var proyecto = Proyecto.builder().id(UUID.randomUUID()).nombre("Test Proyecto").build();
@@ -75,7 +80,9 @@ class ReporteControllerTest {
         var response = new ReporteResponse(UUID.randomUUID(), proyectoId, "Test", "Enero 2026",
                 BigDecimal.ZERO, "Desc", List.of("Hito1"), LocalDateTime.now(), List.of());
 
-        // CORRECCIÓN: Usamos any() para la lista de archivos (tolera nulls) y para el Integer
+        Usuario usuarioFalso = new Usuario();
+        usuarioFalso.setId(1);
+        when(usuarioService.findByFirebaseUuid("firebase-test-uid")).thenReturn(usuarioFalso);
         when(reporteService.crear(any(ReporteCreateRequest.class), any(), any()))
                 .thenReturn(response);
 
@@ -86,7 +93,8 @@ class ReporteControllerTest {
                 objectMapper.writeValueAsBytes(req)
         );
 
-        var authCustom = new TestingAuthenticationToken(1, null, TestData.proyectoAuthToken().getAuthorities());
+        // 2. CAMBIO CLAVE: Pasamos un String como Principal, no un Integer
+        var authCustom = new TestingAuthenticationToken("firebase-test-uid", null, TestData.proyectoAuthToken().getAuthorities());
         authCustom.setAuthenticated(true);
 
         mockMvc.perform(multipart("/api/reportes")
@@ -96,6 +104,7 @@ class ReporteControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tituloPeriodo").value("Enero 2026"));
     }
+    
     @Test
     void crear_sinTitulo_devuelve400() throws Exception {
         // 1. Creamos el request con el título inválido/vacío

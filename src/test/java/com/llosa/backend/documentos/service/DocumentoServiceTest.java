@@ -158,7 +158,7 @@ class DocumentoServiceTest {
 
         when(entidadResolver.resolverEntidad(uuid)).thenReturn("PROYECTO");
         when(file.isEmpty()).thenReturn(false);
-        when(file.getOriginalFilename()).thenReturn("doc"); // Sin extension
+        when(file.getOriginalFilename()).thenReturn("doc.pdf");
         when(file.getContentType()).thenReturn("application/pdf");
         when(file.getSize()).thenReturn(1024L);
         when(tipoDocumentoConfigRepository.findById(TipoDocumento.PDF_LEGAL)).thenReturn(Optional.of(config));
@@ -175,7 +175,6 @@ class DocumentoServiceTest {
         var file = mock(MultipartFile.class);
         var request = new SubirDocumentoRequest(TipoDocumento.PDF_LEGAL);
 
-        when(entidadResolver.resolverEntidad(uuid)).thenReturn("PROYECTO");
         when(file.isEmpty()).thenReturn(true);
 
         assertThatThrownBy(() -> documentoService.subirDocumento(uuid, file, request, 1))
@@ -188,7 +187,6 @@ class DocumentoServiceTest {
         var file = mock(MultipartFile.class);
         var request = new SubirDocumentoRequest(TipoDocumento.PDF_LEGAL);
 
-        when(entidadResolver.resolverEntidad(uuid)).thenReturn("PROYECTO");
         when(file.isEmpty()).thenReturn(false);
         when(tipoDocumentoConfigRepository.findById(TipoDocumento.PDF_LEGAL)).thenReturn(Optional.empty());
 
@@ -205,8 +203,9 @@ class DocumentoServiceTest {
         config.setMimePermitidos("image/png,image/jpeg");
         config.setMaxSizeBytes(10_485_760L);
 
-        when(entidadResolver.resolverEntidad(uuid)).thenReturn("PROYECTO");
+        // 👇 SE ELIMINÓ EL STUB DE entidadResolver PORQUE ES INNECESARIO
         when(file.isEmpty()).thenReturn(false);
+        when(file.getOriginalFilename()).thenReturn("foto.png");
         when(file.getContentType()).thenReturn("application/pdf");
         when(tipoDocumentoConfigRepository.findById(TipoDocumento.PDF_LEGAL)).thenReturn(Optional.of(config));
 
@@ -223,8 +222,9 @@ class DocumentoServiceTest {
         config.setMimePermitidos("application/pdf");
         config.setMaxSizeBytes(1024L);
 
-        when(entidadResolver.resolverEntidad(uuid)).thenReturn("PROYECTO");
+        // 👇 SE ELIMINÓ EL STUB DE entidadResolver PORQUE ES INNECESARIO
         when(file.isEmpty()).thenReturn(false);
+        when(file.getOriginalFilename()).thenReturn("documento.pdf");
         when(file.getContentType()).thenReturn("application/pdf");
         when(file.getSize()).thenReturn(2048L);
         when(tipoDocumentoConfigRepository.findById(TipoDocumento.PDF_LEGAL)).thenReturn(Optional.of(config));
