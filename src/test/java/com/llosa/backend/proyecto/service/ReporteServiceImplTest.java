@@ -62,17 +62,17 @@ class ReporteServiceImplTest {
         when(proyectoRepository.findById(proyectoId)).thenReturn(Optional.of(buildProyecto()));
         when(hitoRepository.countByProyectoId(proyectoId)).thenReturn(2L);
         when(hitoRepository.countByProyectoIdAndEstado(proyectoId, EstadoHito.COMPLETADO)).thenReturn(1L);
-        when(reporteRepository.save(any())).thenAnswer(inv -> {
+
+        // 👇 CAMBIO AQUÍ: de save a saveAndFlush
+        when(reporteRepository.saveAndFlush(any())).thenAnswer(inv -> {
             Reporte r = inv.getArgument(0);
             var idField = Reporte.class.getDeclaredField("id");
             idField.setAccessible(true);
             idField.set(r, reporteId);
             return r;
         });
-        // Agregamos el mock de documentoService para que no devuelva NullPointerException
         when(documentoService.obtenerPorReferencia(eq("REPORTE"), anyString())).thenReturn(List.of());
 
-        // Agregamos null para archivos y 1 para el usuarioId
         var result = reporteService.crear(request, null, 1);
 
         assertThat(result.id()).isEqualTo(reporteId);
@@ -95,7 +95,7 @@ class ReporteServiceImplTest {
         var request = new ReporteCreateRequest(proyectoId, "Enero 2026", null, null, null);
         when(proyectoRepository.findById(proyectoId)).thenReturn(Optional.of(buildProyecto()));
         when(hitoRepository.countByProyectoId(proyectoId)).thenReturn(0L);
-        when(reporteRepository.save(any())).thenAnswer(inv -> {
+        when(reporteRepository.saveAndFlush(any())).thenAnswer(inv -> {
             Reporte r = inv.getArgument(0);
             var idField = Reporte.class.getDeclaredField("id");
             idField.setAccessible(true);
@@ -104,7 +104,6 @@ class ReporteServiceImplTest {
         });
         when(documentoService.obtenerPorReferencia(eq("REPORTE"), anyString())).thenReturn(List.of());
 
-        // Agregamos null, 1
         var result = reporteService.crear(request, null, 1);
         assertThat(result.porcentajeAvance()).isEqualByComparingTo(BigDecimal.ZERO);
     }
@@ -115,16 +114,17 @@ class ReporteServiceImplTest {
         when(proyectoRepository.findById(proyectoId)).thenReturn(Optional.of(buildProyecto()));
         when(hitoRepository.countByProyectoId(proyectoId)).thenReturn(1L);
         when(hitoRepository.countByProyectoIdAndEstado(proyectoId, EstadoHito.COMPLETADO)).thenReturn(0L);
-        when(reporteRepository.save(any())).thenAnswer(inv -> {
+
+        // 👇 CAMBIO AQUÍ: de save a saveAndFlush
+        when(reporteRepository.saveAndFlush(any())).thenAnswer(inv -> {
             Reporte r = inv.getArgument(0);
             var idField = Reporte.class.getDeclaredField("id");
             idField.setAccessible(true);
-            idField.set(r, reporteId); // Añadido para evitar nulos en el ID al consultar referencias
+            idField.set(r, reporteId);
             return r;
         });
         when(documentoService.obtenerPorReferencia(eq("REPORTE"), anyString())).thenReturn(List.of());
 
-        // Agregamos null, 1
         var result = reporteService.crear(request, null, 1);
         assertThat(result.hitosConsolidados()).isEmpty();
     }

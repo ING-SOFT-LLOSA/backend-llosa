@@ -36,7 +36,7 @@ public class ReporteController {
     /**
      * Crea un nuevo reporte de avance de obra.
      */
-    @PreAuthorize("hasAuthority('PROY_CREAR')")
+    @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ReporteResponse> crearReporte(
             @RequestPart("reporte") @Valid ReporteCreateRequest request,
@@ -56,7 +56,7 @@ public class ReporteController {
      * Obtiene un reporte por su ID. Incluye la lista de multimedia (fotos/videos)
      * asociados via la tabla polimórfica de Documentos.
      */
-    @PreAuthorize("hasAuthority('PROY_VER')")
+    @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @GetMapping("/{id}")
     public ResponseEntity<ReporteResponse> obtenerPorId(@PathVariable UUID id) {
         return ResponseEntity.ok(reporteService.obtenerPorId(id));
@@ -66,7 +66,7 @@ public class ReporteController {
      * Lista todos los reportes de un proyecto con soporte de paginación.
      * Filtra directamente por uuid_proyecto para mayor velocidad.
      */
-    @PreAuthorize("hasAuthority('PROY_VER')")
+    @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
     @GetMapping("/proyecto/{uuidProyecto}")
     public ResponseEntity<Page<ReporteResponse>> listarPorProyecto(
             @PathVariable UUID uuidProyecto,
@@ -78,7 +78,7 @@ public class ReporteController {
      * Lista todos los reportes de un proyecto con soporte de paginación.
      * Filtra directamente por uuid_proyecto para mayor velocidad.
      */
-    @PreAuthorize("hasAuthority('PROY_VER')")
+    @PreAuthorize("hasAuthority('CONTRATO_VER')")
     @GetMapping("/proyecto/{uuidActivo}/activo")
     public ResponseEntity<Page<ReporteResponse>> listarPorActivoProyecto(
             @PathVariable UUID uuidActivo,
@@ -91,7 +91,7 @@ public class ReporteController {
     /**
      * Actualiza título, avance, descripción, hitos y pisos de un reporte existente.
      */
-    @PreAuthorize("hasAuthority('PROY_EDITAR')")
+    @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
     @PutMapping("/{id}")
     public ResponseEntity<ReporteResponse> actualizar(
             @PathVariable UUID id,
@@ -102,7 +102,7 @@ public class ReporteController {
     /**
      * Elimina un reporte por su ID.
      */
-    @PreAuthorize("hasAuthority('PROY_EDITAR')")
+    @PreAuthorize("hasAuthority('CONTRATO_EDITAR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable UUID id) {
         reporteService.eliminar(id);
