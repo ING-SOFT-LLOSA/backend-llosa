@@ -70,14 +70,16 @@ class AgendaEmpresaControllerTest {
 
     @Test
     void crearCita_autenticado_devuelve201() throws Exception {
+        // 👇 CAMBIO VITAL: Fechas movidas al año 2027 para burlar la validación @Future del DTO
         var json = """
-                {"clienteId":1,"activoId":"%s","tipoEvento":"ENTREGA_LLAVES","titulo":"Titulo","fechaInicio":"2026-07-01T10:00:00","fechaFin":"2026-07-01T11:00:00","permiteReprogramacion":true,"clienteUsaGoogle":false}
-                """.formatted(UUID.randomUUID());
+            {"clienteId":1,"activoId":"%s","tipoEvento":"ENTREGA_LLAVES","titulo":"Titulo","fechaInicio":"2027-07-01T10:00:00","fechaFin":"2027-07-01T11:00:00","permiteReprogramacion":true,"clienteUsaGoogle":false}
+            """.formatted(UUID.randomUUID());
+
         when(agendaService.crearCita(anyString(), any())).thenReturn(mock(CitaResponse.class));
 
         mockMvc.perform(post("/api/agenda/empresa/citas")
                         .with(authentication(agendaToken()))
-                        .with(csrf())
+                        .with(csrf()) // Si falla por seguridad en multipart, recuerda usar .with(csrf().asHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated());
