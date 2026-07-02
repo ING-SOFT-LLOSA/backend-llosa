@@ -43,7 +43,6 @@ public class ReporteController {
             @RequestPart(value = "archivos", required = false) List<MultipartFile> archivos,
             Authentication authentication // Para sacar el ID del usuario
     ) {
-        System.out.println("CANTIDAD DE ARCHIVOS RECIBIDOS: " + (archivos == null ? "LLEGO NULL" : archivos.size()));
         // 1. Obtenemos el UID de Firebase (String)
         String firebaseUid = (String) authentication.getPrincipal();
         Usuario usuario = usuarioService.findByFirebaseUuid(firebaseUid);

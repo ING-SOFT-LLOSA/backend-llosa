@@ -71,7 +71,7 @@ class ReporteFlowE2ETest {
     UsuarioRepository usuarioRepository;
 
     private Proyecto proyecto;
-    private final String FIREBASE_UID_TEST = "firebase-test-uid-123";
+    private final String firebaseUuidTest = "firebase-test-uid-123";
 
     @BeforeEach
     void setup() {
@@ -82,7 +82,7 @@ class ReporteFlowE2ETest {
 
         // 1. CREAMOS EL USUARIO CON SUS CAMPOS OBLIGATORIOS
         Usuario usuarioReal = new Usuario();
-        usuarioReal.setFirebaseUuid(FIREBASE_UID_TEST);
+        usuarioReal.setFirebaseUuid(firebaseUuidTest);
         usuarioReal.setNombre("Usuario Test");
         usuarioReal.setApellidos("Apellido Test");
         usuarioReal.setEmail("test@llosa.com");
@@ -107,7 +107,7 @@ class ReporteFlowE2ETest {
     void reporte_flujoCompletoCrud() throws Exception {
         // 👈 2. LE ASIGNAMOS EL PERMISO EXACTO QUE PIDE TU CONTROLADOR
         var authCorrecta = new UsernamePasswordAuthenticationToken(
-                FIREBASE_UID_TEST,
+                firebaseUuidTest,
                 null,
                 List.of(
                         new SimpleGrantedAuthority("CONTRATO_EDITAR"),
