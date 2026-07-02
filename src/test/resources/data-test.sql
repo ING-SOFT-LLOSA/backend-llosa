@@ -48,14 +48,14 @@ WHERE r.nombre = 'ASESOR'
 INSERT INTO rol_funcion (id_rol, id_funcion)
 SELECT r.id_rol, f.id_funcion FROM roles r, funcion f
 WHERE r.nombre = 'LEGAL'
-  AND f.nombre_codigo IN ('CONTRATO_VER','CONTRATO_EDITAR','DOCS_VER','USER_VER','AGENDA_VER')
+  AND f.nombre_codigo IN ('CONTRATO_VER','CONTRATO_EDITAR','DOCS_VER','USER_VER','AGENDA_VER','PAGOS_VER')
 ;
 
 -- Permisos de TECNICO
 INSERT INTO rol_funcion (id_rol, id_funcion)
 SELECT r.id_rol, f.id_funcion FROM roles r, funcion f
 WHERE r.nombre = 'TECNICO'
-  AND f.nombre_codigo IN ('OBRA_VER','OBRA_EDITAR','PROY_VER','AGENDA_VER')
+  AND f.nombre_codigo IN ('OBRA_VER','OBRA_EDITAR','PROY_VER','AGENDA_VER','PAGOS_VER')
 ;
 
 -- Permisos de POSTVENTA

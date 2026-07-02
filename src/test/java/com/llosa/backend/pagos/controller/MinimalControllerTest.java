@@ -49,7 +49,7 @@ class MinimalControllerTest {
     @Test
     void testGetWithUuid() throws Exception {
         mockMvc.perform(get("/api/cronogramas/{uuid}", UUID.randomUUID())
-                        .with(authentication(new FirebaseAuthenticationToken("uid", "e@m.com", List.of(new SimpleGrantedAuthority("CONTRATO_VER"))))))
+                        .with(authentication(new FirebaseAuthenticationToken("uid", "e@m.com", List.of(new SimpleGrantedAuthority("PAGOS_VER"))))))
                 .andExpect(status().isOk());
     }
 

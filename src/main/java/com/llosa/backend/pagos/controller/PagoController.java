@@ -27,7 +27,7 @@ public class PagoController {
     private final UsuarioRepository usuarioRepository;
 
     @GetMapping("/api/cronogramas/{uuidCronograma}/pagos")
-    @PreAuthorize("hasAuthority('CONTRATO_VER')")
+    @PreAuthorize("hasAuthority('PAGOS_VER')")
     public ResponseEntity<List<PagoResponse>> listarPorCronograma(@PathVariable UUID uuidCronograma) {
         return ResponseEntity.ok(pagoService.listarPorCronograma(uuidCronograma));
     }
